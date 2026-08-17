@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      alerts: {
+        Row: {
+          created_at: string | null
+          id: string
+          kind: string
+          payload: Json
+          read_at: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          tenant_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          read_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          tenant_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          read_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          tenant_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -109,6 +156,211 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_accounts: {
+        Row: {
+          bank_name: string | null
+          connected_at: string | null
+          external_id: string | null
+          id: string
+          masked_number: string | null
+          provider: string | null
+          status: string | null
+          tenant_id: string
+        }
+        Insert: {
+          bank_name?: string | null
+          connected_at?: string | null
+          external_id?: string | null
+          id?: string
+          masked_number?: string | null
+          provider?: string | null
+          status?: string | null
+          tenant_id: string
+        }
+        Update: {
+          bank_name?: string | null
+          connected_at?: string | null
+          external_id?: string | null
+          id?: string
+          masked_number?: string | null
+          provider?: string | null
+          status?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_transactions: {
+        Row: {
+          account_id: string | null
+          amount_cents: number
+          booked_at: string
+          counterparty_hint: string | null
+          description: string | null
+          external_id: string | null
+          id: string
+          match_confidence: number | null
+          matched_receivable_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount_cents: number
+          booked_at: string
+          counterparty_hint?: string | null
+          description?: string | null
+          external_id?: string | null
+          id?: string
+          match_confidence?: number | null
+          matched_receivable_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          account_id?: string | null
+          amount_cents?: number
+          booked_at?: string
+          counterparty_hint?: string | null
+          description?: string | null
+          external_id?: string | null
+          id?: string
+          match_confidence?: number | null
+          matched_receivable_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_matched_receivable_id_fkey"
+            columns: ["matched_receivable_id"]
+            isOneToOne: false
+            referencedRelation: "receivables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      counterparties: {
+        Row: {
+          cnpj: string
+          created_at: string
+          credit_transfer_pct: number | null
+          id: string
+          meta: Json
+          name: string | null
+          purchase_share_pct: number | null
+          regime: Database["public"]["Enums"]["regime_kind"]
+          regime_checked_at: string | null
+          regime_source: string | null
+          revenue_share_pct: number | null
+          risk_flag: string | null
+          role: Database["public"]["Enums"]["party_role"]
+          tenant_id: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          credit_transfer_pct?: number | null
+          id?: string
+          meta?: Json
+          name?: string | null
+          purchase_share_pct?: number | null
+          regime?: Database["public"]["Enums"]["regime_kind"]
+          regime_checked_at?: string | null
+          regime_source?: string | null
+          revenue_share_pct?: number | null
+          risk_flag?: string | null
+          role?: Database["public"]["Enums"]["party_role"]
+          tenant_id: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          credit_transfer_pct?: number | null
+          id?: string
+          meta?: Json
+          name?: string | null
+          purchase_share_pct?: number | null
+          regime?: Database["public"]["Enums"]["regime_kind"]
+          regime_checked_at?: string | null
+          regime_source?: string | null
+          revenue_share_pct?: number | null
+          risk_flag?: string | null
+          role?: Database["public"]["Enums"]["party_role"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "counterparties_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          config: Json
+          connected_at: string | null
+          error: string | null
+          id: string
+          kind: string
+          last_sync: string | null
+          secret_ref: string | null
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          config?: Json
+          connected_at?: string | null
+          error?: string | null
+          id?: string
+          kind: string
+          last_sync?: string | null
+          secret_ref?: string | null
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          config?: Json
+          connected_at?: string | null
+          error?: string | null
+          id?: string
+          kind?: string
+          last_sync?: string | null
+          secret_ref?: string | null
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
@@ -152,6 +404,237 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_items: {
+        Row: {
+          base_cents: number | null
+          calc_memory: Json | null
+          cbs_cents: number | null
+          cclasstrib: string | null
+          credit_cents: number | null
+          credit_eligible: boolean | null
+          cst: string | null
+          description: string | null
+          ibs_cents: number | null
+          id: string
+          inconsistency: Json | null
+          invoice_id: string
+          is_cents: number | null
+          line: number
+          ncm: string | null
+          product_id: string | null
+          qty: number | null
+          tenant_id: string
+          unit: string | null
+          unit_price_cents: number | null
+        }
+        Insert: {
+          base_cents?: number | null
+          calc_memory?: Json | null
+          cbs_cents?: number | null
+          cclasstrib?: string | null
+          credit_cents?: number | null
+          credit_eligible?: boolean | null
+          cst?: string | null
+          description?: string | null
+          ibs_cents?: number | null
+          id?: string
+          inconsistency?: Json | null
+          invoice_id: string
+          is_cents?: number | null
+          line: number
+          ncm?: string | null
+          product_id?: string | null
+          qty?: number | null
+          tenant_id: string
+          unit?: string | null
+          unit_price_cents?: number | null
+        }
+        Update: {
+          base_cents?: number | null
+          calc_memory?: Json | null
+          cbs_cents?: number | null
+          cclasstrib?: string | null
+          credit_cents?: number | null
+          credit_eligible?: boolean | null
+          cst?: string | null
+          description?: string | null
+          ibs_cents?: number | null
+          id?: string
+          inconsistency?: Json | null
+          invoice_id?: string
+          is_cents?: number | null
+          line?: number
+          ncm?: string | null
+          product_id?: string | null
+          qty?: number | null
+          tenant_id?: string
+          unit?: string | null
+          unit_price_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          access_key: string
+          cbs_cents: number | null
+          counterparty_id: string | null
+          credit_cents: number | null
+          direction: Database["public"]["Enums"]["invoice_direction"]
+          ibs_cents: number | null
+          id: string
+          inconsistencies: Json
+          ingested_at: string
+          is_cents: number | null
+          issued_at: string
+          model: string
+          number: string | null
+          raw_xml_path: string | null
+          rule_version_id: string | null
+          series: string | null
+          status: string
+          tenant_id: string
+          total_cents: number
+        }
+        Insert: {
+          access_key: string
+          cbs_cents?: number | null
+          counterparty_id?: string | null
+          credit_cents?: number | null
+          direction: Database["public"]["Enums"]["invoice_direction"]
+          ibs_cents?: number | null
+          id?: string
+          inconsistencies?: Json
+          ingested_at?: string
+          is_cents?: number | null
+          issued_at: string
+          model: string
+          number?: string | null
+          raw_xml_path?: string | null
+          rule_version_id?: string | null
+          series?: string | null
+          status?: string
+          tenant_id: string
+          total_cents: number
+        }
+        Update: {
+          access_key?: string
+          cbs_cents?: number | null
+          counterparty_id?: string | null
+          credit_cents?: number | null
+          direction?: Database["public"]["Enums"]["invoice_direction"]
+          ibs_cents?: number | null
+          id?: string
+          inconsistencies?: Json
+          ingested_at?: string
+          is_cents?: number | null
+          issued_at?: string
+          model?: string
+          number?: string | null
+          raw_xml_path?: string | null
+          rule_version_id?: string | null
+          series?: string | null
+          status?: string
+          tenant_id?: string
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "rule_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          message: string | null
+          params: Json
+          progress: number | null
+          queued_at: string | null
+          requested_by: string | null
+          result: Json | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          tenant_id: string
+          worker: string | null
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          message?: string | null
+          params?: Json
+          progress?: number | null
+          queued_at?: string | null
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tenant_id: string
+          worker?: string | null
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          message?: string | null
+          params?: Json
+          progress?: number | null
+          queued_at?: string | null
+          requested_by?: string | null
+          result?: Json | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          tenant_id?: string
+          worker?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -221,6 +704,183 @@ export type Database = {
         }
         Relationships: []
       }
+      price_lines: {
+        Row: {
+          below_floor: boolean | null
+          cost_cents: number | null
+          counterparty_id: string | null
+          current_price_cents: number | null
+          delta_pct: number | null
+          floor_price_cents: number | null
+          id: string
+          input_credit_cents: number | null
+          memory: Json | null
+          product_id: string
+          scenario_id: string
+          target_price_cents: number | null
+          tenant_id: string
+        }
+        Insert: {
+          below_floor?: boolean | null
+          cost_cents?: number | null
+          counterparty_id?: string | null
+          current_price_cents?: number | null
+          delta_pct?: number | null
+          floor_price_cents?: number | null
+          id?: string
+          input_credit_cents?: number | null
+          memory?: Json | null
+          product_id: string
+          scenario_id: string
+          target_price_cents?: number | null
+          tenant_id: string
+        }
+        Update: {
+          below_floor?: boolean | null
+          cost_cents?: number | null
+          counterparty_id?: string | null
+          current_price_cents?: number | null
+          delta_pct?: number | null
+          floor_price_cents?: number | null
+          id?: string
+          input_credit_cents?: number | null
+          memory?: Json | null
+          product_id?: string
+          scenario_id?: string
+          target_price_cents?: number | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_lines_counterparty_id_fkey"
+            columns: ["counterparty_id"]
+            isOneToOne: false
+            referencedRelation: "counterparties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_lines_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "price_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_lines_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_scenarios: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          assumptions: Json
+          created_at: string | null
+          fiscal_year: number
+          id: string
+          name: string
+          rule_version_id: string | null
+          status: string
+          target_margin: number
+          tenant_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: Json
+          created_at?: string | null
+          fiscal_year: number
+          id?: string
+          name: string
+          rule_version_id?: string | null
+          status?: string
+          target_margin: number
+          tenant_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          assumptions?: Json
+          created_at?: string | null
+          fiscal_year?: number
+          id?: string
+          name?: string
+          rule_version_id?: string | null
+          status?: string
+          target_margin?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_scenarios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean | null
+          cclasstrib_default: string | null
+          cost_cents: number | null
+          cst_default: string | null
+          current_price_cents: number | null
+          id: string
+          name: string
+          ncm: string | null
+          sku: string | null
+          source: string | null
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          cclasstrib_default?: string | null
+          cost_cents?: number | null
+          cst_default?: string | null
+          current_price_cents?: number | null
+          id?: string
+          name: string
+          ncm?: string | null
+          sku?: string | null
+          source?: string | null
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean | null
+          cclasstrib_default?: string | null
+          cost_cents?: number | null
+          cst_default?: string | null
+          current_price_cents?: number | null
+          id?: string
+          name?: string
+          ncm?: string | null
+          sku?: string | null
+          source?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -253,6 +913,104 @@ export type Database = {
           {
             foreignKeyName: "profiles_last_tenant_fkey"
             columns: ["last_tenant"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receivables: {
+        Row: {
+          amount_cents: number
+          confidence: number
+          due_date: string
+          expected_date: string | null
+          id: string
+          installment: number | null
+          invoice_id: string | null
+          paid_at: string | null
+          source: string
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          confidence?: number
+          due_date: string
+          expected_date?: string | null
+          id?: string
+          installment?: number | null
+          invoice_id?: string | null
+          paid_at?: string | null
+          source?: string
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          confidence?: number
+          due_date?: string
+          expected_date?: string | null
+          id?: string
+          installment?: number | null
+          invoice_id?: string | null
+          paid_at?: string | null
+          source?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receivables_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regime_simulations: {
+        Row: {
+          id: string
+          inputs: Json
+          next_window: string | null
+          recommendation: string | null
+          report_path: string | null
+          results: Json
+          rule_version_id: string | null
+          run_at: string | null
+          tenant_id: string
+        }
+        Insert: {
+          id?: string
+          inputs: Json
+          next_window?: string | null
+          recommendation?: string | null
+          report_path?: string | null
+          results: Json
+          rule_version_id?: string | null
+          run_at?: string | null
+          tenant_id: string
+        }
+        Update: {
+          id?: string
+          inputs?: Json
+          next_window?: string | null
+          recommendation?: string | null
+          report_path?: string | null
+          results?: Json
+          rule_version_id?: string | null
+          run_at?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regime_simulations_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
@@ -337,6 +1095,1028 @@ export type Database = {
           },
         ]
       }
+      tax_cash_events: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_cash_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_cash_events_202601: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202602: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202603: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202604: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202605: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202606: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202607: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202608: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202609: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202610: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202611: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202612: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202701: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202702: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202703: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202704: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202705: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202706: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202707: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202708: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202709: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202710: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202711: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202712: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_default: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           brand: Json
@@ -398,12 +2178,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mv_cash_timeline: {
+        Row: {
+          confidence: number | null
+          credit_in_cents: number | null
+          net_cents: number | null
+          tax_out_cents: number | null
+          tenant_id: string | null
+          week: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_cash_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      ack_alert: { Args: { p_alert: string }; Returns: undefined }
       auth_scopes: { Args: never; Returns: unknown[] }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
+      cancel_job: { Args: { p_job: string }; Returns: undefined }
+      chain_map: {
+        Args: {
+          p_filters?: Json
+          p_role?: Database["public"]["Enums"]["party_role"]
+          p_tenant: string
+        }
+        Returns: {
+          cnpj: string
+          credit_lost_cents: number
+          credit_transfer_pct: number
+          id: string
+          name: string
+          regime: Database["public"]["Enums"]["regime_kind"]
+          semaphore: string
+          share_pct: number
+          suggested_action: string
+          total_cents: number
+        }[]
+      }
+      channel_portfolio: {
+        Args: { p_filters?: Json; p_tenant: string }
+        Returns: {
+          cnpj: string
+          gap_30_cents: number
+          gap_90_cents: number
+          last_ingest: string
+          name: string
+          next_window: string
+          open_alerts: number
+          plan_code: string
+          tenant_id: string
+        }[]
+      }
+      counterparty_detail: {
+        Args: { p_id: string; p_tenant: string }
+        Returns: Json
+      }
       create_tenant: {
         Args: {
           p_cnpj?: string
@@ -415,7 +2252,16 @@ export type Database = {
         Returns: string
       }
       current_aal: { Args: never; Returns: string }
+      dashboard_cash: {
+        Args: { p_horizon_days?: number; p_tenant: string }
+        Returns: Json
+      }
       enforce_mfa: { Args: { p_tenant: string }; Returns: undefined }
+      enqueue_job: {
+        Args: { p_kind: string; p_params?: Json; p_tenant: string }
+        Returns: string
+      }
+      ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
       in_scope: { Args: { p_tenant: string }; Returns: boolean }
       invite_user: {
         Args: {
@@ -446,8 +2292,13 @@ export type Database = {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
       }
+      refresh_cash_timeline: { Args: never; Returns: undefined }
       remove_member: {
         Args: { p_tenant: string; p_user: string }
+        Returns: undefined
+      }
+      resolve_alert: {
+        Args: { p_alert: string; p_note?: string }
         Returns: undefined
       }
       role_in: {
@@ -466,6 +2317,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_regime_manual: {
+        Args: {
+          p_party: string
+          p_reason: string
+          p_regime: Database["public"]["Enums"]["regime_kind"]
+          p_tenant: string
+        }
+        Returns: undefined
+      }
       tenant_members: {
         Args: { p_tenant: string }
         Returns: {
@@ -481,7 +2341,17 @@ export type Database = {
       text2ltree: { Args: { "": string }; Returns: unknown }
     }
     Enums: {
+      alert_severity: "info" | "warning" | "critical"
+      cash_event_kind:
+        | "tax_out"
+        | "credit_in"
+        | "provision"
+        | "credit_advance"
+        | "loan_in"
+        | "loan_out"
       invite_status: "pending" | "accepted" | "expired" | "revoked"
+      invoice_direction: "out" | "in"
+      job_status: "queued" | "running" | "done" | "failed" | "canceled"
       member_role:
         | "platform_admin"
         | "platform_ops"
@@ -492,6 +2362,16 @@ export type Database = {
         | "finance"
         | "commercial"
         | "viewer"
+      party_role: "customer" | "supplier" | "both"
+      regime_kind:
+        | "simples"
+        | "simples_hibrido"
+        | "presumido"
+        | "real"
+        | "mei"
+        | "pf"
+        | "imune"
+        | "desconhecido"
       tenant_kind: "platform" | "channel" | "company" | "unit"
       tenant_status: "active" | "suspended" | "archived"
     }
@@ -621,7 +2501,18 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_severity: ["info", "warning", "critical"],
+      cash_event_kind: [
+        "tax_out",
+        "credit_in",
+        "provision",
+        "credit_advance",
+        "loan_in",
+        "loan_out",
+      ],
       invite_status: ["pending", "accepted", "expired", "revoked"],
+      invoice_direction: ["out", "in"],
+      job_status: ["queued", "running", "done", "failed", "canceled"],
       member_role: [
         "platform_admin",
         "platform_ops",
@@ -632,6 +2523,17 @@ export const Constants = {
         "finance",
         "commercial",
         "viewer",
+      ],
+      party_role: ["customer", "supplier", "both"],
+      regime_kind: [
+        "simples",
+        "simples_hibrido",
+        "presumido",
+        "real",
+        "mei",
+        "pf",
+        "imune",
+        "desconhecido",
       ],
       tenant_kind: ["platform", "channel", "company", "unit"],
       tenant_status: ["active", "suspended", "archived"],

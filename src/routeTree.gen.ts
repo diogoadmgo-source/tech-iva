@@ -10,33 +10,161 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as ConfirmRouteImport } from './routes/confirm'
+import { Route as ForgotRouteImport } from './routes/forgot'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MfaRouteImport } from './routes/mfa'
+import { Route as ResetRouteImport } from './routes/reset'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authenticated/select-tenant'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authenticated/t.$tenantId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmRoute = ConfirmRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotRoute = ForgotRouteImport.update({
+  id: '/forgot',
+  path: '/forgot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MfaRoute = MfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetRoute = ResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSelectTenantRoute =
+  AuthenticatedSelectTenantRouteImport.update({
+    id: '/select-tenant',
+    path: '/select-tenant',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTTenantIdRoute = AuthenticatedTTenantIdRouteImport.update({
+  id: '/t/$tenantId',
+  path: '/t/$tenantId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/confirm': typeof ConfirmRoute
+  '/forgot': typeof ForgotRoute
+  '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
+  '/reset': typeof ResetRoute
+  '/signup': typeof SignupRoute
+  '/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/confirm': typeof ConfirmRoute
+  '/forgot': typeof ForgotRoute
+  '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
+  '/reset': typeof ResetRoute
+  '/signup': typeof SignupRoute
+  '/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/confirm': typeof ConfirmRoute
+  '/forgot': typeof ForgotRoute
+  '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
+  '/reset': typeof ResetRoute
+  '/signup': typeof SignupRoute
+  '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
+    | '/select-tenant'
+    | '/invite/$token'
+    | '/t/$tenantId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
+    | '/select-tenant'
+    | '/invite/$token'
+    | '/t/$tenantId'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
+    | '/_authenticated/select-tenant'
+    | '/invite/$token'
+    | '/_authenticated/t/$tenantId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ConfirmRoute: typeof ConfirmRoute
+  ForgotRoute: typeof ForgotRoute
+  LoginRoute: typeof LoginRoute
+  MfaRoute: typeof MfaRoute
+  ResetRoute: typeof ResetRoute
+  SignupRoute: typeof SignupRoute
+  InviteTokenRoute: typeof InviteTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +176,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm': {
+      id: '/confirm'
+      path: '/confirm'
+      fullPath: '/confirm'
+      preLoaderRoute: typeof ConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot': {
+      id: '/forgot'
+      path: '/forgot'
+      fullPath: '/forgot'
+      preLoaderRoute: typeof ForgotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mfa': {
+      id: '/mfa'
+      path: '/mfa'
+      fullPath: '/mfa'
+      preLoaderRoute: typeof MfaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset': {
+      id: '/reset'
+      path: '/reset'
+      fullPath: '/reset'
+      preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/select-tenant': {
+      id: '/_authenticated/select-tenant'
+      path: '/select-tenant'
+      fullPath: '/select-tenant'
+      preLoaderRoute: typeof AuthenticatedSelectTenantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/t/$tenantId': {
+      id: '/_authenticated/t/$tenantId'
+      path: '/t/$tenantId'
+      fullPath: '/t/$tenantId'
+      preLoaderRoute: typeof AuthenticatedTTenantIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSelectTenantRoute: typeof AuthenticatedSelectTenantRoute
+  AuthenticatedTTenantIdRoute: typeof AuthenticatedTTenantIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSelectTenantRoute: AuthenticatedSelectTenantRoute,
+  AuthenticatedTTenantIdRoute: AuthenticatedTTenantIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ConfirmRoute: ConfirmRoute,
+  ForgotRoute: ForgotRoute,
+  LoginRoute: LoginRoute,
+  MfaRoute: MfaRoute,
+  ResetRoute: ResetRoute,
+  SignupRoute: SignupRoute,
+  InviteTokenRoute: InviteTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
