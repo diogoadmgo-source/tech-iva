@@ -3321,6 +3321,7 @@ export type Database = {
         Args: { p_tenant: string; p_user: string }
         Returns: undefined
       }
+      require_aal2: { Args: never; Returns: undefined }
       resolve_alert: {
         Args: { p_alert: string; p_note?: string }
         Returns: undefined
@@ -3379,7 +3380,6 @@ export type Database = {
           user_id: string
         }[]
       }
-      text2ltree: { Args: { "": string }; Returns: unknown }
       update_product_price: {
         Args: {
           p_cost_cents?: number
