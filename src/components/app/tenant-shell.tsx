@@ -112,9 +112,9 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
             >
               {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
             </span>
-          ) : (
+          ) : collapsed || brand.name ? (
             <BrandIcon className="size-8 shrink-0" />
-          )}
+          ) : null}
           {!collapsed ? (
             brand.name ? (
               <span className="truncate text-sm font-medium text-foreground">{brand.name}</span>
@@ -122,6 +122,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
               <BrandLogo className="h-5 w-auto" />
             )
           ) : null}
+
         </div>
 
 
