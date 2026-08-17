@@ -1,0 +1,1 @@
+grant execute on function channel_commission_statement(uuid, date) to supabase_read_only_user;
