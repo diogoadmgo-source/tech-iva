@@ -121,7 +121,7 @@ export function useMarkRenegotiate(tenantId: string) {
       const { data, error } = await supabase.rpc("mark_renegotiate", {
         p_tenant: tenantId,
         p_parties: input.partyIds,
-        p_note: input.note ?? null,
+        p_note: input.note ?? undefined,
       });
       if (error) throw error;
       return Number(data ?? 0);
