@@ -83,11 +83,11 @@ export function useWeekEvents(tenantId: string, week: string | null) {
         .slice(0, 10);
       const { data, error } = await supabase
         .from("tax_cash_events")
-        .select("id, kind, due_date, amount_cents, confidence, source_ref")
+        .select("id, kind, event_date, amount_cents, confidence, ref_invoice_id")
         .eq("tenant_id", tenantId)
-        .gte("due_date", start)
-        .lt("due_date", end)
-        .order("due_date", { ascending: true })
+        .gte("event_date", start)
+        .lt("event_date", end)
+        .order("event_date", { ascending: true })
         .limit(500);
       if (error) throw error;
       return data;
