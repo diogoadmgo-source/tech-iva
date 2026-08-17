@@ -10,19 +10,28 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const purgePendingMfaFactors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const url = process.env["SUPABASE_URL"]!;
+    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
+    const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+    const base = `${url}/auth/v1/admin/users/${context.userId}/factors`;
 
-    const { data, error } = await supabaseAdmin.auth.admin.mfa.listFactors({
-      userId: context.userId,
-    });
-    if (error) throw error;
-
-    const pending = (data?.factors ?? []).filter((factor) => factor.status !== "verified");
-    for (const factor of pending) {
-      await supabaseAdmin.auth.admin.mfa.deleteFactor({
-        id: factor.id,
-        userId: context.userId,
-      });
+    const listResponse = await fetch(base, { headers });
+    if (!listResponse.ok) {
+      throw new Error(`admin factors list falhou: ${listResponse.status}`);
     }
-    return { removed: pending.length };
+    const payload = (await listResponse.json()) as
+      | Array<{ id: string; status: string }>
+      | { factors?: Array<{ id: string; status: string }> };
+    const factors = Array.isArray(payload) ? payload : (payload.factors ?? []);
+
+    let removed = 0;
+    for (const factor of factors) {
+      if (factor.status === "verified") continue;
+      const deleteResponse = await fetch(`${base}/${factor.id}`, {
+        method: "DELETE",
+        headers,
+      });
+      if (deleteResponse.ok) removed += 1;
+    }
+    return { removed };
   });
