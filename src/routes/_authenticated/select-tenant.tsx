@@ -53,17 +53,21 @@ function SelectTenantPage() {
   const { data, isLoading, error: queryError } = useQuery({
     queryKey: ["select-tenant"],
     queryFn: async (): Promise<Row[]> => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? "";
       const [{ data: tenants, error: tenantsError }, { data: memberships }] = await Promise.all([
         supabase
           .from("tenants")
           .select("id, name, kind, level, slug")
           .order("level")
           .order("name"),
-        supabase.from("memberships").select("tenant_id, role"),
+        // Só os vínculos do próprio usuário: o RLS permite ler os de outros no escopo.
+        supabase.from("memberships").select("tenant_id, role").eq("user_id", userId),
       ]);
       if (tenantsError) throw tenantsError;
       const byTenant = new Map((memberships ?? []).map((m) => [m.tenant_id, m.role]));
       return (tenants ?? []).map((t) => ({ ...t, role: byTenant.get(t.id) ?? null }));
+
     },
   });
 
