@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import iconAsset from "@/assets/techiva-icon.png.asset.json";
+import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
