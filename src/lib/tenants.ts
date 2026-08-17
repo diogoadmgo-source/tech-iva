@@ -101,8 +101,8 @@ export function useTenantMutations(rootId: string) {
         p_parent: input.parentId,
         p_kind: input.kind,
         p_name: input.name,
-        p_cnpj: input.cnpj ?? undefined,
-        p_slug: input.slug ?? undefined,
+        ...(input.cnpj ? { p_cnpj: input.cnpj } : {}),
+        ...(input.slug ? { p_slug: input.slug } : {}),
       });
       if (error) throw error;
       return data as string;
@@ -117,11 +117,14 @@ export function useTenantMutations(rootId: string) {
       status?: TenantStatus;
       brand?: Brand;
     }) => {
-      const patch: Record<string, unknown> = {};
-      if (input.name !== undefined) patch["name"] = input.name;
-      if (input.status !== undefined) patch["status"] = input.status;
-      if (input.brand !== undefined) patch["brand"] = input.brand;
-      const { error } = await supabase.from("tenants").update(patch).eq("id", input.id);
+      const { error } = await supabase
+        .from("tenants")
+        .update({
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.status !== undefined ? { status: input.status } : {}),
+          ...(input.brand !== undefined ? { brand: { ...input.brand } } : {}),
+        })
+        .eq("id", input.id);
       if (error) throw error;
     },
     onSuccess: refresh,
