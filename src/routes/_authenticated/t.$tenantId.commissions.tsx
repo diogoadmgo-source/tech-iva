@@ -136,8 +136,8 @@ function CommissionsPage() {
     return (
       <ErrorState
         title="Não foi possível carregar o extrato"
-        hint={(statement.error as Error)?.message}
-        onRetry={() => statement.refetch()}
+        message={(statement.error as Error)?.message}
+        onRetry={() => void statement.refetch()}
       />
     );
   }
