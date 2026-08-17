@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConfirmRouteImport } from './routes/confirm'
 import { Route as ForgotRouteImport } from './routes/forgot'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as MfaRouteImport } from './routes/mfa'
 import { Route as ResetRouteImport } from './routes/reset'
 import { Route as SignupRouteImport } from './routes/signup'
 
@@ -36,6 +37,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MfaRoute = MfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetRoute = ResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/confirm': typeof ConfirmRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/confirm': typeof ConfirmRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
 }
@@ -69,16 +77,25 @@ export interface FileRoutesById {
   '/confirm': typeof ConfirmRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
+  '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/confirm' | '/forgot' | '/login' | '/reset' | '/signup'
+  fullPaths:
+    '/' | '/confirm' | '/forgot' | '/login' | '/mfa' | '/reset' | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/confirm' | '/forgot' | '/login' | '/reset' | '/signup'
+  to: '/' | '/confirm' | '/forgot' | '/login' | '/mfa' | '/reset' | '/signup'
   id:
-    '__root__' | '/' | '/confirm' | '/forgot' | '/login' | '/reset' | '/signup'
+    | '__root__'
+    | '/'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -86,6 +103,7 @@ export interface RootRouteChildren {
   ConfirmRoute: typeof ConfirmRoute
   ForgotRoute: typeof ForgotRoute
   LoginRoute: typeof LoginRoute
+  MfaRoute: typeof MfaRoute
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
 }
@@ -120,6 +138,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mfa': {
+      id: '/mfa'
+      path: '/mfa'
+      fullPath: '/mfa'
+      preLoaderRoute: typeof MfaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset': {
       id: '/reset'
       path: '/reset'
@@ -142,6 +167,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfirmRoute: ConfirmRoute,
   ForgotRoute: ForgotRoute,
   LoginRoute: LoginRoute,
+  MfaRoute: MfaRoute,
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
 }
