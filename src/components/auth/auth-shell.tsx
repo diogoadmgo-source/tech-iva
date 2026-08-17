@@ -62,3 +62,13 @@ export function FormSuccess({ message }: { message?: string | null }) {
     </p>
   );
 }
+
+/** Erro de um campo específico, exibido logo abaixo do input. */
+export function FieldError({ message }: { message?: string | null }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="text-xs text-destructive">
+      {message}
+    </p>
+  );
+}
