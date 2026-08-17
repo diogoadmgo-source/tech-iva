@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/brand/brand-logo";
+
 
 export function AuthShell({
   title,
@@ -17,14 +19,12 @@ export function AuthShell({
   return (
     <main className="auth-backdrop flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className={wide ? "w-full max-w-2xl" : "w-full max-w-md"}>
-        <div className="mb-8 text-center">
-          <Link
-            to="/"
-            className="font-mono text-sm tracking-[0.35em] text-primary uppercase"
-          >
-            tech-iva
+        <div className="mb-8 flex justify-center">
+          <Link to="/" aria-label="TECH-IVA — início">
+            <BrandLogo className="h-9 w-auto" />
           </Link>
         </div>
+
 
         <section className="rounded-xl border border-border bg-surface p-8 shadow-[0_24px_60px_-30px_oklch(0_0_0/0.9)]">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>

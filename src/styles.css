@@ -161,19 +161,19 @@
 .dark {
   --radius: 0.75rem;
 
-  --background: oklch(0.16 0.014 264);
+  --background: oklch(0.17 0.028 265);
   --foreground: oklch(0.968 0.005 247);
 
   /* superfície elevada onde os cartões de auth vivem */
-  --surface: oklch(0.216 0.017 264);
+  --surface: oklch(0.225 0.026 265);
   --surface-foreground: oklch(0.968 0.005 247);
-  --card: oklch(0.216 0.017 264);
+  --card: oklch(0.225 0.026 265);
   --card-foreground: oklch(0.968 0.005 247);
-  --popover: oklch(0.216 0.017 264);
+  --popover: oklch(0.225 0.026 265);
   --popover-foreground: oklch(0.968 0.005 247);
 
-  --primary: oklch(0.72 0.15 165);
-  --primary-foreground: oklch(0.16 0.03 165);
+  --primary: oklch(0.55 0.22 264);
+  --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.27 0.018 264);
   --secondary-foreground: oklch(0.968 0.005 247);
@@ -189,16 +189,16 @@
 
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.72 0.15 165 / 60%);
+  --ring: oklch(0.55 0.22 264 / 60%);
 
-  --sidebar: oklch(0.19 0.015 264);
+  --sidebar: oklch(0.195 0.026 265);
   --sidebar-foreground: oklch(0.968 0.005 247);
-  --sidebar-primary: oklch(0.72 0.15 165);
-  --sidebar-primary-foreground: oklch(0.16 0.03 165);
+  --sidebar-primary: oklch(0.55 0.22 264);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.27 0.018 264);
   --sidebar-accent-foreground: oklch(0.968 0.005 247);
   --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.72 0.15 165 / 60%);
+  --sidebar-ring: oklch(0.55 0.22 264 / 60%);
 }
 
 @layer base {
@@ -217,7 +217,8 @@
 
 @utility auth-backdrop {
   background:
-    radial-gradient(60rem 40rem at 50% -10%, oklch(0.72 0.15 165 / 12%), transparent 70%),
-    radial-gradient(40rem 30rem at 90% 110%, oklch(0.55 0.12 264 / 14%), transparent 70%),
+    radial-gradient(60rem 40rem at 50% -10%, oklch(0.55 0.22 264 / 18%), transparent 70%),
+    radial-gradient(40rem 30rem at 90% 110%, oklch(0.62 0.18 258 / 12%), transparent 70%),
+
     var(--background);
 }

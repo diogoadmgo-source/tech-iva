@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Bell, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { toast } from "sonner";
 
+import { BrandIcon, BrandLogo } from "@/components/brand/brand-logo";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
@@ -97,21 +99,28 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
         }`}
       >
         <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-          <span
-            className="grid size-8 shrink-0 place-items-center rounded-md font-mono text-xs font-semibold"
-            style={{
-              backgroundColor: brand.color ?? "hsl(var(--primary))",
-              color: "hsl(var(--primary-foreground))",
-            }}
-          >
-            {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
-          </span>
-          {!collapsed ? (
-            <span className="truncate text-sm font-medium text-foreground">
-              {brand.name ?? "TECH-IVA"}
+          {brand.color ? (
+            <span
+              className="grid size-8 shrink-0 place-items-center rounded-md font-mono text-xs font-semibold"
+              style={{
+                backgroundColor: brand.color,
+                color: "hsl(var(--primary-foreground))",
+              }}
+            >
+              {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
             </span>
+          ) : (
+            <BrandIcon className="size-8 shrink-0" />
+          )}
+          {!collapsed ? (
+            brand.name ? (
+              <span className="truncate text-sm font-medium text-foreground">{brand.name}</span>
+            ) : (
+              <BrandLogo className="h-5 w-auto" />
+            )
           ) : null}
         </div>
+
 
         <nav className="flex-1 space-y-1 p-2" aria-label="Navegação da organização">
           {items.map((item) => (

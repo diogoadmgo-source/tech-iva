@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -44,7 +45,7 @@ function Index() {
   return (
     <main className="auth-backdrop min-h-screen">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
-        <span className="font-mono text-sm tracking-[0.35em] text-primary uppercase">tech-iva</span>
+        <BrandLogo className="h-8 w-auto" />
         <nav className="flex items-center gap-6 text-sm">
           <Link to="/login" className="text-muted-foreground transition-colors hover:text-foreground">
             Entrar
