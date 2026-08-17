@@ -1,27 +1,40 @@
 -- =============================================================================
 -- 0019_seed_dev_operation.sql   ⚠️  NÃO RODAR EM PRODUÇÃO  ⚠️
 -- =============================================================================
--- Espelho do dado de demonstração aplicado manualmente na Distribuidora Beta.
--- Somente DADOS: nenhuma função, tabela, política ou grant é tocado.
--- Requer 0006_seed_dev.sql aplicado (tenant "Distribuidora Beta" existente).
+-- Operação de demonstração (somente DADOS: nenhuma função, tabela, política
+-- ou grant é tocado). Requer 0006_seed_dev.sql aplicado.
+--
+-- Tenant alvo: por padrão 'Distribuidora Beta'. Para rodar num tenant
+-- descartável, defina antes:
+--     set local techiva.seed_tenant = 'Nome do tenant';
+--
 -- Volumes-alvo: 26 contrapartes (18 clientes / 8 fornecedores, 4 'desconhecido'),
 -- ~574 notas em 12 meses, ~1.049 itens, ~334 recebíveis (30/45/60, parte paga),
--- vendas ~R$ 16,1 mi/12m, compras ~55%, 128 eventos em tax_cash_events (120 dias),
--- 3 alertas abertos. Determinístico via setseed().
+-- 128+ eventos em tax_cash_events (120 dias), 3 alertas abertos.
+-- Impostos separados: IBS 8,8% + CBS 2,7% (total ~11,5%). Determinístico.
+--
+-- Schema real observado (não alterar sem reconferir):
+--   invoices(access_key NOT NULL UNIQUE, ibs_cents, cbs_cents, is_cents, credit_cents)
+--   invoice_items(line NOT NULL, qty, base_cents, cst, cclasstrib, ibs/cbs/is_cents)
+--   receivables(invoice_id, installment, due_date, paid_at, amount_cents, source, confidence)
 -- =============================================================================
 
 do $$
 declare
+  v_tenant_name text := coalesce(current_setting('techiva.seed_tenant', true), 'Distribuidora Beta');
   v_tenant uuid;
-  v_cp uuid; v_inv uuid;
+  v_cp uuid; v_inv uuid; v_role party_role;
   v_regimes regime_kind[] := array['real','presumido','simples','simples_hibrido','mei',
                                   'real','presumido','simples','desconhecido']::regime_kind[];
-  i int; j int; n int;
-  v_dir invoice_direction; v_date date; v_total bigint; v_credit bigint;
+  i int; j int; n int; v_seq bigint := 0;
+  v_dir invoice_direction; v_date date;
+  v_total bigint; v_ibs bigint; v_cbs bigint; v_credit bigint;
   v_weekly_run bigint;
 begin
-  select id into v_tenant from tenants where name = 'Distribuidora Beta';
-  if v_tenant is null then raise exception 'seed 0006 nao aplicado'; end if;
+  select id into v_tenant from tenants where name = v_tenant_name;
+  if v_tenant is null then
+    raise exception 'tenant % nao encontrado (rode 0006_seed_dev.sql)', v_tenant_name;
+  end if;
 
   perform setseed(0.42);
 
@@ -50,43 +63,52 @@ begin
   end loop;
 
   -- ~574 notas / ~1.049 itens / ~334 recebíveis em 12 meses -------------------
-  for v_cp in select id from counterparties where tenant_id = v_tenant loop
+  for v_cp, v_role in select id, role from counterparties where tenant_id = v_tenant loop
+    v_dir := case when v_role = 'customer' then 'out' else 'in' end::invoice_direction;
     n := 18 + floor(random() * 8)::int;                  -- 18..25 notas por parte
     for j in 1..n loop
-      select role into strict v_dir from (
-        select case when c.role = 'customer' then 'out' else 'in' end::invoice_direction as role
-        from counterparties c where c.id = v_cp) s;
-      v_date  := current_date - (floor(random() * 365))::int;
+      v_seq  := v_seq + 1;
+      v_date := current_date - (floor(random() * 365))::int;
       v_total := case when v_dir = 'out'
                       then (60000 + floor(random() * 450000))::bigint * 100
                       else (35000 + floor(random() * 240000))::bigint * 100 end;
+      v_ibs    := (v_total * 0.088)::bigint;             -- IBS 8,8%
+      v_cbs    := (v_total * 0.027)::bigint;             -- CBS 2,7%
       v_credit := (v_total * 0.18)::bigint;
 
-      insert into invoices (tenant_id, counterparty_id, direction, number, issued_at,
-                            total_cents, tax_cents, credit_cents, status)
-      values (v_tenant, v_cp, v_dir, 'DEMO-' || substr(v_cp::text,1,4) || '-' || j,
-              v_date, v_total, (v_total * 0.115)::bigint, v_credit, 'authorized')
+      insert into invoices (tenant_id, counterparty_id, direction, model, access_key,
+                            number, series, issued_at, total_cents,
+                            ibs_cents, cbs_cents, is_cents, credit_cents, status)
+      values (v_tenant, v_cp, v_dir, '55',
+              -- chave de acesso fictícia de 44 dígitos, única e determinística
+              lpad(replace(v_tenant::text,'-','') , 32, '0') || lpad(v_seq::text, 12, '0'),
+              'DEMO-' || lpad(v_seq::text, 6, '0'), '1',
+              v_date, v_total, v_ibs, v_cbs, 0, v_credit, 'authorized')
       returning id into v_inv;
 
       -- 1 a 3 itens por nota
       for i in 1..(1 + floor(random() * 2)::int) loop
-        insert into invoice_items (tenant_id, invoice_id, description, quantity,
-                                   unit_price_cents, total_cents, cfop, ncm)
-        values (v_tenant, v_inv, 'Item demo ' || i, 1 + floor(random() * 20),
-                (v_total / 3)::bigint, (v_total / 3)::bigint, '5102', '85443000');
+        insert into invoice_items (tenant_id, invoice_id, line, description, ncm, cst,
+                                   cclasstrib, qty, unit, unit_price_cents, base_cents,
+                                   ibs_cents, cbs_cents, is_cents,
+                                   credit_eligible, credit_cents)
+        values (v_tenant, v_inv, i, 'Item demo ' || i, '85443000', '000',
+                '000001', 1 + floor(random() * 20), 'UN',
+                (v_total / 3)::bigint, (v_total / 3)::bigint,
+                (v_total / 3 * 0.088)::bigint, (v_total / 3 * 0.027)::bigint, 0,
+                v_dir = 'in', (v_total / 3 * 0.18)::bigint);
       end loop;
 
       -- recebíveis só para saídas: prazos 30/45/60, parte já paga
       if v_dir = 'out' and random() < 0.62 then
-        insert into receivables (tenant_id, invoice_id, counterparty_id, due_date,
-                                 amount_cents, paid_at, status)
-        values (v_tenant, v_inv, v_cp,
+        insert into receivables (tenant_id, invoice_id, installment, due_date,
+                                 expected_date, paid_at, amount_cents, source, confidence)
+        values (v_tenant, v_inv, 1,
                 v_date + (array[30,45,60])[1 + floor(random() * 3)::int],
-                v_total,
+                v_date + 45,
                 case when v_date < current_date - 70 and random() < 0.7
                      then v_date + 40 else null end,
-                case when v_date < current_date - 70 and random() < 0.7
-                     then 'paid' else 'open' end);
+                v_total, 'demo', 0.9);
       end if;
     end loop;
   end loop;
@@ -96,11 +118,13 @@ begin
     from invoices where tenant_id = v_tenant and direction = 'out'
      and issued_at >= current_date - 365;
 
-  -- 128 eventos cobrindo 120 dias -------------------------------------------
-  -- (a) tax_out dos recebíveis a vencer
+  -- eventos cobrindo 120 dias ------------------------------------------------
+  -- (a) tax_out dos recebíveis a vencer (IBS + CBS)
   insert into tax_cash_events (tenant_id, kind, event_date, amount_cents, confidence, ref_invoice_id)
-  select v_tenant, 'tax_out', r.due_date + 10, (r.amount_cents * 0.115)::bigint, 0.9, r.invoice_id
+  select v_tenant, 'tax_out', r.due_date + 10,
+         (coalesce(i.ibs_cents,0) + coalesce(i.cbs_cents,0)), 0.9, r.invoice_id
     from receivables r
+    join invoices i on i.id = r.invoice_id
    where r.tenant_id = v_tenant and r.due_date between current_date and current_date + 120;
 
   -- (b) tax_out da PROJEÇÃO de vendas futuras por run-rate semanal
@@ -111,8 +135,7 @@ begin
 
   -- (c) credit_in com retorno em 150–180 dias
   insert into tax_cash_events (tenant_id, kind, event_date, amount_cents, confidence)
-  select v_tenant, 'credit_in', d::date,
-         (v_weekly_run * 0.082)::bigint, 0.7
+  select v_tenant, 'credit_in', d::date, (v_weekly_run * 0.082)::bigint, 0.7
     from generate_series(current_date + 5, current_date + 120, interval '10 days') d;
 
   -- (d) provisão mensal
