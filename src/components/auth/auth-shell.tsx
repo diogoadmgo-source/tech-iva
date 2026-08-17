@@ -22,7 +22,7 @@ export function AuthShell({
             to="/"
             className="font-mono text-sm tracking-[0.35em] text-primary uppercase"
           >
-            fluxa
+            tech-iva
           </Link>
         </div>
 
