@@ -25,7 +25,7 @@ declare
   v_tenant uuid;
   v_cp uuid; v_inv uuid; v_role party_role;
   v_regimes regime_kind[] := array['real','presumido','simples','simples_hibrido','mei',
-                                  'real','presumido','simples','desconhecido']::regime_kind[];
+                                  'real','presumido','simples']::regime_kind[];
   i int; j int; n int; v_seq bigint := 0;
   v_dir invoice_direction; v_date date;
   v_total bigint; v_ibs bigint; v_cbs bigint; v_credit bigint;
@@ -69,9 +69,10 @@ begin
     for j in 1..n loop
       v_seq  := v_seq + 1;
       v_date := current_date - (floor(random() * 365))::int;
+      -- vendas ~R$ 16,1 mi/12m; compras ~55% disso
       v_total := case when v_dir = 'out'
-                      then (60000 + floor(random() * 450000))::bigint * 100
-                      else (35000 + floor(random() * 240000))::bigint * 100 end;
+                      then (15000 + floor(random() * 55000))::bigint * 100
+                      else (25000 + floor(random() * 56000))::bigint * 100 end;
       v_ibs    := (v_total * 0.088)::bigint;             -- IBS 8,8%
       v_cbs    := (v_total * 0.027)::bigint;             -- CBS 2,7%
       v_credit := (v_total * 0.18)::bigint;
@@ -87,7 +88,8 @@ begin
       returning id into v_inv;
 
       -- 1 a 3 itens por nota
-      for i in 1..(1 + floor(random() * 2)::int) loop
+      -- 1 ou 2 itens por nota (média ~1,81 → ~1.049 itens)
+      for i in 1..(case when random() < 0.81 then 2 else 1 end) loop
         insert into invoice_items (tenant_id, invoice_id, line, description, ncm, cst,
                                    cclasstrib, qty, unit, unit_price_cents, base_cents,
                                    ibs_cents, cbs_cents, is_cents,
@@ -100,7 +102,7 @@ begin
       end loop;
 
       -- recebíveis só para saídas: prazos 30/45/60, parte já paga
-      if v_dir = 'out' and random() < 0.62 then
+      if v_dir = 'out' and random() < 0.86 then
         insert into receivables (tenant_id, invoice_id, installment, due_date,
                                  expected_date, paid_at, amount_cents, source, confidence)
         values (v_tenant, v_inv, 1,
