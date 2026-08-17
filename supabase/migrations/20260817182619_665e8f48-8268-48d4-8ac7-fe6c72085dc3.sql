@@ -1,0 +1,1 @@
+update public.tenants set name = 'TECH-IVA', slug = 'tech-iva' where kind = 'platform' and name = 'FLUXA';
