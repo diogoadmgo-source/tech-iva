@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { Bell, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { toast } from "sonner";
 
+import { BrandIcon, BrandLogo } from "@/components/brand/brand-logo";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
