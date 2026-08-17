@@ -363,10 +363,10 @@ function UsersPage() {
         pending={invite.isPending}
         onSubmit={async (email, role) => {
           try {
-            const { token } = await invite.mutateAsync({ email, role });
+            const { invitationId, token } = await invite.mutateAsync({ email, role });
             setInviteOpen(false);
             setLastLink(inviteLink(token));
-            toast.success(`Convite criado para ${email}.`);
+            await deliverInvite(tenantId, invitationId, token, email);
           } catch (error) {
             toast.error(authErrorMessage(error));
           }
