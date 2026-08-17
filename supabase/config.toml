@@ -1,1 +1,30 @@
 project_id = "lfufwoirpwlsdmststbr"
+
+# Templates de e-mail de autenticação (TECH-IVA)
+# Estes blocos são usados pelo Supabase CLI (dev/local e `supabase config push`).
+# No projeto hospedado fluxa-dev, cole o HTML de supabase/templates/*.html em
+# Authentication → Emails → Templates (assunto indicado em cada bloco).
+
+[auth.email.template.confirmation]
+subject = "Confirme seu e-mail — TECH-IVA"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.magic_link]
+subject = "Seu link de acesso ao TECH-IVA"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.recovery]
+subject = "Redefinição de senha — TECH-IVA"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.invite]
+subject = "Você foi convidado ao TECH-IVA"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.email_change]
+subject = "Confirme seu novo e-mail — TECH-IVA"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.reauthentication]
+subject = "Código de verificação — TECH-IVA"
+content_path = "./supabase/templates/reauthentication.html"
