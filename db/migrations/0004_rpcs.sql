@@ -55,6 +55,7 @@ create or replace function remove_member(p_tenant uuid, p_user uuid) returns voi
 language plpgsql security definer set search_path = public, extensions as $$
 begin
   if not can_admin(p_tenant) then raise exception 'forbidden'; end if;
+  perform enforce_mfa(p_tenant);
   if (select count(*) from memberships where tenant_id=p_tenant and role in ('owner','channel_admin','platform_admin')) = 1
      and (select role from memberships where tenant_id=p_tenant and user_id=p_user) in ('owner','channel_admin','platform_admin') then
     raise exception 'cannot remove last admin';
