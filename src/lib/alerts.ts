@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 export type AlertStatusFilter = "open" | "resolved" | "all";
 
 export type AlertRow = AlertItem & {
-  body: string | null;
   payload: Record<string, unknown> | null;
   resolved_by: string | null;
 };
@@ -64,7 +63,7 @@ export function useAlertCenter(
     queryFn: async (): Promise<AlertRow[]> => {
       let q = supabase
         .from("alerts")
-        .select("id, kind, severity, title, body, payload, created_at, read_at, resolved_at, resolved_by")
+        .select("id, kind, severity, title, payload, created_at, read_at, resolved_at, resolved_by")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(300);
@@ -81,7 +80,6 @@ export function useAlertCenter(
         kind: a.kind,
         severity: a.severity as AlertSeverity,
         title: a.title,
-        body: a.body ?? null,
         payload: (a.payload as Record<string, unknown> | null) ?? null,
         created_at: a.created_at ?? new Date().toISOString(),
         read_at: a.read_at,
