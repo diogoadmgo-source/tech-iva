@@ -11,6 +11,8 @@ export type NavItem = {
     | "/t/$tenantId/regime"
     | "/t/$tenantId/portfolio"
     | "/t/$tenantId/brand"
+    | "/t/$tenantId/companies"
+    | "/t/$tenantId/onboarding"
     | "/t/$tenantId/settings/users"
     | "/t/$tenantId/tenants"
     | "/t/$tenantId/plans"
@@ -30,7 +32,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
   ],
   channel: [
     { label: "Carteira", block: "3.6", to: "/t/$tenantId/portfolio" },
-    { label: "Empresas", block: "1.7.4", to: "/t/$tenantId/tenants" },
+    { label: "Empresas", block: "3.6", to: "/t/$tenantId/companies" },
     { label: "Usuários", block: "1.7.3", to: "/t/$tenantId/settings/users" },
     { label: "Marca", block: "3.6", to: "/t/$tenantId/brand" },
     { label: "Comissões", block: "1.7.5" },
@@ -39,6 +41,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
   ],
   company: [
     { label: "Caixa", block: "3.4", to: "/t/$tenantId/cash" },
+    { label: "Onboarding", block: "3.2", to: "/t/$tenantId/onboarding" },
     { label: "Assinatura", block: "1.7.5", to: "/t/$tenantId/plans" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
