@@ -4,7 +4,7 @@
 -- com senha Teste@123456 e e-mail já confirmado.
 --
 -- Árvore:
---   platform "FLUXA"
+--   platform "TECH-IVA"
 --     └── channel "Contábil Alfa" (slug alfa)
 --           └── company "Distribuidora Beta" (CNPJ 11.222.333/0001-81)
 --                 └── unit "Beta — Filial 02" (CNPJ 11.222.333/0002-62)
@@ -28,7 +28,7 @@ begin
   -- ------------------------------------------------------------------ usuários
   for r in
     select * from (values
-      (v_admin,  'admin@fluxa.dev',  'Ana Admin (FLUXA)'),
+      (v_admin,  'admin@fluxa.dev',  'Ana Admin (TECH-IVA)'),
       (v_canal,  'canal@alfa.dev',   'Carlos Canal (Contábil Alfa)'),
       (v_dono,   'dono@beta.dev',    'Débora Dona (Distribuidora Beta)'),
       (v_fin,    'fin@beta.dev',     'Felipe Financeiro (Beta)'),
@@ -57,7 +57,7 @@ begin
 
   -- -------------------------------------------------------------------- tenants
   insert into tenants (parent_id, kind, name, slug, created_by)
-    values (null, 'platform', 'FLUXA', 'fluxa', v_admin) returning id into v_platform;
+    values (null, 'platform', 'TECH-IVA', 'tech-iva', v_admin) returning id into v_platform;
 
   insert into tenants (parent_id, kind, name, slug, created_by, brand)
     values (v_platform, 'channel', 'Contábil Alfa', 'alfa', v_admin,

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AuthShell, FormError } from "@/components/auth/auth-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
   KIND_LABELS,
@@ -18,16 +19,16 @@ import {
 export const Route = createFileRoute("/_authenticated/select-tenant")({
   head: () => ({
     meta: [
-      { title: "Selecionar organização — FLUXA" },
+      { title: "Selecionar organização — TECH-IVA" },
       {
         name: "description",
         content:
-          "Escolha a plataforma, canal, empresa ou unidade que você vai operar no painel FLUXA.",
+          "Escolha a plataforma, canal, empresa ou unidade que você vai operar no painel TECH-IVA.",
       },
-      { property: "og:title", content: "Selecionar organização — FLUXA" },
+      { property: "og:title", content: "Selecionar organização — TECH-IVA" },
       {
         property: "og:description",
-        content: "Escolha a organização que você vai operar no painel FLUXA.",
+        content: "Escolha a organização que você vai operar no painel TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -45,10 +46,14 @@ type Row = {
   role: MemberRole | null;
 };
 
+const KIND_ORDER: TenantKind[] = ["platform", "channel", "company", "unit"];
+
 function SelectTenantPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
 
   const { data, isLoading, error: queryError } = useQuery({
     queryKey: ["select-tenant"],
@@ -70,6 +75,18 @@ function SelectTenantPage() {
 
     },
   });
+
+  const term = query.trim().toLowerCase();
+  const filtered = (data ?? []).filter(
+    (t) =>
+      term.length === 0 ||
+      t.name.toLowerCase().includes(term) ||
+      (t.slug ?? "").toLowerCase().includes(term),
+  );
+  const groups = KIND_ORDER.map(
+    (kind) => [kind, filtered.filter((t) => t.kind === kind)] as const,
+  ).filter(([, rows]) => rows.length > 0);
+
 
   async function choose(tenantId: string) {
     setError(null);
@@ -109,36 +126,49 @@ function SelectTenantPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-5">
           <FormError message={error ?? (queryError ? authErrorMessage(queryError) : null)} />
 
-          {(data ?? []).length === 0 ? (
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome ou slug…"
+            aria-label="Buscar organização"
+          />
+
+          {groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma organização no seu escopo. Peça um convite ao administrador.
+              Nenhuma organização encontrada no seu escopo.
             </p>
           ) : null}
 
-          {(data ?? []).map((tenant) => (
-            <button
-              key={tenant.id}
-              type="button"
-              onClick={() => void choose(tenant.id)}
-              className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
-              style={{ marginLeft: `${Math.min(tenant.level, 3) * 12}px` }}
-            >
-              <span>
-                <span className="block text-sm font-medium text-foreground">{tenant.name}</span>
-                <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
-                  {KIND_LABELS[tenant.kind]}
-                  {tenant.slug ? ` · ${tenant.slug}` : ""}
-                </span>
-              </span>
-              {tenant.role ? (
-                <Badge variant="secondary">{ROLE_LABELS[tenant.role]}</Badge>
-              ) : (
-                <Badge variant="outline">herdado</Badge>
-              )}
-            </button>
+          {groups.map(([kind, rows]) => (
+            <section key={kind} className="space-y-2">
+              <h2 className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                {KIND_LABELS[kind]}
+              </h2>
+              {rows.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  type="button"
+                  onClick={() => void choose(tenant.id)}
+                  className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+                >
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">{tenant.name}</span>
+                    <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+                      nível {tenant.level}
+                      {tenant.slug ? ` · ${tenant.slug}` : ""}
+                    </span>
+                  </span>
+                  {tenant.role ? (
+                    <Badge variant="secondary">{ROLE_LABELS[tenant.role]}</Badge>
+                  ) : (
+                    <Badge variant="outline">herdado</Badge>
+                  )}
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       )}

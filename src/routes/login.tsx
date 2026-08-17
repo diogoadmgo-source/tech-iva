@@ -17,16 +17,16 @@ export const Route = createFileRoute("/login")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Entrar — FLUXA" },
+      { title: "Entrar — TECH-IVA" },
       {
         name: "description",
         content:
-          "Acesse o painel FLUXA com e-mail e senha ou link mágico. Plataforma multi-tenant de gestão fiscal para PMEs.",
+          "Acesse o painel TECH-IVA com e-mail e senha ou link mágico. Plataforma multi-tenant de gestão fiscal para PMEs.",
       },
-      { property: "og:title", content: "Entrar — FLUXA" },
+      { property: "og:title", content: "Entrar — TECH-IVA" },
       {
         property: "og:description",
-        content: "Acesse o painel FLUXA com e-mail e senha ou link mágico.",
+        content: "Acesse o painel TECH-IVA com e-mail e senha ou link mágico.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

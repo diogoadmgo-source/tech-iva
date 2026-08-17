@@ -18,16 +18,16 @@ export const Route = createFileRoute("/mfa")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Verificação em duas etapas — FLUXA" },
+      { title: "Verificação em duas etapas — TECH-IVA" },
       {
         name: "description",
         content:
-          "Cadastre ou confirme o código TOTP. Obrigatório para papéis de plataforma e admin de canal no FLUXA.",
+          "Cadastre ou confirme o código TOTP. Obrigatório para papéis de plataforma e admin de canal no TECH-IVA.",
       },
-      { property: "og:title", content: "Verificação em duas etapas — FLUXA" },
+      { property: "og:title", content: "Verificação em duas etapas — TECH-IVA" },
       {
         property: "og:description",
-        content: "Cadastre ou confirme seu código TOTP de acesso ao FLUXA.",
+        content: "Cadastre ou confirme seu código TOTP de acesso ao TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -77,7 +77,7 @@ function MfaPage() {
 
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `FLUXA ${Date.now()}`,
+        friendlyName: `TECH-IVA ${Date.now()}`,
       });
       if (enrollError) throw enrollError;
       setFactorId(enrollData.id);
