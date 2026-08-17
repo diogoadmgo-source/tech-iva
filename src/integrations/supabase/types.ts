@@ -1142,6 +1142,201 @@ export type Database = {
           },
         ]
       }
+      tax_cash_events_202508: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202509: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202510: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202511: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202512: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
       tax_cash_events_202601: {
         Row: {
           amount_cents: number
@@ -2040,6 +2235,747 @@ export type Database = {
         Relationships: []
       }
       tax_cash_events_202712: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202801: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202802: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202803: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202804: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202805: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202806: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202807: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202808: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202809: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202810: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202811: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202812: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202901: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202902: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202903: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202904: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202905: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202906: {
+        Row: {
+          amount_cents: number
+          computed_at: string
+          confidence: number
+          event_date: string
+          id: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id: string | null
+          ref_invoice_id: string | null
+          rule_version_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          amount_cents: number
+          computed_at?: string
+          confidence?: number
+          event_date: string
+          id?: number
+          kind: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          amount_cents?: number
+          computed_at?: string
+          confidence?: number
+          event_date?: string
+          id?: number
+          kind?: Database["public"]["Enums"]["cash_event_kind"]
+          ref_contract_id?: string | null
+          ref_invoice_id?: string | null
+          rule_version_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: []
+      }
+      tax_cash_events_202907: {
         Row: {
           amount_cents: number
           computed_at: string
