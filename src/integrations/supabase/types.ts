@@ -3237,6 +3237,9 @@ export type Database = {
         Returns: undefined
       }
       refresh_cash_timeline: { Args: never; Returns: undefined }
+      regime_iva_rate: { Args: { p_year: number }; Returns: number }
+      regime_next_window: { Args: { p_from?: string }; Returns: string }
+      regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
       remove_member: {
         Args: { p_tenant: string; p_user: string }
         Returns: undefined
@@ -3253,6 +3256,10 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["member_role"] }
         Returns: boolean
       }
+      run_regime_simulation: {
+        Args: { p_inputs?: Json; p_tenant: string }
+        Returns: string
+      }
       set_member_role: {
         Args: {
           p_role: Database["public"]["Enums"]["member_role"]
@@ -3268,6 +3275,10 @@ export type Database = {
           p_regime: Database["public"]["Enums"]["regime_kind"]
           p_tenant: string
         }
+        Returns: undefined
+      }
+      share_regime_simulation: {
+        Args: { p_note?: string; p_simulation: string }
         Returns: undefined
       }
       tenant_members: {
