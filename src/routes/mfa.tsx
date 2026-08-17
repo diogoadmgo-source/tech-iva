@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -8,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
+import { purgePendingMfaFactors } from "@/lib/mfa.functions";
 
 const searchSchema = z.object({ redirect: z.string().optional() });
 
@@ -48,6 +50,8 @@ function MfaPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const purgePendingFactors = useServerFn(purgePendingMfaFactors);
+
   const bootstrap = useCallback(async () => {
     setError(null);
     try {
@@ -67,11 +71,13 @@ function MfaPage() {
         return;
       }
 
-      // listFactors() só devolve fatores verificados; tentativas anteriores
-      // ficam pendentes no banco, então o enroll vai sem friendly_name para
-      // não colidir com a restrição de nome único por usuário.
+      // listFactors() devolve apenas fatores verificados, então tentativas
+      // pendentes são apagadas no servidor antes de um novo enroll.
+      await purgePendingFactors();
+
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: "totp",
+        friendlyName: `FLUXA ${Date.now()}`,
       });
       if (enrollError) throw enrollError;
       setFactorId(enrollData.id);
@@ -82,7 +88,7 @@ function MfaPage() {
       setError(authErrorMessage(err));
       setMode("verify");
     }
-  }, []);
+  }, [purgePendingFactors]);
 
   useEffect(() => {
     void bootstrap();
