@@ -3182,6 +3182,7 @@ export type Database = {
       }
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
+      alert_prefs_default: { Args: never; Returns: Json }
       approve_price_scenario: {
         Args: { p_scenario: string }
         Returns: undefined
@@ -3267,6 +3268,7 @@ export type Database = {
         Returns: string
       }
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
+      get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
       in_scope: { Args: { p_tenant: string }; Returns: boolean }
       invite_user: {
         Args: {
@@ -3357,6 +3359,10 @@ export type Database = {
         Args: { p_inputs?: Json; p_tenant: string }
         Returns: string
       }
+      set_alert_prefs: {
+        Args: { p_prefs: Json; p_tenant: string }
+        Returns: Json
+      }
       set_commission_rule: {
         Args: {
           p_credit_pct: number
@@ -3407,6 +3413,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      weekly_digest_batch: { Args: { p_weekday?: number }; Returns: Json[] }
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"
