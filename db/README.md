@@ -41,3 +41,12 @@ psql "$DATABASE_URL" -f db/tests/acceptance_a_f.sql
 ```
 
 Saída: uma linha por teste com `esperado`, `obtido` e `PASS`/`FAIL`, mais o total.
+
+## Correção aplicada em 2026-08-17 (0006b)
+
+O seed 0006 inseriu os 5 usuários em `auth.users` deixando `confirmation_token`,
+`recovery_token`, `email_change`, `email_change_token_new/current`, `phone_change`,
+`phone_change_token` e `reauthentication_token` como NULL. O GoTrue não consegue
+ler essas colunas nulas e o login retornava HTTP 500
+`Database error querying schema`. Correção: `update auth.users set <coluna> = ''`
+onde estava nulo. Em novos seeds, insira `''` nessas colunas.
