@@ -106,7 +106,7 @@ export function useSetCommissionRule(tenantId: string) {
         p_tenant: tenantId,
         p_mrr_pct: input.mrr_pct,
         p_credit_pct: input.credit_pct,
-        p_note: input.note ?? null,
+        p_note: input.note ?? "",
       });
       if (error) throw error;
     },
