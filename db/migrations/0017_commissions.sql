@@ -151,3 +151,11 @@ revoke execute on function set_commission_rule(uuid, numeric, numeric, text) fro
 revoke execute on function channel_commission_statement(uuid, date) from public, anon;
 grant execute on function set_commission_rule(uuid, numeric, numeric, text) to authenticated;
 grant execute on function channel_commission_statement(uuid, date) to authenticated;
+
+-- Regra padrão do canal semente (Contábil Alfa).
+insert into public.commission_rules (tenant_id, mrr_pct, credit_pct, note)
+select t.id, 20.00, 1.00, 'contrato padrão de canal'
+  from public.tenants t
+ where t.slug = 'alfa'
+   and not exists (select 1 from public.commission_rules r
+                    where r.tenant_id = t.id and r.is_current);
