@@ -1,3 +1,9 @@
+-- ############################################################################
+-- # SEED DEV/STAGING — NÃO RODAR EM PRODUÇÃO.                                #
+-- # Cria a árvore fictícia (TECH-IVA > Contábil Alfa > Distribuidora Beta >  #
+-- # Beta - Filial 02, Serviços Gama), planos e 5 usuários de teste.          #
+-- # Pipeline de produção deve aplicar somente db/migrations/*.sql.            #
+-- ############################################################################
 -- 0006_seed_dev.sql
 -- Bloco 1.7 do documento 01 — seed SÓ para dev/staging. Dados 100% fictícios.
 -- Decisão gravada (opção 1): os 5 usuários são inseridos direto em auth.users
