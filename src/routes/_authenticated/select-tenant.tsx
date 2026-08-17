@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AuthShell, FormError } from "@/components/auth/auth-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import {
   KIND_LABELS,
