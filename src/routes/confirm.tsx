@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { AuthShell, FormError } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
 import { linkErrorFromUrl } from "@/lib/auth-validation";
@@ -63,7 +64,7 @@ function ConfirmPage() {
     }
 
     // 2) Sessão pode chegar via evento (troca do código pelo cliente).
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (session) void finish();
     });
 

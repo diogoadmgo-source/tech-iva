@@ -66,7 +66,7 @@ function MfaPage() {
       const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
       if (factorsError) throw factorsError;
 
-      const verified = factorsData?.totp?.find((f) => f.status === "verified");
+      const verified = factorsData?.totp?.find((f: { id: string; status: string }) => f.status === "verified");
       if (verified) {
         setFactorId(verified.id);
         setMode("verify");

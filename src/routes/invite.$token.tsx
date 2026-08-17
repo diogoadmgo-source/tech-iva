@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { AuthShell, FormError, FormSuccess } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
+import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
 
@@ -37,7 +38,7 @@ function InvitePage() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setHasSession(Boolean(data.session)));
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => setHasSession(Boolean(data.session)));
   }, []);
 
   async function accept() {

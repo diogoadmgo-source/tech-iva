@@ -5,6 +5,7 @@ import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
 import {
@@ -64,7 +65,7 @@ function ResetPage() {
 
     // O cliente troca o código do link por sessão de forma assíncrona:
     // ouvimos o evento e também consultamos a sessão como fallback.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
       if (cancelled) return;
       if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN")) {
         setLinkState("valid");
