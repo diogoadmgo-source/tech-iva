@@ -11,15 +11,15 @@ export const Route = createFileRoute("/confirm")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Confirmando acesso — FLUXA" },
+      { title: "Confirmando acesso — TECH-IVA" },
       {
         name: "description",
-        content: "Validação do link de confirmação de e-mail ou de acesso por link mágico no FLUXA.",
+        content: "Validação do link de confirmação de e-mail ou de acesso por link mágico no TECH-IVA.",
       },
-      { property: "og:title", content: "Confirmando acesso — FLUXA" },
+      { property: "og:title", content: "Confirmando acesso — TECH-IVA" },
       {
         property: "og:description",
-        content: "Validação do link de confirmação de e-mail no FLUXA.",
+        content: "Validação do link de confirmação de e-mail no TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

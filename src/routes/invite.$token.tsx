@@ -10,16 +10,16 @@ export const Route = createFileRoute("/invite/$token")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Aceitar convite — FLUXA" },
+      { title: "Aceitar convite — TECH-IVA" },
       {
         name: "description",
         content:
-          "Aceite o convite para uma organização no FLUXA. O papel é aplicado pelo RPC accept_invitation.",
+          "Aceite o convite para uma organização no TECH-IVA. O papel é aplicado pelo RPC accept_invitation.",
       },
-      { property: "og:title", content: "Aceitar convite — FLUXA" },
+      { property: "og:title", content: "Aceitar convite — TECH-IVA" },
       {
         property: "og:description",
-        content: "Aceite o convite para uma organização no FLUXA.",
+        content: "Aceite o convite para uma organização no TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

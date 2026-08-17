@@ -11,15 +11,15 @@ import { authErrorMessage } from "@/lib/auth";
 export const Route = createFileRoute("/forgot")({
   head: () => ({
     meta: [
-      { title: "Recuperar senha — FLUXA" },
+      { title: "Recuperar senha — TECH-IVA" },
       {
         name: "description",
-        content: "Receba um link por e-mail para definir uma nova senha de acesso ao FLUXA.",
+        content: "Receba um link por e-mail para definir uma nova senha de acesso ao TECH-IVA.",
       },
-      { property: "og:title", content: "Recuperar senha — FLUXA" },
+      { property: "og:title", content: "Recuperar senha — TECH-IVA" },
       {
         property: "og:description",
-        content: "Receba um link por e-mail para definir uma nova senha no FLUXA.",
+        content: "Receba um link por e-mail para definir uma nova senha no TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

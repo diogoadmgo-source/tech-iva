@@ -9,16 +9,16 @@ import { KIND_LABELS, ROLE_LABELS, signOutAndRedirect } from "@/lib/auth";
 export const Route = createFileRoute("/_authenticated/t/$tenantId")({
   head: () => ({
     meta: [
-      { title: "Painel da organização — FLUXA" },
+      { title: "Painel da organização — TECH-IVA" },
       {
         name: "description",
         content:
-          "Painel da organização ativa no FLUXA, com papel do usuário e escopo hierárquico carregados do banco.",
+          "Painel da organização ativa no TECH-IVA, com papel do usuário e escopo hierárquico carregados do banco.",
       },
-      { property: "og:title", content: "Painel da organização — FLUXA" },
+      { property: "og:title", content: "Painel da organização — TECH-IVA" },
       {
         property: "og:description",
-        content: "Painel da organização ativa no FLUXA.",
+        content: "Painel da organização ativa no TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

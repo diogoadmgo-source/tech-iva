@@ -18,16 +18,16 @@ import {
 export const Route = createFileRoute("/_authenticated/select-tenant")({
   head: () => ({
     meta: [
-      { title: "Selecionar organização — FLUXA" },
+      { title: "Selecionar organização — TECH-IVA" },
       {
         name: "description",
         content:
-          "Escolha a plataforma, canal, empresa ou unidade que você vai operar no painel FLUXA.",
+          "Escolha a plataforma, canal, empresa ou unidade que você vai operar no painel TECH-IVA.",
       },
-      { property: "og:title", content: "Selecionar organização — FLUXA" },
+      { property: "og:title", content: "Selecionar organização — TECH-IVA" },
       {
         property: "og:description",
-        content: "Escolha a organização que você vai operar no painel FLUXA.",
+        content: "Escolha a organização que você vai operar no painel TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

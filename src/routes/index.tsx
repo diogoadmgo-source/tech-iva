@@ -3,13 +3,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FLUXA — controle multi-tenant para PMEs" },
+      { title: "TECH-IVA — controle multi-tenant para PMEs" },
       {
         name: "description",
         content:
-          "FLUXA organiza plataforma, canais, empresas e unidades em uma hierarquia única, com isolamento garantido no banco, papéis por escopo e auditoria completa.",
+          "TECH-IVA organiza plataforma, canais, empresas e unidades em uma hierarquia única, com isolamento garantido no banco, papéis por escopo e auditoria completa.",
       },
-      { property: "og:title", content: "FLUXA — controle multi-tenant para PMEs" },
+      { property: "og:title", content: "TECH-IVA — controle multi-tenant para PMEs" },
       {
         property: "og:description",
         content:
@@ -66,7 +66,7 @@ function Index() {
           Uma hierarquia só, do canal contábil até a filial da empresa.
         </h1>
         <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          O FLUXA modela plataforma, canais, empresas e unidades em uma árvore única e resolve
+          O TECH-IVA modela plataforma, canais, empresas e unidades em uma árvore única e resolve
           escopo, papéis e auditoria diretamente no banco de dados.
         </p>
 

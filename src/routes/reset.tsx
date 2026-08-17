@@ -12,16 +12,16 @@ export const Route = createFileRoute("/reset")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Definir nova senha — FLUXA" },
+      { title: "Definir nova senha — TECH-IVA" },
       {
         name: "description",
         content:
-          "Defina uma nova senha de acesso ao FLUXA. A troca de senha encerra as outras sessões ativas.",
+          "Defina uma nova senha de acesso ao TECH-IVA. A troca de senha encerra as outras sessões ativas.",
       },
-      { property: "og:title", content: "Definir nova senha — FLUXA" },
+      { property: "og:title", content: "Definir nova senha — TECH-IVA" },
       {
         property: "og:description",
-        content: "Defina uma nova senha de acesso ao FLUXA.",
+        content: "Defina uma nova senha de acesso ao TECH-IVA.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

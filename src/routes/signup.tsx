@@ -11,16 +11,16 @@ import { authErrorMessage } from "@/lib/auth";
 export const Route = createFileRoute("/signup")({
   head: () => ({
     meta: [
-      { title: "Criar conta — FLUXA" },
+      { title: "Criar conta — TECH-IVA" },
       {
         name: "description",
         content:
-          "Crie sua conta FLUXA. Confirmação de e-mail obrigatória e senha de no mínimo 10 caracteres.",
+          "Crie sua conta TECH-IVA. Confirmação de e-mail obrigatória e senha de no mínimo 10 caracteres.",
       },
-      { property: "og:title", content: "Criar conta — FLUXA" },
+      { property: "og:title", content: "Criar conta — TECH-IVA" },
       {
         property: "og:description",
-        content: "Crie sua conta FLUXA e receba o e-mail de confirmação.",
+        content: "Crie sua conta TECH-IVA e receba o e-mail de confirmação.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
