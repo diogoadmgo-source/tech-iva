@@ -39,7 +39,12 @@ begin
   perform setseed(0.42);
 
   -- limpeza idempotente do dado de demonstração deste tenant ------------------
-  delete from tax_cash_events where tenant_id = v_tenant;
+  -- ATENÇÃO: o worker project_cash só reescreve eventos com event_date >= hoje.
+  -- Eventos de seed com data PASSADA jamais são removidos por ele e viram órfãos
+  -- permanentes no histórico. Por isso apagamos TODOS os eventos do tenant aqui,
+  -- passados e futuros, antes de recriar.
+  delete from tax_cash_events where tenant_id = v_tenant;                -- inclui event_date < current_date
+
   delete from receivables      where tenant_id = v_tenant;
   delete from invoice_items    where tenant_id = v_tenant;
   delete from invoices         where tenant_id = v_tenant;
