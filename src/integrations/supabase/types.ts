@@ -3228,6 +3228,10 @@ export type Database = {
         Returns: undefined
       }
       ltree_label: { Args: { p: string }; Returns: string }
+      mark_renegotiate: {
+        Args: { p_note?: string; p_parties: string[]; p_tenant: string }
+        Returns: number
+      }
       move_tenant: {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
