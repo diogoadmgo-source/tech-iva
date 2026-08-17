@@ -29,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { KIND_LABELS, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
+import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
 import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
 
