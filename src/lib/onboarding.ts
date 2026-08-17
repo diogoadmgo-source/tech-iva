@@ -154,7 +154,7 @@ export function useOnboardingMutations(tenantId: string) {
       if (error) throw error;
 
       const config = {
-        ...(((existing?.config ?? {}) as Record<string, unknown>) ?? {}),
+        ...((existing?.config ?? {}) as Record<string, unknown>),
         ...(input.config ?? {}),
       } as Json;
       const connected_at = input.status === "connected" ? new Date().toISOString() : null;
