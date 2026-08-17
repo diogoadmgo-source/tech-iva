@@ -39,8 +39,8 @@ export const sendInviteEmail = createServerFn({ method: "POST" })
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, email")
-      .eq("id", userId)
+      .select("full_name")
+      .eq("user_id", userId)
       .maybeSingle();
 
     const { renderInviteEmail, inviteEmailSubject } = await import("@/lib/email/invite-template");
@@ -50,7 +50,7 @@ export const sendInviteEmail = createServerFn({ method: "POST" })
       acceptUrl: `${data.origin.replace(/\/$/, "")}/invite/${data.token}`,
       tenantName: tenant?.name ?? "sua organização",
       role: invitation.role,
-      invitedBy: profile?.full_name ?? profile?.email ?? null,
+      invitedBy: profile?.full_name ?? null,
       expiresAt: invitation.expires_at,
     });
 
@@ -67,7 +67,6 @@ export const sendInviteEmail = createServerFn({ method: "POST" })
       p_entity_id: invitation.id,
       p_before: null,
       p_after: { email: invitation.email, provider_id: result.id },
-      p_rule: null,
     });
 
     return { sent: true, email: invitation.email };
