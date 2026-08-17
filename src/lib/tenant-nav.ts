@@ -12,6 +12,8 @@ export type NavItem = {
     | "/t/$tenantId/portfolio"
     | "/t/$tenantId/brand"
     | "/t/$tenantId/companies"
+    | "/t/$tenantId/commissions"
+    | "/t/$tenantId/reports"
     | "/t/$tenantId/onboarding"
     | "/t/$tenantId/settings/users"
     | "/t/$tenantId/tenants"
@@ -27,6 +29,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Regras", block: "1.7.5" },
     { label: "Operações", block: "1.7.6" },
     { label: "Crédito", block: "1.7.5" },
+    { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Usuários", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
@@ -35,7 +38,8 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Empresas", block: "3.6", to: "/t/$tenantId/companies" },
     { label: "Usuários", block: "1.7.3", to: "/t/$tenantId/settings/users" },
     { label: "Marca", block: "3.6", to: "/t/$tenantId/brand" },
-    { label: "Comissões", block: "1.7.5" },
+    { label: "Relatórios", block: "3.6", to: "/t/$tenantId/reports" },
+    { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
     { label: "Assinaturas", block: "1.7.5", to: "/t/$tenantId/plans" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
   ],
