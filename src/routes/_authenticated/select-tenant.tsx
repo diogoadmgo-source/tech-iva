@@ -109,36 +109,49 @@ function SelectTenantPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-5">
           <FormError message={error ?? (queryError ? authErrorMessage(queryError) : null)} />
 
-          {(data ?? []).length === 0 ? (
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome ou slug…"
+            aria-label="Buscar organização"
+          />
+
+          {groups.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nenhuma organização no seu escopo. Peça um convite ao administrador.
+              Nenhuma organização encontrada no seu escopo.
             </p>
           ) : null}
 
-          {(data ?? []).map((tenant) => (
-            <button
-              key={tenant.id}
-              type="button"
-              onClick={() => void choose(tenant.id)}
-              className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
-              style={{ marginLeft: `${Math.min(tenant.level, 3) * 12}px` }}
-            >
-              <span>
-                <span className="block text-sm font-medium text-foreground">{tenant.name}</span>
-                <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
-                  {KIND_LABELS[tenant.kind]}
-                  {tenant.slug ? ` · ${tenant.slug}` : ""}
-                </span>
-              </span>
-              {tenant.role ? (
-                <Badge variant="secondary">{ROLE_LABELS[tenant.role]}</Badge>
-              ) : (
-                <Badge variant="outline">herdado</Badge>
-              )}
-            </button>
+          {groups.map(([kind, rows]) => (
+            <section key={kind} className="space-y-2">
+              <h2 className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                {KIND_LABELS[kind]}
+              </h2>
+              {rows.map((tenant) => (
+                <button
+                  key={tenant.id}
+                  type="button"
+                  onClick={() => void choose(tenant.id)}
+                  className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+                >
+                  <span>
+                    <span className="block text-sm font-medium text-foreground">{tenant.name}</span>
+                    <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+                      nível {tenant.level}
+                      {tenant.slug ? ` · ${tenant.slug}` : ""}
+                    </span>
+                  </span>
+                  {tenant.role ? (
+                    <Badge variant="secondary">{ROLE_LABELS[tenant.role]}</Badge>
+                  ) : (
+                    <Badge variant="outline">herdado</Badge>
+                  )}
+                </button>
+              ))}
+            </section>
           ))}
         </div>
       )}
