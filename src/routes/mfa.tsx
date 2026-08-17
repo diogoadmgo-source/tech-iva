@@ -67,16 +67,16 @@ function MfaPage() {
         return;
       }
 
-      const unverified = factorsData?.all?.find(
-        (f) => f.factor_type === "totp" && f.status === "unverified",
+      const unverified = (factorsData?.all ?? []).filter(
+        (f) => f.factor_type === "totp" && f.status !== "verified",
       );
-      if (unverified) {
-        await supabase.auth.mfa.unenroll({ factorId: unverified.id });
+      for (const factor of unverified) {
+        await supabase.auth.mfa.unenroll({ factorId: factor.id });
       }
 
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `FLUXA ${new Date().toISOString().slice(0, 10)}`,
+        friendlyName: `FLUXA ${Date.now()}`,
       });
       if (enrollError) throw enrollError;
       setFactorId(enrollData.id);
