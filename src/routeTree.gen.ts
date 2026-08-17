@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as ConfirmRouteImport } from './routes/confirm'
+import { Route as DesignRouteImport } from './routes/design'
 import { Route as ForgotRouteImport } from './routes/forgot'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MfaRouteImport } from './routes/mfa'
@@ -39,6 +40,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const ConfirmRoute = ConfirmRouteImport.update({
   id: '/confirm',
   path: '/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignRoute = DesignRouteImport.update({
+  id: '/design',
+  path: '/design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotRoute = ForgotRouteImport.update({
@@ -121,6 +127,7 @@ const AuthenticatedTTenantIdSettingsUsersRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/confirm': typeof ConfirmRoute
+  '/design': typeof DesignRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/confirm': typeof ConfirmRoute
+  '/design': typeof DesignRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/confirm': typeof ConfirmRoute
+  '/design': typeof DesignRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/confirm'
+    | '/design'
     | '/forgot'
     | '/login'
     | '/mfa'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/confirm'
+    | '/design'
     | '/forgot'
     | '/login'
     | '/mfa'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/confirm'
+    | '/design'
     | '/forgot'
     | '/login'
     | '/mfa'
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConfirmRoute: typeof ConfirmRoute
+  DesignRoute: typeof DesignRoute
   ForgotRoute: typeof ForgotRoute
   LoginRoute: typeof LoginRoute
   MfaRoute: typeof MfaRoute
@@ -263,6 +276,13 @@ declare module '@tanstack/react-router' {
       path: '/confirm'
       fullPath: '/confirm'
       preLoaderRoute: typeof ConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design': {
+      id: '/design'
+      path: '/design'
+      fullPath: '/design'
+      preLoaderRoute: typeof DesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot': {
@@ -408,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConfirmRoute: ConfirmRoute,
+  DesignRoute: DesignRoute,
   ForgotRoute: ForgotRoute,
   LoginRoute: LoginRoute,
   MfaRoute: MfaRoute,
