@@ -50,3 +50,19 @@ O seed 0006 inseriu os 5 usuários em `auth.users` deixando `confirmation_token`
 ler essas colunas nulas e o login retornava HTTP 500
 `Database error querying schema`. Correção: `update auth.users set <coluna> = ''`
 onde estava nulo. Em novos seeds, insira `''` nessas colunas.
+
+## Fase 02 — plano de dados (documento 02)
+
+- `0010_data_plane.sql` — bloco A: enums fiscais, 14 tabelas (`counterparties`, `invoices`,
+  `invoice_items`, `receivables`, `tax_cash_events` particionada por mês, `products`,
+  `price_scenarios`, `price_lines`, `regime_simulations`, `bank_accounts`, `bank_transactions`,
+  `alerts`, `jobs`, `integrations`), RLS de leitura por `in_scope(tenant_id)` em todas,
+  escrita pelo front só em `products`/`price_scenarios`/`alerts`(update)/`integrations`,
+  GRANTs explícitos e `mv_cash_timeline` **sem** grant para `anon`/`authenticated`
+  (materialized view não respeita RLS → acesso apenas via RPC security definer).
+- `0011_jobs_rpcs.sql` — blocos B/E: `job_kind_allowed`, `enqueue_job`, `cancel_job`
+  (fila por tenant: um job do mesmo kind por vez), auditoria `job.enqueue`/`job.cancel`
+  e `jobs` publicada no Realtime.
+
+Diferença vs. documento 02: `tax_cash_events` recebeu PK composta `(id, event_date)`
+(exigência do Postgres para tabelas particionadas) e partição `default`.
