@@ -182,10 +182,15 @@ function CashScreen() {
         />
         <KpiCard
           label="Provisão sugerida"
-          valueCents={kpis?.provision_suggested_cents ?? 0}
-          hint="Reserva semanal recomendada"
+          valueCents={kpis?.provision_month_cents ?? 0}
+          hint={
+            kpis
+              ? `Reserva do mês · ${formatCents(kpis.provision_horizon_cents)} no horizonte`
+              : "Reserva sugerida do mês"
+          }
           loading={cash.isLoading}
         />
+
       </div>
 
       <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
