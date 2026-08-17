@@ -20,7 +20,10 @@ export type NavItem = {
     | "/t/$tenantId/settings/users"
     | "/t/$tenantId/tenants"
     | "/t/$tenantId/plans"
-    | "/t/$tenantId/audit";
+    | "/t/$tenantId/audit"
+    | "/t/$tenantId/rules"
+    | "/t/$tenantId/ops"
+    | "/t/$tenantId/alerts";
 };
 
 /** Itens da sidebar por tipo de tenant (documento 01 §1.7.2). */
@@ -28,8 +31,9 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
   platform: [
     { label: "Organizações", block: "1.7.4", to: "/t/$tenantId/tenants" },
     { label: "Planos", block: "1.7.5", to: "/t/$tenantId/plans" },
-    { label: "Regras", block: "1.7.5" },
-    { label: "Operações", block: "1.7.6" },
+    { label: "Regras", block: "3.9", to: "/t/$tenantId/rules" },
+    { label: "Operações", block: "3.9", to: "/t/$tenantId/ops" },
+    { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Crédito", block: "1.7.5" },
     { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
@@ -42,6 +46,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Marca", block: "3.6", to: "/t/$tenantId/brand" },
     { label: "Relatórios", block: "3.6", to: "/t/$tenantId/reports" },
     { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
+    { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Assinaturas", block: "1.7.5", to: "/t/$tenantId/plans" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
   ],
@@ -54,6 +59,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance" },
+    { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
   unit: [
@@ -63,6 +69,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance" },
+    { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
 };
