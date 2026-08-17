@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
 import { KIND_LABELS } from "@/lib/auth";
 import { NAV_BY_KIND } from "@/lib/tenant-nav";
@@ -12,6 +12,14 @@ function TenantHome() {
   const { tenantId } = Route.useParams();
   const { data } = useShellData(tenantId);
   if (!data) return null;
+
+  // Redireciona pela home natural de cada tipo (spec 3.2).
+  if (data.tenant.kind === "company" || data.tenant.kind === "unit") {
+    return <Navigate to="/t/$tenantId/cash" params={{ tenantId }} replace />;
+  }
+  if (data.tenant.kind === "platform") {
+    return <Navigate to="/t/$tenantId/tenants" params={{ tenantId }} replace />;
+  }
 
   const items = NAV_BY_KIND[data.tenant.kind];
 
