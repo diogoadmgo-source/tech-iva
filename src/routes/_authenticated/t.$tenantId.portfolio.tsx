@@ -179,7 +179,7 @@ function PortfolioScreen() {
     return (
       <div className="p-6">
         <ErrorState
-          hint={portfolio.error.message}
+          message={portfolio.error.message}
           onRetry={() => {
             void portfolio.refetch();
           }}
