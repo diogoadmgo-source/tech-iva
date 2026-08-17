@@ -52,7 +52,7 @@ async function audit(entry: {
   actorId: string;
   action: string;
   entityId: string | null;
-  after: Record<string, unknown> | null;
+  after: Record<string, string> | null;
 }) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   await supabaseAdmin.from("audit_log").insert({
@@ -63,7 +63,7 @@ async function audit(entry: {
     action: entry.action,
     entity: "tenants",
     entity_id: entry.entityId,
-    after: entry.after,
+    after: entry.after ?? null,
   });
 }
 
