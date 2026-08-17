@@ -20,7 +20,8 @@ export type DashboardCash = {
     credit_in_month_cents: number;
     credit_backlog_cents: number;
     credit_avg_days: number;
-    provision_suggested_cents: number;
+    provision_month_cents: number;
+    provision_horizon_cents: number;
   };
   timeline: CashTimelinePoint[];
   next_gap: { week: string; amount_cents: number; offer_available: boolean } | null;
@@ -34,8 +35,10 @@ const EMPTY: DashboardCash = {
     credit_in_month_cents: 0,
     credit_backlog_cents: 0,
     credit_avg_days: 0,
-    provision_suggested_cents: 0,
+    provision_month_cents: 0,
+    provision_horizon_cents: 0,
   },
+
   timeline: [],
   next_gap: null,
 };
