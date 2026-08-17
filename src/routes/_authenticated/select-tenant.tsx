@@ -45,10 +45,14 @@ type Row = {
   role: MemberRole | null;
 };
 
+const KIND_ORDER: TenantKind[] = ["platform", "channel", "company", "unit"];
+
 function SelectTenantPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
 
   const { data, isLoading, error: queryError } = useQuery({
     queryKey: ["select-tenant"],
