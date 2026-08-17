@@ -185,11 +185,12 @@ function CashScreen() {
           valueCents={kpis?.provision_month_cents ?? 0}
           hint={
             kpis
-              ? `Reserva do mês · ${formatCents(kpis.provision_horizon_cents)} no horizonte`
+              ? `Reserva do mês · ${formatCents(kpis.provision_horizon_cents)} nos próximos ${horizon} dias`
               : "Reserva sugerida do mês"
           }
           loading={cash.isLoading}
         />
+
 
       </div>
 
