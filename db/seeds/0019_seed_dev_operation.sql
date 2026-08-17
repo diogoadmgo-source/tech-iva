@@ -158,3 +158,44 @@ begin
 
   perform refresh_cash_timeline();
 end $$;
+
+-- =============================================================================
+-- Catálogo de demonstração para o T3 (Preço com IVA) — 50 SKUs.
+-- Custos e razões preço/custo variados (1,08x a 1,58x) para que cenários de
+-- anos fiscais mais altos e clientes do Simples acusem itens abaixo do piso.
+-- Determinístico: nada de random() aqui.
+-- =============================================================================
+do $$
+declare
+  v_tenant_name text := coalesce(current_setting('techiva.seed_tenant', true), 'Distribuidora Beta');
+  v_tenant uuid;
+  i int;
+  v_cost bigint;
+  v_ratio numeric;
+begin
+  select id into v_tenant from tenants where name = v_tenant_name;
+  if v_tenant is null then
+    raise exception 'tenant % nao encontrado (rode 0006_seed_dev.sql)', v_tenant_name;
+  end if;
+
+  for i in 1..50 loop
+    -- custo entre R$ 12,00 e R$ 505,00, espalhado de forma determinística
+    v_cost  := (1200 + ((i * 977) % 49300))::bigint;
+    -- razão preço/custo entre 1,08 e 1,58 em passos de ~0,01
+    v_ratio := 1.08 + ((i * 7) % 51) * 0.01;
+
+    insert into products (tenant_id, sku, name, ncm, cost_cents, current_price_cents, source, active)
+    values (v_tenant,
+            'DEMO-' || lpad(i::text, 3, '0'),
+            'Produto demo ' || lpad(i::text, 3, '0'),
+            (array['10063021','07133399','15079011','17019900','09012100',
+                   '04012010','11010010','19021900','34022000','48181000'])[1 + (i % 10)],
+            v_cost,
+            round(v_cost * v_ratio)::bigint,
+            'seed', true)
+    on conflict (tenant_id, sku) do update
+      set cost_cents = excluded.cost_cents,
+          current_price_cents = excluded.current_price_cents,
+          active = true;
+  end loop;
+end $$;

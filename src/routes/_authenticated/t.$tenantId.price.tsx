@@ -395,8 +395,13 @@ function PricePage() {
               label="Itens abaixo do piso"
               value={String(totals?.below_floor ?? 0)}
               loading={detail.isLoading}
-              hint={`${totals?.lines ?? 0} linhas no cenário`}
+              hint={
+                (totals?.below_floor ?? 0) === 0
+                  ? `Nenhum item abaixo do piso neste cenário · ${totals?.lines ?? 0} linhas avaliadas`
+                  : `${totals?.lines ?? 0} linhas no cenário`
+              }
             />
+
           </div>
 
           {detail.isError ? (
@@ -415,6 +420,17 @@ function PricePage() {
               density="compact"
             />
           )}
+
+          {!detail.isLoading && !detail.isError && lines.length > 0 && (totals?.below_floor ?? 0) === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nenhum item abaixo do piso neste cenário — todos os preços atuais cobrem o piso
+              calculado. O piso sobe com a alíquota do ano fiscal, com despesas variáveis maiores e
+              com clientes que aproveitam menos crédito (Simples/MEI); a margem alvo altera só o
+              preço-alvo.
+            </p>
+          ) : null}
+
+
 
           {scenario?.assumptions["counterparty_id"] ? (
             <p className="text-xs text-muted-foreground">

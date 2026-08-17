@@ -3258,12 +3258,12 @@ export type Database = {
           status: Database["public"]["Enums"]["job_status"]
           tenant_id: string
           worker: string | null
-        }
+        }[]
         SetofOptions: {
           from: "*"
           to: "jobs"
-          isOneToOne: true
-          isSetofReturn: false
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       counterparty_detail: {
