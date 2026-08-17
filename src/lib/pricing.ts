@@ -163,7 +163,7 @@ export function usePriceCustomers(tenantId: string) {
       if (error) throw error;
       return (data ?? []).map((c) => ({
         id: c.id,
-        name: c.name,
+        name: c.name ?? "(sem nome)",
         cnpj: c.cnpj,
         regime: (c.regime as RegimeKind) ?? "desconhecido",
       }));
