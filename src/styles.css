@@ -222,3 +222,49 @@
 
     var(--background);
 }
+
+/* ==========================================================================
+   Bloco 3.1 — Design system: superfícies, sinais de fluxo e paleta de regime
+   ========================================================================== */
+
+@theme inline {
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-border-strong: var(--border-strong);
+  --color-flow-in: var(--flow-in);
+  --color-flow-out: var(--flow-out);
+  --color-warn: var(--warn);
+  --color-warn-foreground: var(--warn-foreground);
+  --color-regime-simples: var(--regime-simples);
+  --color-regime-hibrido: var(--regime-hibrido);
+  --color-regime-presumido: var(--regime-presumido);
+  --color-regime-real: var(--regime-real);
+  --color-regime-mei: var(--regime-mei);
+  --color-regime-pf: var(--regime-pf);
+  --shadow-e1: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-e2: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-e3: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+:root,
+.dark {
+  --surface-1: oklch(0.225 0.026 265);
+  --surface-2: oklch(0.262 0.026 265);
+  --border-strong: oklch(1 0 0 / 16%);
+
+  --flow-in: oklch(0.72 0.17 152);
+  --flow-out: oklch(0.72 0.17 55);
+  --warn: oklch(0.78 0.15 78);
+  --warn-foreground: oklch(0.2 0.05 78);
+
+  --regime-simples: oklch(0.62 0.2 295);
+  --regime-hibrido: oklch(0.72 0.15 295);
+  --regime-presumido: oklch(0.72 0.12 215);
+  --regime-real: oklch(0.72 0.11 180);
+  --regime-mei: oklch(0.6 0.03 255);
+  --regime-pf: oklch(0.7 0.02 255);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
