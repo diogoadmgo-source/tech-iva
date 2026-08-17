@@ -10,11 +10,11 @@ export function EmptyState({
   action,
   className,
 }: {
-  icon?: LucideIcon;
+  icon?: LucideIcon | undefined;
   title: string;
-  hint?: string;
-  action?: ReactNode;
-  className?: string;
+  hint?: string | undefined;
+  action?: ReactNode | undefined;
+  className?: string | undefined;
 }) {
   return (
     <div
@@ -37,10 +37,10 @@ export function ErrorState({
   onRetry,
   className,
 }: {
-  title?: string;
-  message?: string;
-  onRetry?: () => void;
-  className?: string;
+  title?: string | undefined;
+  message?: string | undefined;
+  onRetry?: (() => void) | undefined;
+  className?: string | undefined;
 }) {
   return (
     <div
@@ -64,7 +64,7 @@ export function ErrorState({
   );
 }
 
-export function NoPermissionState({ hint }: { hint?: string }) {
+export function NoPermissionState({ hint }: { hint?: string | undefined }) {
   return (
     <EmptyState
       title="Sem permissão"
