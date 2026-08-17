@@ -120,13 +120,15 @@ begin
      and issued_at >= current_date - 365;
 
   -- eventos cobrindo 120 dias ------------------------------------------------
-  -- (a) tax_out dos recebíveis a vencer (IBS + CBS)
+  -- (a) tax_out dos recebíveis (IBS + CBS): 60 dias de histórico + 120 à frente,
+  --     para o gráfico do T1 ter passado e futuro
   insert into tax_cash_events (tenant_id, kind, event_date, amount_cents, confidence, ref_invoice_id)
   select v_tenant, 'tax_out', r.due_date + 10,
          (coalesce(i.ibs_cents,0) + coalesce(i.cbs_cents,0)), 0.9, r.invoice_id
     from receivables r
     join invoices i on i.id = r.invoice_id
-   where r.tenant_id = v_tenant and r.due_date between current_date and current_date + 120;
+   where r.tenant_id = v_tenant
+     and r.due_date between current_date - 60 and current_date + 120;
 
   -- (b) tax_out da PROJEÇÃO de vendas futuras por run-rate semanal
   --     sem isto o imposto futuro fica subestimado e o T1 mostra folga onde há aperto
