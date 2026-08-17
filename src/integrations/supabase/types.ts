@@ -3263,12 +3263,20 @@ export type Database = {
         Returns: Json
       }
       enforce_mfa: { Args: { p_tenant: string }; Returns: undefined }
+      enforce_regime_role: { Args: { p_tenant: string }; Returns: undefined }
       enqueue_job: {
         Args: { p_kind: string; p_params?: Json; p_tenant: string }
         Returns: string
       }
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
       get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
+      has_role: {
+        Args: {
+          p_roles: Database["public"]["Enums"]["member_role"][]
+          p_tenant: string
+        }
+        Returns: boolean
+      }
       in_scope: { Args: { p_tenant: string }; Returns: boolean }
       invite_user: {
         Args: {
