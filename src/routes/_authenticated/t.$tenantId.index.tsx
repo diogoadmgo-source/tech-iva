@@ -20,6 +20,9 @@ function TenantHome() {
   if (data.tenant.kind === "platform") {
     return <Navigate to="/t/$tenantId/tenants" params={{ tenantId }} replace />;
   }
+  if (data.tenant.kind === "channel") {
+    return <Navigate to="/t/$tenantId/portfolio" params={{ tenantId }} replace />;
+  }
 
   const items = NAV_BY_KIND[data.tenant.kind];
 
