@@ -173,12 +173,12 @@ function LoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                aria-invalid={Boolean(fields.email)}
+                aria-invalid={Boolean(fields["email"])}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
               />
-              <FieldError message={fields.email} />
+              <FieldError message={fields["email"]} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -191,11 +191,11 @@ function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                aria-invalid={Boolean(fields.password)}
+                aria-invalid={Boolean(fields["password"])}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <FieldError message={fields.password} />
+              <FieldError message={fields["password"]} />
             </div>
             <FormError message={error} />
             <FormSuccess message={sent} />
@@ -224,12 +224,12 @@ function LoginPage() {
                 id="magic-email"
                 type="email"
                 autoComplete="email"
-                aria-invalid={Boolean(fields.email)}
+                aria-invalid={Boolean(fields["email"])}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
               />
-              <FieldError message={fields.email} />
+              <FieldError message={fields["email"]} />
             </div>
             <FormError message={error} />
             <FormSuccess message={sent} />

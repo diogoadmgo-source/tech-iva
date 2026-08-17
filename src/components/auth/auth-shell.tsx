@@ -64,7 +64,7 @@ export function FormSuccess({ message }: { message?: string | null }) {
 }
 
 /** Erro de um campo específico, exibido logo abaixo do input. */
-export function FieldError({ message }: { message?: string | null }) {
+export function FieldError({ message }: { message?: string | null | undefined }) {
   if (!message) return null;
   return (
     <p role="alert" className="text-xs text-destructive">
