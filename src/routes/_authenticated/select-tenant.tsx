@@ -75,6 +75,18 @@ function SelectTenantPage() {
     },
   });
 
+  const term = query.trim().toLowerCase();
+  const filtered = (data ?? []).filter(
+    (t) =>
+      term.length === 0 ||
+      t.name.toLowerCase().includes(term) ||
+      (t.slug ?? "").toLowerCase().includes(term),
+  );
+  const groups = KIND_ORDER.map(
+    (kind) => [kind, filtered.filter((t) => t.kind === kind)] as const,
+  ).filter(([, rows]) => rows.length > 0);
+
+
   async function choose(tenantId: string) {
     setError(null);
     try {
