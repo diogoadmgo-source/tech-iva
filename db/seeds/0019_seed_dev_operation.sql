@@ -87,7 +87,6 @@ begin
               v_date, v_total, v_ibs, v_cbs, 0, v_credit, 'authorized')
       returning id into v_inv;
 
-      -- 1 a 3 itens por nota
       -- 1 ou 2 itens por nota (média ~1,81 → ~1.049 itens)
       for i in 1..(case when random() < 0.81 then 2 else 1 end) loop
         insert into invoice_items (tenant_id, invoice_id, line, description, ncm, cst,
