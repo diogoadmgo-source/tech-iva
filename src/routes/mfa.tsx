@@ -113,7 +113,7 @@ function MfaPage() {
       if (verifyError) throw verifyError;
 
       setInfo("Verificação concluída.");
-      navigate({ to: redirect === "/select-tenant" ? "/select-tenant" : "/select-tenant", replace: true });
+      navigate({ to: redirect ?? "/select-tenant", replace: true });
     } catch (err) {
       setError(authErrorMessage(err));
     } finally {
