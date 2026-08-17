@@ -51,6 +51,9 @@ export type ShellData = {
   scope: ShellTenant[]; // todos os tenants visíveis, para o ⌘K
 };
 
+const navItemClass =
+  "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
+
 const COLLAPSE_KEY = "techiva:sidebar-collapsed";
 
 export function TenantShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
@@ -109,9 +112,9 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
             >
               {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
             </span>
-          ) : (
+          ) : collapsed || brand.name ? (
             <BrandIcon className="size-8 shrink-0" />
-          )}
+          ) : null}
           {!collapsed ? (
             brand.name ? (
               <span className="truncate text-sm font-medium text-foreground">{brand.name}</span>
@@ -119,26 +122,41 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
               <BrandLogo className="h-5 w-auto" />
             )
           ) : null}
+
         </div>
 
 
         <nav className="flex-1 space-y-1 p-2" aria-label="Navegação da organização">
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() =>
-                toast.info(`${item.label} entra no bloco ${item.block}`, {
-                  description: "Nesta fase a fundação entrega o shell e o seletor de organização.",
-                })
-              }
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              title={collapsed ? item.label : undefined}
-            >
-              <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
-              {!collapsed ? <span className="truncate">{item.label}</span> : null}
-            </button>
-          ))}
+          {items.map((item) =>
+            item.to ? (
+              <Link
+                key={item.label}
+                to={item.to}
+                params={{ tenantId: data.tenant.id }}
+                activeProps={{ className: "bg-accent text-foreground" }}
+                className={navItemClass}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              </Link>
+            ) : (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() =>
+                  toast.info(`${item.label} entra no bloco ${item.block}`, {
+                    description: "Nesta fase a fundação entrega o shell, o seletor e a gestão de usuários.",
+                  })
+                }
+                className={navItemClass}
+                title={collapsed ? item.label : undefined}
+              >
+                <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
+                {!collapsed ? <span className="truncate">{item.label}</span> : null}
+              </button>
+            ),
+          )}
         </nav>
 
         <div className="border-t border-border p-2">
