@@ -17,7 +17,9 @@ export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<
   if (!lovableKey) throw new Error("LOVABLE_API_KEY não configurada.");
   if (!resendKey) throw new Error("RESEND_API_KEY não configurada.");
 
-  const from = process.env["EMAIL_FROM"] ?? "TECH-IVA <nao-responda@techiva.com.br>";
+  // O domínio remetente precisa estar verificado no Resend.
+  // techiva.com.br ainda não está verificado, então usamos um domínio já verificado.
+  const from = process.env["EMAIL_FROM"] ?? "TECH-IVA <nao-responda@hosphub.com.br>";
 
   const response = await fetch(`${GATEWAY_URL}/emails`, {
     method: "POST",
