@@ -29,8 +29,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { KIND_LABELS, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
+import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
 import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
+import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
 
 export type ShellTenant = {
   id: string;
@@ -85,6 +86,8 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
     });
   }
 
+  const impersonation = useImpersonation();
+  const { stop: stopImpersonating } = useImpersonationMutations();
   const brand = resolveBrand(data.chain);
   const items = NAV_BY_KIND[data.tenant.kind];
   const initials = (data.fullName ?? data.email ?? "?")
@@ -96,6 +99,39 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
   return (
     <div className="flex min-h-screen bg-background">
+      {impersonation.data ? (
+        <div
+          role="status"
+          className="fixed inset-x-0 top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-primary px-4 py-2 text-sm text-primary-foreground"
+        >
+          <span>
+            Impersonando{" "}
+            <strong>{impersonation.data.tenantName ?? impersonation.data.tenantId}</strong> — expira
+            às{" "}
+            <span className="font-mono">
+              {new Date(impersonation.data.expiresAt).toLocaleTimeString("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </span>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={stopImpersonating.isPending}
+            onClick={async () => {
+              try {
+                await stopImpersonating.mutateAsync();
+                toast.success("Impersonação encerrada.");
+              } catch (error) {
+                toast.error(authErrorMessage(error));
+              }
+            }}
+          >
+            Sair da impersonação
+          </Button>
+        </div>
+      ) : null}
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
           collapsed ? "w-16" : "w-60"
