@@ -136,15 +136,28 @@ function UsersPage() {
     }
   }
 
+  async function deliverInvite(tenantId: string, invitationId: string, token: string, email: string) {
+    try {
+      await sendInvite({
+        data: { tenantId, invitationId, token, origin: window.location.origin },
+      });
+      toast.success(`Convite enviado por e-mail para ${email}.`);
+    } catch (error) {
+      toast.warning(
+        `Convite criado, mas o e-mail não pôde ser enviado (${authErrorMessage(error)}). Use o link abaixo.`,
+      );
+    }
+  }
+
   async function handleResend(invitation: Invitation) {
     try {
       await revoke.mutateAsync(invitation.id);
-      const { token } = await invite.mutateAsync({
+      const { invitationId, token } = await invite.mutateAsync({
         email: invitation.email,
         role: invitation.role,
       });
       setLastLink(inviteLink(token));
-      toast.success("Novo link de convite gerado.");
+      await deliverInvite(tenantId, invitationId, token, invitation.email);
     } catch (error) {
       toast.error(authErrorMessage(error));
     }
