@@ -157,11 +157,8 @@ function CashScreen() {
       <HeroMetric
         label={`Buraco líquido — próximos ${horizon} dias`}
         valueCents={heroValue ?? 0}
-        sub={
-          hero
-            ? `60d: ${formatCents(hero.gap_60_cents)} · 90d: ${formatCents(hero.gap_90_cents)}`
-            : undefined
-        }
+        sub={heroSub || undefined}
+
         trend={hero?.trend}
         loading={cash.isLoading}
       />
