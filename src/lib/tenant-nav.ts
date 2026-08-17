@@ -15,6 +15,7 @@ export type NavItem = {
     | "/t/$tenantId/commissions"
     | "/t/$tenantId/reports"
     | "/t/$tenantId/onboarding"
+    | "/t/$tenantId/price"
     | "/t/$tenantId/settings/users"
     | "/t/$tenantId/tenants"
     | "/t/$tenantId/plans"
@@ -49,7 +50,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Assinatura", block: "1.7.5", to: "/t/$tenantId/plans" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
-    { label: "Preço", block: "1.7.5" },
+    { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "1.7.5" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
@@ -58,7 +59,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Caixa", block: "3.4", to: "/t/$tenantId/cash" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
-    { label: "Preço", block: "1.7.5" },
+    { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "1.7.5" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },

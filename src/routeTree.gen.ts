@@ -32,6 +32,7 @@ import { Route as AuthenticatedTTenantIdCompaniesRouteImport } from './routes/_a
 import { Route as AuthenticatedTTenantIdOnboardingRouteImport } from './routes/_authenticated/t.$tenantId.onboarding'
 import { Route as AuthenticatedTTenantIdPlansRouteImport } from './routes/_authenticated/t.$tenantId.plans'
 import { Route as AuthenticatedTTenantIdPortfolioRouteImport } from './routes/_authenticated/t.$tenantId.portfolio'
+import { Route as AuthenticatedTTenantIdPriceRouteImport } from './routes/_authenticated/t.$tenantId.price'
 import { Route as AuthenticatedTTenantIdRegimeRouteImport } from './routes/_authenticated/t.$tenantId.regime'
 import { Route as AuthenticatedTTenantIdReportsRouteImport } from './routes/_authenticated/t.$tenantId.reports'
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
@@ -162,6 +163,12 @@ const AuthenticatedTTenantIdPortfolioRoute =
     path: '/portfolio',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdPriceRoute =
+  AuthenticatedTTenantIdPriceRouteImport.update({
+    id: '/price',
+    path: '/price',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdRegimeRoute =
   AuthenticatedTTenantIdRegimeRouteImport.update({
     id: '/regime',
@@ -209,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
+  '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
@@ -236,6 +244,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
+  '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
@@ -266,6 +275,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
   '/_authenticated/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/_authenticated/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
+  '/_authenticated/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/_authenticated/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/_authenticated/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/_authenticated/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/onboarding'
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
+    | '/t/$tenantId/price'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/tenants'
@@ -323,6 +334,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/onboarding'
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
+    | '/t/$tenantId/price'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/tenants'
@@ -352,6 +364,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/onboarding'
     | '/_authenticated/t/$tenantId/plans'
     | '/_authenticated/t/$tenantId/portfolio'
+    | '/_authenticated/t/$tenantId/price'
     | '/_authenticated/t/$tenantId/regime'
     | '/_authenticated/t/$tenantId/reports'
     | '/_authenticated/t/$tenantId/tenants'
@@ -535,6 +548,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdPortfolioRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/price': {
+      id: '/_authenticated/t/$tenantId/price'
+      path: '/price'
+      fullPath: '/t/$tenantId/price'
+      preLoaderRoute: typeof AuthenticatedTTenantIdPriceRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/regime': {
       id: '/_authenticated/t/$tenantId/regime'
       path: '/regime'
@@ -576,6 +596,7 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdOnboardingRoute: typeof AuthenticatedTTenantIdOnboardingRoute
   AuthenticatedTTenantIdPlansRoute: typeof AuthenticatedTTenantIdPlansRoute
   AuthenticatedTTenantIdPortfolioRoute: typeof AuthenticatedTTenantIdPortfolioRoute
+  AuthenticatedTTenantIdPriceRoute: typeof AuthenticatedTTenantIdPriceRoute
   AuthenticatedTTenantIdRegimeRoute: typeof AuthenticatedTTenantIdRegimeRoute
   AuthenticatedTTenantIdReportsRoute: typeof AuthenticatedTTenantIdReportsRoute
   AuthenticatedTTenantIdTenantsRoute: typeof AuthenticatedTTenantIdTenantsRoute
@@ -596,6 +617,7 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
       AuthenticatedTTenantIdOnboardingRoute,
     AuthenticatedTTenantIdPlansRoute: AuthenticatedTTenantIdPlansRoute,
     AuthenticatedTTenantIdPortfolioRoute: AuthenticatedTTenantIdPortfolioRoute,
+    AuthenticatedTTenantIdPriceRoute: AuthenticatedTTenantIdPriceRoute,
     AuthenticatedTTenantIdRegimeRoute: AuthenticatedTTenantIdRegimeRoute,
     AuthenticatedTTenantIdReportsRoute: AuthenticatedTTenantIdReportsRoute,
     AuthenticatedTTenantIdTenantsRoute: AuthenticatedTTenantIdTenantsRoute,
