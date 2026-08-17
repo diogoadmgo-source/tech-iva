@@ -1,12 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { AuthShell, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
+import {
+  type FieldErrors,
+  linkErrorFromUrl,
+  MIN_PASSWORD_LENGTH,
+  passwordStrength,
+  resetSchema,
+  validate,
+} from "@/lib/auth-validation";
 
 export const Route = createFileRoute("/reset")({
   ssr: false,
@@ -30,35 +38,70 @@ export const Route = createFileRoute("/reset")({
   component: ResetPage,
 });
 
+type LinkState = "checking" | "valid" | "invalid";
+
 function ResetPage() {
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
+  const [linkState, setLinkState] = useState<LinkState>("checking");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldErrors>({});
   const [done, setDone] = useState(false);
 
+  const strength = passwordStrength(password);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setReady(Boolean(data.session));
+    let cancelled = false;
+
+    const linkError = linkErrorFromUrl(window.location.href);
+    if (linkError) {
+      setError(linkError);
+      setLinkState("invalid");
+      return;
+    }
+
+    // O cliente troca o código do link por sessão de forma assíncrona:
+    // ouvimos o evento e também consultamos a sessão como fallback.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN")) {
+        setLinkState("valid");
+      }
     });
+
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (data.session) setLinkState("valid");
+      else {
+        setError("Link inválido ou expirado. Solicite um novo e-mail de recuperação.");
+        setLinkState("invalid");
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    if (password.length < 10) {
-      setError("A senha deve ter no mínimo 10 caracteres.");
-      return;
-    }
-    if (password !== confirm) {
-      setError("As senhas não coincidem.");
+    setFields({});
+    const result = validate(resetSchema, { password, confirm });
+    if (!result.data) {
+      setFields(result.fieldErrors);
       return;
     }
     setLoading(true);
     try {
-      const { error: updateError } = await supabase.auth.updateUser({ password });
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: result.data.password,
+      });
       if (updateError) throw updateError;
       // Logout global em troca de senha (documento 01 §1.4).
       await supabase.auth.signOut({ scope: "global" });
@@ -83,24 +126,47 @@ function ResetPage() {
     >
       {done ? (
         <FormSuccess message="Senha atualizada. Redirecionando para o login…" />
+      ) : linkState === "checking" ? (
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          Validando o link de recuperação
+        </div>
+      ) : linkState === "invalid" ? (
+        <div className="space-y-4">
+          <FormError message={error} />
+          <Button asChild variant="secondary" className="w-full">
+            <Link to="/forgot">Solicitar novo link</Link>
+          </Button>
+        </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!ready ? (
-            <p className="text-sm text-muted-foreground">
-              Abra esta página pelo link enviado por e-mail para autorizar a troca de senha.
-            </p>
-          ) : null}
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="password">Nova senha</Label>
             <Input
               id="password"
               type="password"
               autoComplete="new-password"
-              required
-              minLength={10}
+              aria-invalid={Boolean(fields["password"])}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <div className="flex items-center gap-2">
+              <div className="flex h-1 flex-1 gap-1" aria-hidden>
+                {[0, 1, 2, 3].map((i) => (
+                  <span
+                    key={i}
+                    className={
+                      i < strength.score ? "flex-1 rounded bg-primary" : "flex-1 rounded bg-border"
+                    }
+                  />
+                ))}
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground">{strength.label}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Mínimo de {MIN_PASSWORD_LENGTH} caracteres, com letra e número.
+            </p>
+            <FieldError message={fields["password"]} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm">Repetir senha</Label>
@@ -108,14 +174,14 @@ function ResetPage() {
               id="confirm"
               type="password"
               autoComplete="new-password"
-              required
-              minLength={10}
+              aria-invalid={Boolean(fields["confirm"])}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
             />
+            <FieldError message={fields["confirm"]} />
           </div>
           <FormError message={error} />
-          <Button type="submit" className="w-full" disabled={loading || !ready}>
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Salvando…" : "Salvar nova senha"}
           </Button>
         </form>
