@@ -10,16 +10,22 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as ConfirmRouteImport } from './routes/confirm'
 import { Route as ForgotRouteImport } from './routes/forgot'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MfaRouteImport } from './routes/mfa'
 import { Route as ResetRouteImport } from './routes/reset'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authenticated/select-tenant'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConfirmRoute = ConfirmRouteImport.update({
@@ -52,6 +58,12 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSelectTenantRoute =
+  AuthenticatedSelectTenantRouteImport.update({
+    id: '/select-tenant',
+    path: '/select-tenant',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/select-tenant': typeof AuthenticatedSelectTenantRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,25 +83,23 @@ export interface FileRoutesByTo {
   '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/select-tenant': typeof AuthenticatedSelectTenantRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/confirm': typeof ConfirmRoute
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/confirm' | '/forgot' | '/login' | '/mfa' | '/reset' | '/signup'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/confirm' | '/forgot' | '/login' | '/mfa' | '/reset' | '/signup'
-  id:
-    | '__root__'
     | '/'
     | '/confirm'
     | '/forgot'
@@ -96,10 +107,33 @@ export interface FileRouteTypes {
     | '/mfa'
     | '/reset'
     | '/signup'
+    | '/select-tenant'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
+    | '/select-tenant'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/confirm'
+    | '/forgot'
+    | '/login'
+    | '/mfa'
+    | '/reset'
+    | '/signup'
+    | '/_authenticated/select-tenant'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   ConfirmRoute: typeof ConfirmRoute
   ForgotRoute: typeof ForgotRoute
   LoginRoute: typeof LoginRoute
@@ -115,6 +149,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/confirm': {
@@ -159,11 +200,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/select-tenant': {
+      id: '/_authenticated/select-tenant'
+      path: '/select-tenant'
+      fullPath: '/select-tenant'
+      preLoaderRoute: typeof AuthenticatedSelectTenantRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedSelectTenantRoute: typeof AuthenticatedSelectTenantRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedSelectTenantRoute: AuthenticatedSelectTenantRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   ConfirmRoute: ConfirmRoute,
   ForgotRoute: ForgotRoute,
   LoginRoute: LoginRoute,
