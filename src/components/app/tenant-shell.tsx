@@ -243,19 +243,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
           <JobCenter tenantId={data.tenant.id} />
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Alertas">
-                <Bell className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72">
-              <p className="text-sm font-medium text-foreground">Alertas</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Nenhum alerta. A central de alertas entra no bloco 1.7.6.
-              </p>
-            </PopoverContent>
-          </Popover>
+          <ShellAlertBell tenantId={data.tenant.id} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
