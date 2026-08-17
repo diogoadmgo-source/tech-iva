@@ -67,16 +67,11 @@ function MfaPage() {
         return;
       }
 
-      const unverified = (factorsData?.all ?? []).filter(
-        (f) => f.factor_type === "totp" && f.status !== "verified",
-      );
-      for (const factor of unverified) {
-        await supabase.auth.mfa.unenroll({ factorId: factor.id });
-      }
-
+      // listFactors() só devolve fatores verificados; tentativas anteriores
+      // ficam pendentes no banco, então o enroll vai sem friendly_name para
+      // não colidir com a restrição de nome único por usuário.
       const { data: enrollData, error: enrollError } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        friendlyName: `FLUXA ${Date.now()}`,
       });
       if (enrollError) throw enrollError;
       setFactorId(enrollData.id);
