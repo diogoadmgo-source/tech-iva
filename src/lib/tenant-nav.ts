@@ -5,13 +5,13 @@ export type NavItem = {
   /** Bloco da especificação que entrega a tela. */
   block: string;
   /** Rota já implementada (relativa ao tenant ativo); ausente = tela futura. */
-  to?: "/t/$tenantId/settings/users";
+  to?: "/t/$tenantId/settings/users" | "/t/$tenantId/tenants";
 };
 
 /** Itens da sidebar por tipo de tenant (documento 01 §1.7.2). */
 export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
   platform: [
-    { label: "Organizações", block: "1.7.4" },
+    { label: "Organizações", block: "1.7.4", to: "/t/$tenantId/tenants" },
     { label: "Planos", block: "1.7.5" },
     { label: "Regras", block: "1.7.5" },
     { label: "Operações", block: "1.7.6" },
@@ -21,7 +21,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
   ],
   channel: [
     { label: "Carteira", block: "1.7.4" },
-    { label: "Empresas", block: "1.7.4" },
+    { label: "Empresas", block: "1.7.4", to: "/t/$tenantId/tenants" },
     { label: "Usuários", block: "1.7.3", to: "/t/$tenantId/settings/users" },
     { label: "Marca", block: "1.7.4" },
     { label: "Comissões", block: "1.7.5" },
