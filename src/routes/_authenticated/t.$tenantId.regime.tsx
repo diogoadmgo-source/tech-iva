@@ -123,8 +123,8 @@ function RegimeScreen() {
     Híbrido: y.hybrid_cents / 100,
   }));
 
-  const window = current?.next_window ?? w?.next_window ?? null;
-  const countdown = daysUntil(window);
+  const nextWindow = current?.next_window ?? w?.next_window ?? null;
+  const countdown = daysUntil(nextWindow);
 
   async function onRun() {
     try {
@@ -426,7 +426,7 @@ function RegimeScreen() {
                 {countdown !== null ? `${countdown} dias` : "—"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {window ? new Date(`${window}T00:00:00`).toLocaleDateString("pt-BR") : "sem data"} · o
+                {nextWindow ? new Date(`${nextWindow}T00:00:00`).toLocaleDateString("pt-BR") : "sem data"} · o
                 silêncio mantém o tradicional.
               </p>
             </div>
