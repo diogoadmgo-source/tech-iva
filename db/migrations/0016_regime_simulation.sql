@@ -268,12 +268,12 @@ begin
     raise exception 'este tenant nao possui canal/pai para compartilhar' using errcode = '55006';
   end if;
 
-  insert into alerts (tenant_id, kind, severity, title, body, payload)
+  insert into alerts (tenant_id, kind, severity, title, payload)
   values (v_parent, 'regime.simulation_shared', 'info',
           format('%s compartilhou uma simulação de regime', coalesce(v_name, 'Empresa')),
-          coalesce(nullif(p_note, ''), s.recommendation),
           jsonb_build_object('simulation_id', s.id, 'company_tenant_id', s.tenant_id,
-                             'next_window', s.next_window));
+                             'next_window', s.next_window,
+                             'note', coalesce(nullif(p_note, ''), s.recommendation)));
 
   perform log_audit(s.tenant_id, 'regime.share', 'regime_simulations', s.id::text, null,
                     jsonb_build_object('channel_tenant_id', v_parent));
