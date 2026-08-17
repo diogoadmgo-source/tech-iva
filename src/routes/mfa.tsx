@@ -96,9 +96,18 @@ function MfaPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!factorId) return;
     setError(null);
     setInfo(null);
+    setFields({});
+    const result = validate(totpSchema, { code });
+    if (!result.data) {
+      setFields(result.fieldErrors);
+      return;
+    }
+    if (!factorId) {
+      setError("Fator TOTP indisponível. Recarregue a página e tente novamente.");
+      return;
+    }
     setBusy(true);
     try {
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
