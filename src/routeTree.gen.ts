@@ -23,6 +23,7 @@ import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authent
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authenticated/t.$tenantId'
 import { Route as AuthenticatedTTenantIdIndexRouteImport } from './routes/_authenticated/t.$tenantId.index'
+import { Route as AuthenticatedTTenantIdAlertsRouteImport } from './routes/_authenticated/t.$tenantId.alerts'
 import { Route as AuthenticatedTTenantIdAuditRouteImport } from './routes/_authenticated/t.$tenantId.audit'
 import { Route as AuthenticatedTTenantIdBrandRouteImport } from './routes/_authenticated/t.$tenantId.brand'
 import { Route as AuthenticatedTTenantIdCashRouteImport } from './routes/_authenticated/t.$tenantId.cash'
@@ -110,6 +111,12 @@ const AuthenticatedTTenantIdIndexRoute =
   AuthenticatedTTenantIdIndexRouteImport.update({
     id: '/',
     path: '/',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
+const AuthenticatedTTenantIdAlertsRoute =
+  AuthenticatedTTenantIdAlertsRouteImport.update({
+    id: '/alerts',
+    path: '/alerts',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
 const AuthenticatedTTenantIdAuditRoute =
@@ -228,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
+  '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -259,6 +267,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -293,6 +302,7 @@ export interface FileRoutesById {
   '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
+  '/_authenticated/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/_authenticated/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/_authenticated/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/_authenticated/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/select-tenant'
     | '/invite/$token'
     | '/t/$tenantId'
+    | '/t/$tenantId/alerts'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
+    | '/t/$tenantId/alerts'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -391,6 +403,7 @@ export interface FileRouteTypes {
     | '/_authenticated/select-tenant'
     | '/invite/$token'
     | '/_authenticated/t/$tenantId'
+    | '/_authenticated/t/$tenantId/alerts'
     | '/_authenticated/t/$tenantId/audit'
     | '/_authenticated/t/$tenantId/brand'
     | '/_authenticated/t/$tenantId/cash'
@@ -524,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdIndexRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/alerts': {
+      id: '/_authenticated/t/$tenantId/alerts'
+      path: '/alerts'
+      fullPath: '/t/$tenantId/alerts'
+      preLoaderRoute: typeof AuthenticatedTTenantIdAlertsRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/audit': {
       id: '/_authenticated/t/$tenantId/audit'
       path: '/audit'
@@ -647,6 +667,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedTTenantIdRouteChildren {
+  AuthenticatedTTenantIdAlertsRoute: typeof AuthenticatedTTenantIdAlertsRoute
   AuthenticatedTTenantIdAuditRoute: typeof AuthenticatedTTenantIdAuditRoute
   AuthenticatedTTenantIdBrandRoute: typeof AuthenticatedTTenantIdBrandRoute
   AuthenticatedTTenantIdCashRoute: typeof AuthenticatedTTenantIdCashRoute
@@ -669,6 +690,7 @@ interface AuthenticatedTTenantIdRouteChildren {
 
 const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
   {
+    AuthenticatedTTenantIdAlertsRoute: AuthenticatedTTenantIdAlertsRoute,
     AuthenticatedTTenantIdAuditRoute: AuthenticatedTTenantIdAuditRoute,
     AuthenticatedTTenantIdBrandRoute: AuthenticatedTTenantIdBrandRoute,
     AuthenticatedTTenantIdCashRoute: AuthenticatedTTenantIdCashRoute,
