@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
 import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
+import { JobCenter } from "@/components/app/job-center";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
 
 export type ShellTenant = {
@@ -240,7 +241,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
             <kbd className="hidden font-mono text-[10px] sm:inline">⌘K</kbd>
           </Button>
 
-          <JobCenter tenantId={tenantId} />
+          <JobCenter tenantId={data.tenant.id} />
 
           <Popover>
             <PopoverTrigger asChild>
