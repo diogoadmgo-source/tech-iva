@@ -3211,6 +3211,10 @@ export type Database = {
         }[]
       }
       is_platform: { Args: never; Returns: boolean }
+      job_kind_allowed: {
+        Args: { p_kind: string; p_tenant: string }
+        Returns: boolean
+      }
       log_audit: {
         Args: {
           p_action: string
