@@ -3176,6 +3176,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_credit_offer: {
+        Args: { p_offer: string; p_signature_ref: string }
+        Returns: string
+      }
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
       approve_price_scenario: {
@@ -3184,6 +3188,7 @@ export type Database = {
       }
       auth_scopes: { Args: never; Returns: unknown[] }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
+      can_credit: { Args: { p_tenant: string }; Returns: boolean }
       can_price: { Args: { p_tenant: string }; Returns: boolean }
       cancel_job: { Args: { p_job: string }; Returns: undefined }
       chain_map: {
@@ -3237,6 +3242,11 @@ export type Database = {
         }
         Returns: string
       }
+      credit_contract_detail: { Args: { p_contract: string }; Returns: Json }
+      credit_contracts: { Args: { p_tenant: string }; Returns: Json[] }
+      credit_generate_offers: { Args: { p_tenant: string }; Returns: number }
+      credit_offer_detail: { Args: { p_offer: string }; Returns: Json }
+      credit_offers: { Args: { p_tenant: string }; Returns: Json[] }
       current_aal: { Args: never; Returns: string }
       dashboard_cash: {
         Args: { p_horizon_days?: number; p_tenant: string }
