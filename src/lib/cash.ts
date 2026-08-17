@@ -122,8 +122,10 @@ export function useAlerts(tenantId: string, limit = 20) {
   });
 
   useEffect(() => {
+    // nome único por assinante: o sino do shell também escuta alerts deste tenant
     const channel = supabase
-      .channel(`alerts-${tenantId}`)
+      .channel(`alerts-${tenantId}-${Math.random().toString(36).slice(2)}`)
+
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "alerts", filter: `tenant_id=eq.${tenantId}` },
