@@ -93,6 +93,7 @@ function UsersPage() {
   const members = useMembers(tenantId);
   const invitations = useInvitations(tenantId);
   const { invite, setRole, remove, revoke } = useMemberMutations(tenantId);
+  const sendInvite = useServerFn(sendInviteEmail);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<TenantMember | null>(null);
