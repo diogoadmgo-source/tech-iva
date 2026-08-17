@@ -8,7 +8,7 @@ export function Stepper({
 }: {
   steps: string[];
   current: number;
-  className?: string;
+  className?: string | undefined;
 }) {
   return (
     <ol className={cn("flex items-center gap-3", className)}>

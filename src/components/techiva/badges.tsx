@@ -50,8 +50,8 @@ export function Semaphore({
   className,
 }: {
   level: SemaphoreLevel;
-  showLabel?: boolean;
-  className?: string;
+  showLabel?: boolean | undefined;
+  className?: string | undefined;
 }) {
   const cfg = SEMAPHORE[level];
   return (

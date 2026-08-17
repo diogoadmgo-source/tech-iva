@@ -13,9 +13,9 @@ export function SideSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  description?: string;
+  description?: string | undefined;
   children: ReactNode;
-  footer?: ReactNode;
+  footer?: ReactNode | undefined;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

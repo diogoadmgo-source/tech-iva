@@ -48,13 +48,13 @@ export function DataTable<T>({
 }: {
   columns: ColumnDef<T, unknown>[];
   data: T[];
-  loading?: boolean;
-  searchPlaceholder?: string;
-  emptyTitle?: string;
-  emptyHint?: string;
-  exportName?: string;
-  density?: Density;
-  className?: string;
+  loading?: boolean | undefined;
+  searchPlaceholder?: string | undefined;
+  emptyTitle?: string | undefined;
+  emptyHint?: string | undefined;
+  exportName?: string | undefined;
+  density?: Density | undefined;
+  className?: string | undefined;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");

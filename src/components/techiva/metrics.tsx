@@ -25,12 +25,12 @@ export function KpiCard({
   className,
 }: {
   label: string;
-  valueCents?: number;
-  value?: ReactNode;
-  delta?: number;
-  hint?: string;
-  loading?: boolean;
-  className?: string;
+  valueCents?: number | undefined;
+  value?: ReactNode | undefined;
+  delta?: number | undefined;
+  hint?: string | undefined;
+  loading?: boolean | undefined;
+  className?: string | undefined;
 }) {
   return (
     <div
@@ -65,10 +65,10 @@ export function HeroMetric({
 }: {
   label: string;
   valueCents: number;
-  sub?: string;
-  trend?: number;
-  action?: ReactNode;
-  loading?: boolean;
+  sub?: string | undefined;
+  trend?: number | undefined;
+  action?: ReactNode | undefined;
+  loading?: boolean | undefined;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-surface-2 p-6 shadow-e2">

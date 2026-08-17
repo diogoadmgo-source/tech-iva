@@ -26,8 +26,8 @@ export function MoneyText({
   className,
 }: {
   cents: number;
-  sign?: boolean;
-  className?: string;
+  sign?: boolean | undefined;
+  className?: string | undefined;
 }) {
   const negative = (cents ?? 0) < 0;
   return (
