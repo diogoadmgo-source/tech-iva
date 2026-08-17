@@ -86,26 +86,26 @@ function normalizeWallet(raw: unknown): WalletSummary {
       ? v.map((g) => {
           const o = g as Record<string, unknown>;
           return {
-            regime: (o.regime as RegimeKind) ?? "desconhecido",
-            count: num(o.count),
-            volume_cents: num(o.volume_cents),
+            regime: (o["regime"] as RegimeKind) ?? "desconhecido",
+            count: num(o["count"]),
+            volume_cents: num(o["volume_cents"]),
           };
         })
       : [];
   return {
-    revenue_cents: num(w.revenue_cents),
-    b2b_cents: num(w.b2b_cents),
-    b2c_cents: num(w.b2c_cents),
-    b2b_share_pct: num(w.b2b_share_pct),
-    pj_regular_share_pct: num(w.pj_regular_share_pct),
-    customers_by_regime: groups(w.customers_by_regime),
-    suppliers_by_regime: groups(w.suppliers_by_regime),
-    purchases_cents: num(w.purchases_cents),
-    input_credit_cents: num(w.input_credit_cents),
-    simples_supplier_share_pct: num(w.simples_supplier_share_pct),
-    unknown_regime_count: num(w.unknown_regime_count),
-    next_window: typeof w.next_window === "string" ? w.next_window : "",
-    rule_version_id: typeof w.rule_version_id === "string" ? w.rule_version_id : null,
+    revenue_cents: num(w["revenue_cents"]),
+    b2b_cents: num(w["b2b_cents"]),
+    b2c_cents: num(w["b2c_cents"]),
+    b2b_share_pct: num(w["b2b_share_pct"]),
+    pj_regular_share_pct: num(w["pj_regular_share_pct"]),
+    customers_by_regime: groups(w["customers_by_regime"]),
+    suppliers_by_regime: groups(w["suppliers_by_regime"]),
+    purchases_cents: num(w["purchases_cents"]),
+    input_credit_cents: num(w["input_credit_cents"]),
+    simples_supplier_share_pct: num(w["simples_supplier_share_pct"]),
+    unknown_regime_count: num(w["unknown_regime_count"]),
+    next_window: typeof w["next_window"] === "string" ? w["next_window"] : "",
+    rule_version_id: typeof w["rule_version_id"] === "string" ? w["rule_version_id"] : null,
   };
 }
 
