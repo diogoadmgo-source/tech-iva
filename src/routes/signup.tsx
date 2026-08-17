@@ -29,7 +29,7 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
-export default function SignupPage() {
+function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
