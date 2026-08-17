@@ -41,15 +41,24 @@ begin
       (v_viewer, 'viewer@gama.dev',  'Vera Viewer (Serviços Gama)')
     ) as t(id, email, full_name)
   loop
+    -- ATENÇÃO (aprendizado 0034): as colunas de token de auth.users
+    -- (confirmation_token, recovery_token, email_change, email_change_token_new,
+    --  email_change_token_current, phone_change, phone_change_token, reauthentication_token)
+    -- NÃO podem nascer NULL. O GoTrue faz scan em `string` e recusa o login com
+    -- "converting NULL to string is unsupported". Sempre insira string vazia ('').
     insert into auth.users (
       instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-      created_at, updated_at, raw_app_meta_data, raw_user_meta_data
+      created_at, updated_at, raw_app_meta_data, raw_user_meta_data,
+      confirmation_token, recovery_token, email_change, email_change_token_new,
+      email_change_token_current, phone_change, phone_change_token, reauthentication_token
     ) values (
       '00000000-0000-0000-0000-000000000000', r.id, 'authenticated', 'authenticated',
       r.email, v_pw, now(), now(), now(),
       jsonb_build_object('provider','email','providers', jsonb_build_array('email')),
-      jsonb_build_object('full_name', r.full_name)
+      jsonb_build_object('full_name', r.full_name),
+      '', '', '', '', '', '', '', ''
     ) on conflict (id) do nothing;
+
 
     insert into auth.identities (id, user_id, provider_id, provider, identity_data, last_sign_in_at, created_at, updated_at)
     values (gen_random_uuid(), r.id, r.id::text, 'email',
