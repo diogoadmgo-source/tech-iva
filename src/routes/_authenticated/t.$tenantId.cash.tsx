@@ -105,6 +105,21 @@ function CashScreen() {
   const timeline = data?.timeline ?? [];
   const nextGap = data?.next_gap ?? null;
   const conf = data?.confidence;
+  // a RPC agrega apenas dentro do horizonte pedido: só exibimos as janelas
+  // menores ou iguais a ele (senão 60d/90d repetiriam o valor de 30d).
+  const heroSub = hero
+    ? (
+        [
+          [30, hero.gap_30_cents],
+          [60, hero.gap_60_cents],
+          [90, hero.gap_90_cents],
+        ] as const
+      )
+        .filter(([win]) => win <= horizon && win !== horizon)
+        .map(([win, cents]) => `${win}d: ${formatCents(cents)}`)
+        .join(" · ")
+    : "";
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
