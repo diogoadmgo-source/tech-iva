@@ -40,7 +40,7 @@ function BrandScreen() {
 
   const tenant = shell.data?.tenant;
   const role = shell.data?.role ?? null;
-  const canEdit = role === "channel_admin" || role === "platform_admin" || role === "platform_owner";
+  const canEdit = role === "channel_admin" || role === "platform_admin";
 
   useEffect(() => {
     if (!tenant) return;
