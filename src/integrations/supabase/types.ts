@@ -626,11 +626,14 @@ export type Database = {
       }
       jobs: {
         Row: {
+          attempts: number
           error: string | null
           finished_at: string | null
           id: string
           kind: string
+          lease_until: string | null
           message: string | null
+          next_attempt_at: string | null
           params: Json
           progress: number | null
           queued_at: string | null
@@ -642,11 +645,14 @@ export type Database = {
           worker: string | null
         }
         Insert: {
+          attempts?: number
           error?: string | null
           finished_at?: string | null
           id?: string
           kind: string
+          lease_until?: string | null
           message?: string | null
+          next_attempt_at?: string | null
           params?: Json
           progress?: number | null
           queued_at?: string | null
@@ -658,11 +664,14 @@ export type Database = {
           worker?: string | null
         }
         Update: {
+          attempts?: number
           error?: string | null
           finished_at?: string | null
           id?: string
           kind?: string
+          lease_until?: string | null
           message?: string | null
+          next_attempt_at?: string | null
           params?: Json
           progress?: number | null
           queued_at?: string | null
@@ -3229,6 +3238,34 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      claim_job: {
+        Args: { p_kinds: string[]; p_lease_seconds?: number; p_worker: string }
+        Returns: {
+          attempts: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          lease_until: string | null
+          message: string | null
+          next_attempt_at: string | null
+          params: Json
+          progress: number | null
+          queued_at: string | null
+          requested_by: string | null
+          result: Json | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          tenant_id: string
+          worker: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       counterparty_detail: {
         Args: { p_id: string; p_tenant: string }
         Returns: Json
@@ -3345,6 +3382,18 @@ export type Database = {
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
       remove_member: {
         Args: { p_tenant: string; p_user: string }
+        Returns: undefined
+      }
+      report_job: {
+        Args: {
+          p_error?: string
+          p_job: string
+          p_lease_seconds?: number
+          p_message?: string
+          p_progress?: number
+          p_result?: Json
+          p_status: Database["public"]["Enums"]["job_status"]
+        }
         Returns: undefined
       }
       require_aal2: { Args: never; Returns: undefined }
