@@ -258,6 +258,47 @@ export type Database = {
           },
         ]
       }
+      commission_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          credit_pct: number
+          id: string
+          is_current: boolean
+          mrr_pct: number
+          note: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          credit_pct?: number
+          id?: string
+          is_current?: boolean
+          mrr_pct?: number
+          note?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          credit_pct?: number
+          id?: string
+          is_current?: boolean
+          mrr_pct?: number
+          note?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       counterparties: {
         Row: {
           cnpj: string
@@ -3159,6 +3200,10 @@ export type Database = {
           total_cents: number
         }[]
       }
+      channel_commission_statement: {
+        Args: { p_month?: string; p_tenant: string }
+        Returns: Json
+      }
       channel_portfolio: {
         Args: { p_filters?: Json; p_tenant: string }
         Returns: {
@@ -3258,6 +3303,15 @@ export type Database = {
       }
       run_regime_simulation: {
         Args: { p_inputs?: Json; p_tenant: string }
+        Returns: string
+      }
+      set_commission_rule: {
+        Args: {
+          p_credit_pct: number
+          p_mrr_pct: number
+          p_note?: string
+          p_tenant: string
+        }
         Returns: string
       }
       set_member_role: {
