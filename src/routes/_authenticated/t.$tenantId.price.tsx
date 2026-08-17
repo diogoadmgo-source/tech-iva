@@ -395,8 +395,13 @@ function PricePage() {
               label="Itens abaixo do piso"
               value={String(totals?.below_floor ?? 0)}
               loading={detail.isLoading}
-              hint={`${totals?.lines ?? 0} linhas no cenário`}
+              hint={
+                (totals?.below_floor ?? 0) === 0
+                  ? `Nenhum item abaixo do piso neste cenário · ${totals?.lines ?? 0} linhas avaliadas`
+                  : `${totals?.lines ?? 0} linhas no cenário`
+              }
             />
+
           </div>
 
           {detail.isError ? (
