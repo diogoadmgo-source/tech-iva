@@ -3103,6 +3103,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_features: {
+        Row: {
+          enabled: boolean
+          enabled_at: string | null
+          enabled_by: string | null
+          feature: string
+          note: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          feature: string
+          note?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          enabled_at?: string | null
+          enabled_by?: string | null
+          feature?: string
+          note?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_features_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           brand: Json
@@ -3306,6 +3344,10 @@ export type Database = {
         Returns: string
       }
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
+      feature_enabled: {
+        Args: { p_feature: string; p_tenant: string }
+        Returns: boolean
+      }
       get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
       has_role: {
         Args: {
@@ -3354,6 +3396,18 @@ export type Database = {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
       }
+      platform_features: {
+        Args: { p_feature?: string }
+        Returns: {
+          cnpj: string
+          enabled: boolean
+          enabled_at: string
+          kind: Database["public"]["Enums"]["tenant_kind"]
+          note: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
       platform_ops_overview: { Args: never; Returns: Json }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
@@ -3397,6 +3451,10 @@ export type Database = {
         Returns: undefined
       }
       require_aal2: { Args: never; Returns: undefined }
+      require_feature: {
+        Args: { p_feature: string; p_tenant: string }
+        Returns: undefined
+      }
       resolve_alert: {
         Args: { p_alert: string; p_note?: string }
         Returns: undefined
@@ -3442,6 +3500,15 @@ export type Database = {
           p_party: string
           p_reason: string
           p_regime: Database["public"]["Enums"]["regime_kind"]
+          p_tenant: string
+        }
+        Returns: undefined
+      }
+      set_tenant_feature: {
+        Args: {
+          p_enabled: boolean
+          p_feature: string
+          p_note?: string
           p_tenant: string
         }
         Returns: undefined
