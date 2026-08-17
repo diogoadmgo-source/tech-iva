@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { KIND_LABELS } from "@/lib/auth";
 import { NAV_BY_KIND } from "@/lib/tenant-nav";
-import { useShellData } from "@/routes/_authenticated/t.$tenantId";
+import { useShellData } from "@/lib/tenant-shell-data";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/")({
   component: TenantHome,
