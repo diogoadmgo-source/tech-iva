@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCents } from "./money";
+import { useChartColors } from "./use-chart-colors";
 
 export type CashTimelinePoint = {
   week: string;
@@ -66,6 +67,8 @@ export function CashTimelineChart({
   onSelectWeek?: ((week: string) => void) | undefined;
   height?: number | undefined;
 }) {
+  const c = useChartColors();
+
   if (loading) return <Skeleton className="w-full" style={{ height }} />;
 
   const withBand = data.map((d) => ({
@@ -83,31 +86,31 @@ export function CashTimelineChart({
             if (week && onSelectWeek) onSelectWeek(week);
           }}
         >
-          <CartesianGrid stroke="var(--border)" vertical={false} />
+          <CartesianGrid stroke={c.border} vertical={false} />
           <XAxis
             dataKey="week"
             tickFormatter={weekLabel}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-            stroke="var(--border)"
+            tick={{ fill: c.muted, fontSize: 11 }}
+            stroke={c.border}
           />
           <YAxis
             tickFormatter={(v) => `${Math.round(Number(v) / 100000)}k`}
-            tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "var(--font-mono)" }}
-            stroke="var(--border)"
+            tick={{ fill: c.muted, fontSize: 11 }}
+            stroke={c.border}
           />
           <Tooltip content={<CashTooltip />} />
           <Area
             dataKey="band"
-            fill="var(--primary)"
+            fill={c.primary}
             fillOpacity={0.1}
             stroke="none"
             isAnimationActive={false}
           />
-          <Bar dataKey="tax_out_cents" fill="var(--flow-out)" radius={[3, 3, 0, 0]} maxBarSize={18} />
-          <Bar dataKey="credit_in_cents" fill="var(--flow-in)" radius={[3, 3, 0, 0]} maxBarSize={18} />
+          <Bar dataKey="tax_out_cents" fill={c.flowOut} radius={[3, 3, 0, 0]} maxBarSize={18} />
+          <Bar dataKey="credit_in_cents" fill={c.flowIn} radius={[3, 3, 0, 0]} maxBarSize={18} />
           <Line
             dataKey="net_cents"
-            stroke="var(--primary)"
+            stroke={c.primary}
             strokeWidth={2}
             dot={false}
             type="monotone"
