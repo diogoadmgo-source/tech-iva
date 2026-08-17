@@ -1,14 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { AuthShell, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
+import {
+  type FieldErrors,
+  linkErrorFromUrl,
+  loginSchema,
+  magicLinkSchema,
+  validate,
+} from "@/lib/auth-validation";
 import { resolvePostLoginRoute } from "@/lib/post-login";
 
 const searchSchema = z.object({ redirect: z.string().optional() });
@@ -42,26 +49,52 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldErrors>({});
   const [sent, setSent] = useState<string | null>(null);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+
+  // Erros devolvidos pelo próprio link do Supabase (ex.: otp_expired).
+  useEffect(() => {
+    const linkError = linkErrorFromUrl(window.location.href);
+    if (linkError) setError(linkError);
+  }, []);
+
+  function reset() {
+    setError(null);
+    setSent(null);
+    setFields({});
+    setNeedsConfirm(false);
+  }
 
   async function handlePassword(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSent(null);
+    reset();
+    const result = validate(loginSchema, { email, password });
+    if (!result.data) {
+      setFields(result.fieldErrors);
+      return;
+    }
     setLoading(true);
     try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+        email: result.data.email,
+        password: result.data.password,
       });
       if (signInError) throw signInError;
       const target = await resolvePostLoginRoute();
-      navigate({
-        to: target === "/mfa" ? "/mfa" : (search.redirect ?? "/select-tenant"),
-        replace: true,
-      });
+      if (target === "/mfa") {
+        navigate({
+          to: "/mfa",
+          search: search.redirect ? { redirect: search.redirect } : {},
+          replace: true,
+        });
+        return;
+      }
+      navigate({ to: search.redirect ?? "/select-tenant", replace: true });
     } catch (err) {
-      setError(authErrorMessage(err));
+      const message = authErrorMessage(err);
+      setError(message);
+      setNeedsConfirm(/confirme seu e-mail/i.test(message));
     } finally {
       setLoading(false);
     }
@@ -69,16 +102,43 @@ function LoginPage() {
 
   async function handleMagicLink(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSent(null);
+    reset();
+    const result = validate(magicLinkSchema, { email });
+    if (!result.data) {
+      setFields(result.fieldErrors);
+      return;
+    }
     setLoading(true);
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+        email: result.data.email,
         options: { emailRedirectTo: `${window.location.origin}/confirm` },
       });
       if (otpError) throw otpError;
-      setSent("Link enviado. Confira sua caixa de entrada.");
+      setSent("Link enviado. Confira sua caixa de entrada e a pasta de spam.");
+    } catch (err) {
+      setError(authErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resendConfirmation() {
+    reset();
+    const result = validate(magicLinkSchema, { email });
+    if (!result.data) {
+      setFields(result.fieldErrors);
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: result.data.email,
+        options: { emailRedirectTo: `${window.location.origin}/confirm` },
+      });
+      if (resendError) throw resendError;
+      setSent("Novo e-mail de confirmação enviado.");
     } catch (err) {
       setError(authErrorMessage(err));
     } finally {
@@ -99,25 +159,26 @@ function LoginPage() {
         </span>
       }
     >
-      <Tabs defaultValue="password">
+      <Tabs defaultValue="password" onValueChange={reset}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="password">Senha</TabsTrigger>
           <TabsTrigger value="magic">Link mágico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="password" className="mt-6">
-          <form onSubmit={handlePassword} className="space-y-4">
+          <form onSubmit={handlePassword} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 autoComplete="email"
-                required
+                aria-invalid={Boolean(fields.email)}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
               />
+              <FieldError message={fields.email} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -130,12 +191,25 @@ function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
-                required
+                aria-invalid={Boolean(fields.password)}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <FieldError message={fields.password} />
             </div>
             <FormError message={error} />
+            <FormSuccess message={sent} />
+            {needsConfirm ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={loading}
+                onClick={resendConfirmation}
+              >
+                Reenviar e-mail de confirmação
+              </Button>
+            ) : null}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Entrando…" : "Entrar"}
             </Button>
@@ -143,18 +217,19 @@ function LoginPage() {
         </TabsContent>
 
         <TabsContent value="magic" className="mt-6">
-          <form onSubmit={handleMagicLink} className="space-y-4">
+          <form onSubmit={handleMagicLink} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="magic-email">E-mail</Label>
               <Input
                 id="magic-email"
                 type="email"
                 autoComplete="email"
-                required
+                aria-invalid={Boolean(fields.email)}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="voce@empresa.com"
               />
+              <FieldError message={fields.email} />
             </div>
             <FormError message={error} />
             <FormSuccess message={sent} />
