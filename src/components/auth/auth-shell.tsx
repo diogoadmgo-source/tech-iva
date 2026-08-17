@@ -22,7 +22,7 @@ export function AuthShell({
             to="/"
             className="font-mono text-sm tracking-[0.35em] text-primary uppercase"
           >
-            fluxa
+            tech-iva
           </Link>
         </div>
 
@@ -58,6 +58,16 @@ export function FormSuccess({ message }: { message?: string | null }) {
   if (!message) return null;
   return (
     <p className="rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-sm text-foreground">
+      {message}
+    </p>
+  );
+}
+
+/** Erro de um campo específico, exibido logo abaixo do input. */
+export function FieldError({ message }: { message?: string | null | undefined }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="text-xs text-destructive">
       {message}
     </p>
   );

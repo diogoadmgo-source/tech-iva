@@ -3,12 +3,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { z } from "zod";
 
-import { AuthShell, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
+import { type FieldErrors, totpSchema, validate } from "@/lib/auth-validation";
 import { purgePendingMfaFactors } from "@/lib/mfa.functions";
 
 const searchSchema = z.object({ redirect: z.string().optional() });
@@ -49,6 +50,7 @@ function MfaPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [fields, setFields] = useState<FieldErrors>({});
 
   const purgePendingFactors = useServerFn(purgePendingMfaFactors);
 
@@ -96,9 +98,18 @@ function MfaPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!factorId) return;
     setError(null);
     setInfo(null);
+    setFields({});
+    const result = validate(totpSchema, { code });
+    if (!result.data) {
+      setFields(result.fieldErrors);
+      return;
+    }
+    if (!factorId) {
+      setError("Fator TOTP indisponível. Recarregue a página e tente novamente.");
+      return;
+    }
     setBusy(true);
     try {
       const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({
@@ -109,7 +120,7 @@ function MfaPage() {
       const { error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challenge.id,
-        code: code.trim(),
+        code: result.data.code,
       });
       if (verifyError) throw verifyError;
 
@@ -176,7 +187,9 @@ function MfaPage() {
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               className="font-mono tracking-[0.4em]"
               placeholder="000000"
+              aria-invalid={Boolean(fields["code"])}
             />
+            <FieldError message={fields["code"]} />
           </div>
 
           <FormError message={error} />
@@ -185,6 +198,24 @@ function MfaPage() {
           <Button type="submit" className="w-full" disabled={busy || code.length !== 6}>
             {busy ? "Verificando…" : "Confirmar"}
           </Button>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <button
+              type="button"
+              className="hover:text-primary"
+              disabled={busy}
+              onClick={() => {
+                setCode("");
+                setMode("loading");
+                void bootstrap();
+              }}
+            >
+              Recomeçar o cadastro do fator
+            </button>
+            <Link to="/login" className="hover:text-primary" onClick={() => void supabase.auth.signOut()}>
+              Sair e entrar com outra conta
+            </Link>
+          </div>
         </form>
       )}
     </AuthShell>

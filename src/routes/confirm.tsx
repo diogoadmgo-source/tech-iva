@@ -5,6 +5,7 @@ import { AuthShell, FormError } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
+import { linkErrorFromUrl } from "@/lib/auth-validation";
 import { resolvePostLoginRoute } from "@/lib/post-login";
 
 export const Route = createFileRoute("/confirm")({
@@ -14,7 +15,8 @@ export const Route = createFileRoute("/confirm")({
       { title: "Confirmando acesso — TECH-IVA" },
       {
         name: "description",
-        content: "Validação do link de confirmação de e-mail ou de acesso por link mágico no TECH-IVA.",
+        content:
+          "Validação do link de confirmação de e-mail ou de acesso por link mágico no TECH-IVA.",
       },
       { property: "og:title", content: "Confirmando acesso — TECH-IVA" },
       {
@@ -35,14 +37,20 @@ function ConfirmPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let settled = false;
 
-    async function run() {
+    // 1) O link pode já trazer o erro (otp_expired, access_denied…).
+    const linkError = linkErrorFromUrl(window.location.href);
+    if (linkError) {
+      setError(linkError);
+      setStatus("error");
+      return;
+    }
+
+    async function finish() {
+      if (settled || cancelled) return;
+      settled = true;
       try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        if (!data.session) {
-          throw new Error("Link inválido ou expirado. Solicite um novo e-mail.");
-        }
         const target = await resolvePostLoginRoute();
         if (cancelled) return;
         setStatus("ok");
@@ -54,11 +62,33 @@ function ConfirmPage() {
       }
     }
 
-    // Dá tempo ao cliente de trocar o código do link pela sessão.
-    const timer = setTimeout(run, 400);
+    // 2) Sessão pode chegar via evento (troca do código pelo cliente).
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) void finish();
+    });
+
+    // 3) Fallback: consulta direta com tentativas até ~3s.
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || settled) return;
+      if (data.session) {
+        clearInterval(interval);
+        void finish();
+        return;
+      }
+      if (attempts >= 6) {
+        clearInterval(interval);
+        setError("Link inválido ou expirado. Solicite um novo e-mail.");
+        setStatus("error");
+      }
+    }, 500);
+
     return () => {
       cancelled = true;
-      clearTimeout(timer);
+      clearInterval(interval);
+      sub.subscription.unsubscribe();
     };
   }, [navigate]);
 
@@ -81,6 +111,9 @@ function ConfirmPage() {
       {status === "error" ? (
         <div className="space-y-4">
           <FormError message={error} />
+          <p className="text-sm text-muted-foreground">
+            Você pode entrar novamente para receber um novo link de confirmação.
+          </p>
           <Button asChild variant="secondary" className="w-full">
             <Link to="/login">Voltar para o login</Link>
           </Button>
