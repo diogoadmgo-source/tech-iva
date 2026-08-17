@@ -35,7 +35,7 @@ export const Route = createFileRoute("/design")({
   }),
 });
 
-const REGIMES: RegimeKind[] = ["simples", "hibrido", "presumido", "real"];
+const REGIMES: RegimeKind[] = ["simples", "simples_hibrido", "presumido", "real", "mei", "pf"];
 
 const CASH: CashTimelinePoint[] = Array.from({ length: 12 }).map((_, i) => {
   const d = new Date(2026, 0, 5 + i * 7);
@@ -123,9 +123,9 @@ function DesignGallery() {
           {REGIMES.map((r) => (
             <RegimeBadge key={r} regime={r} />
           ))}
-          <Semaphore level="ok" label="Conforme" />
-          <Semaphore level="warn" label="Atenção" />
-          <Semaphore level="crit" label="Crítico" />
+          <Semaphore level="ok" showLabel />
+          <Semaphore level="warn" showLabel />
+          <Semaphore level="crit" showLabel />
         </div>
       </Section>
 
@@ -226,7 +226,7 @@ function DesignGallery() {
 
       <Section title="Processo e painéis">
         <Stepper
-          steps={[{ label: "Empresa" }, { label: "Certificado" }, { label: "Integrações" }, { label: "Revisão" }]}
+          steps={["Empresa", "Certificado", "Integrações", "Revisão"]}
           current={1}
         />
         <Button type="button" variant="outline" onClick={() => setSheet(true)}>
