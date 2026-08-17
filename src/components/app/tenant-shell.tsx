@@ -240,6 +240,8 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
             <kbd className="hidden font-mono text-[10px] sm:inline">⌘K</kbd>
           </Button>
 
+          <JobCenter tenantId={tenantId} />
+
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Alertas">
