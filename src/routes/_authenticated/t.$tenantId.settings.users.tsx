@@ -55,6 +55,7 @@ import {
   type Invitation,
   type TenantMember,
 } from "@/lib/members";
+import { sendInviteEmail } from "@/lib/invite-email.functions";
 import { useShellData } from "@/lib/tenant-shell-data";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/settings/users")({
