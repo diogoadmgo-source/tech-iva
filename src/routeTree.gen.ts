@@ -40,6 +40,7 @@ import { Route as AuthenticatedTTenantIdRegimeRouteImport } from './routes/_auth
 import { Route as AuthenticatedTTenantIdReportsRouteImport } from './routes/_authenticated/t.$tenantId.reports'
 import { Route as AuthenticatedTTenantIdRulesRouteImport } from './routes/_authenticated/t.$tenantId.rules'
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
+import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/public/cron.weekly-digest'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
 
 const IndexRoute = IndexRouteImport.update({
@@ -215,6 +216,12 @@ const AuthenticatedTTenantIdTenantsRoute =
     path: '/tenants',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const ApiPublicCronWeeklyDigestRoute =
+  ApiPublicCronWeeklyDigestRouteImport.update({
+    id: '/api/public/cron/weekly-digest',
+    path: '/api/public/cron/weekly-digest',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTTenantIdSettingsUsersRoute =
   AuthenticatedTTenantIdSettingsUsersRouteImport.update({
     id: '/settings/users',
@@ -252,6 +259,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -284,6 +292,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -319,6 +328,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/_authenticated/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/_authenticated/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -354,6 +364,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
     | '/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/users'
   fileRoutesByTo: FileRoutesByTo
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
     | '/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/t/$tenantId'
     | '/t/$tenantId/settings/users'
   id:
@@ -420,6 +432,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/reports'
     | '/_authenticated/t/$tenantId/rules'
     | '/_authenticated/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/users'
   fileRoutesById: FileRoutesById
@@ -435,6 +448,7 @@ export interface RootRouteChildren {
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -656,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdTenantsRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/api/public/cron/weekly-digest': {
+      id: '/api/public/cron/weekly-digest'
+      path: '/api/public/cron/weekly-digest'
+      fullPath: '/api/public/cron/weekly-digest'
+      preLoaderRoute: typeof ApiPublicCronWeeklyDigestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/t/$tenantId/settings/users': {
       id: '/_authenticated/t/$tenantId/settings/users'
       path: '/settings/users'
@@ -745,6 +766,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
