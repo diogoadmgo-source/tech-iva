@@ -268,9 +268,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
                 <span className="block font-mono text-xs text-muted-foreground">{data.email}</span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => toast.info("Perfil entra no bloco 1.7.5")}
-              >
+              <DropdownMenuItem onSelect={() => navigate({ to: "/profile" })}>
                 Perfil
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => navigate({ to: "/select-tenant" })}>
