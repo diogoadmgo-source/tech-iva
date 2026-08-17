@@ -28,3 +28,12 @@ content_path = "./supabase/templates/email_change.html"
 [auth.email.template.reauthentication]
 subject = "Código de verificação — TECH-IVA"
 content_path = "./supabase/templates/reauthentication.html"
+
+# Proteção contra senhas vazadas (HaveIBeenPwned). No projeto hospedado,
+# ativar também em Authentication → Providers → Email → "Leaked password protection".
+[auth]
+password_requirements = "lower_upper_letters_digits_symbols"
+minimum_password_length = 8
+
+[auth.password]
+hibp_enabled = true
