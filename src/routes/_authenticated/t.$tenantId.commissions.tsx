@@ -128,10 +128,7 @@ function CommissionsPage() {
 
   if (shell.isSuccess && !canSeeChannel) {
     return (
-      <NoPermissionState
-        title="Comissões são do canal"
-        hint="Abra esta tela no contexto de um canal contábil ou da plataforma."
-      />
+      <NoPermissionState hint="Comissões existem no contexto de um canal contábil ou da plataforma." />
     );
   }
 
