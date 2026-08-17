@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCashDashboard } from "@/lib/cash";
+import { useDashboardCash } from "@/lib/cash";
 import {
   LEDGER_COPY,
   OFFER_COPY,
@@ -81,7 +81,7 @@ function FinancePage() {
   const { tenantId } = Route.useParams();
   const navigate = useNavigate();
   const shell = useShellData(tenantId);
-  const cash = useCashDashboard(tenantId, 90);
+  const cash = useDashboardCash(tenantId, 90);
   const canCredit = useCanCredit(tenantId);
   const offers = useCreditOffers(tenantId);
   const contracts = useCreditContracts(tenantId);
