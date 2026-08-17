@@ -3182,6 +3182,7 @@ export type Database = {
       }
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
+      alert_prefs_default: { Args: never; Returns: Json }
       approve_price_scenario: {
         Args: { p_scenario: string }
         Returns: undefined
@@ -3232,6 +3233,15 @@ export type Database = {
         Args: { p_id: string; p_tenant: string }
         Returns: Json
       }
+      create_rule_version: {
+        Args: {
+          p_calc_version: string
+          p_cclasstrib_version: string
+          p_notes?: string
+          p_valid_from: string
+        }
+        Returns: string
+      }
       create_tenant: {
         Args: {
           p_cnpj?: string
@@ -3258,6 +3268,7 @@ export type Database = {
         Returns: string
       }
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
+      get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
       in_scope: { Args: { p_tenant: string }; Returns: boolean }
       invite_user: {
         Args: {
@@ -3271,6 +3282,8 @@ export type Database = {
         }[]
       }
       is_platform: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
+      is_platform_ops: { Args: never; Returns: boolean }
       job_kind_allowed: {
         Args: { p_kind: string; p_tenant: string }
         Returns: boolean
@@ -3296,6 +3309,7 @@ export type Database = {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
       }
+      platform_ops_overview: { Args: never; Returns: Json }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
         Returns: number
@@ -3313,6 +3327,10 @@ export type Database = {
         Returns: string
       }
       price_scenario_detail: { Args: { p_scenario: string }; Returns: Json }
+      publish_rule_version: {
+        Args: { p_dry_run?: boolean; p_id: string }
+        Returns: Json
+      }
       refresh_cash_timeline: { Args: never; Returns: undefined }
       regime_iva_rate: { Args: { p_year: number }; Returns: number }
       regime_next_window: { Args: { p_from?: string }; Returns: string }
@@ -3326,6 +3344,7 @@ export type Database = {
         Args: { p_alert: string; p_note?: string }
         Returns: undefined
       }
+      retry_job: { Args: { p_job: string }; Returns: string }
       role_in: {
         Args: { p_tenant: string }
         Returns: Database["public"]["Enums"]["member_role"]
@@ -3334,9 +3353,15 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["member_role"] }
         Returns: boolean
       }
+      rule_reprocess_progress: { Args: { p_id: string }; Returns: Json }
+      rule_versions_list: { Args: never; Returns: Json[] }
       run_regime_simulation: {
         Args: { p_inputs?: Json; p_tenant: string }
         Returns: string
+      }
+      set_alert_prefs: {
+        Args: { p_prefs: Json; p_tenant: string }
+        Returns: Json
       }
       set_commission_rule: {
         Args: {
@@ -3388,6 +3413,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      weekly_digest_batch: { Args: { p_weekday?: number }; Returns: Json[] }
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"

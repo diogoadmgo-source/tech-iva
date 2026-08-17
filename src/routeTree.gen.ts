@@ -23,6 +23,7 @@ import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authent
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authenticated/t.$tenantId'
 import { Route as AuthenticatedTTenantIdIndexRouteImport } from './routes/_authenticated/t.$tenantId.index'
+import { Route as AuthenticatedTTenantIdAlertsRouteImport } from './routes/_authenticated/t.$tenantId.alerts'
 import { Route as AuthenticatedTTenantIdAuditRouteImport } from './routes/_authenticated/t.$tenantId.audit'
 import { Route as AuthenticatedTTenantIdBrandRouteImport } from './routes/_authenticated/t.$tenantId.brand'
 import { Route as AuthenticatedTTenantIdCashRouteImport } from './routes/_authenticated/t.$tenantId.cash'
@@ -31,12 +32,15 @@ import { Route as AuthenticatedTTenantIdCommissionsRouteImport } from './routes/
 import { Route as AuthenticatedTTenantIdCompaniesRouteImport } from './routes/_authenticated/t.$tenantId.companies'
 import { Route as AuthenticatedTTenantIdFinanceRouteImport } from './routes/_authenticated/t.$tenantId.finance'
 import { Route as AuthenticatedTTenantIdOnboardingRouteImport } from './routes/_authenticated/t.$tenantId.onboarding'
+import { Route as AuthenticatedTTenantIdOpsRouteImport } from './routes/_authenticated/t.$tenantId.ops'
 import { Route as AuthenticatedTTenantIdPlansRouteImport } from './routes/_authenticated/t.$tenantId.plans'
 import { Route as AuthenticatedTTenantIdPortfolioRouteImport } from './routes/_authenticated/t.$tenantId.portfolio'
 import { Route as AuthenticatedTTenantIdPriceRouteImport } from './routes/_authenticated/t.$tenantId.price'
 import { Route as AuthenticatedTTenantIdRegimeRouteImport } from './routes/_authenticated/t.$tenantId.regime'
 import { Route as AuthenticatedTTenantIdReportsRouteImport } from './routes/_authenticated/t.$tenantId.reports'
+import { Route as AuthenticatedTTenantIdRulesRouteImport } from './routes/_authenticated/t.$tenantId.rules'
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
+import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/public/cron.weekly-digest'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
 
 const IndexRoute = IndexRouteImport.update({
@@ -110,6 +114,12 @@ const AuthenticatedTTenantIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdAlertsRoute =
+  AuthenticatedTTenantIdAlertsRouteImport.update({
+    id: '/alerts',
+    path: '/alerts',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdAuditRoute =
   AuthenticatedTTenantIdAuditRouteImport.update({
     id: '/audit',
@@ -158,6 +168,12 @@ const AuthenticatedTTenantIdOnboardingRoute =
     path: '/onboarding',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdOpsRoute =
+  AuthenticatedTTenantIdOpsRouteImport.update({
+    id: '/ops',
+    path: '/ops',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdPlansRoute =
   AuthenticatedTTenantIdPlansRouteImport.update({
     id: '/plans',
@@ -188,11 +204,23 @@ const AuthenticatedTTenantIdReportsRoute =
     path: '/reports',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdRulesRoute =
+  AuthenticatedTTenantIdRulesRouteImport.update({
+    id: '/rules',
+    path: '/rules',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdTenantsRoute =
   AuthenticatedTTenantIdTenantsRouteImport.update({
     id: '/tenants',
     path: '/tenants',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
+const ApiPublicCronWeeklyDigestRoute =
+  ApiPublicCronWeeklyDigestRouteImport.update({
+    id: '/api/public/cron/weekly-digest',
+    path: '/api/public/cron/weekly-digest',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedTTenantIdSettingsUsersRoute =
   AuthenticatedTTenantIdSettingsUsersRouteImport.update({
@@ -214,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
+  '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -222,12 +251,15 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/companies': typeof AuthenticatedTTenantIdCompaniesRoute
   '/t/$tenantId/finance': typeof AuthenticatedTTenantIdFinanceRoute
   '/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
+  '/t/$tenantId/ops': typeof AuthenticatedTTenantIdOpsRoute
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
+  '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -243,6 +275,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -251,12 +284,15 @@ export interface FileRoutesByTo {
   '/t/$tenantId/companies': typeof AuthenticatedTTenantIdCompaniesRoute
   '/t/$tenantId/finance': typeof AuthenticatedTTenantIdFinanceRoute
   '/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
+  '/t/$tenantId/ops': typeof AuthenticatedTTenantIdOpsRoute
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
+  '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -275,6 +311,7 @@ export interface FileRoutesById {
   '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
+  '/_authenticated/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/_authenticated/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/_authenticated/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/_authenticated/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -283,12 +320,15 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/companies': typeof AuthenticatedTTenantIdCompaniesRoute
   '/_authenticated/t/$tenantId/finance': typeof AuthenticatedTTenantIdFinanceRoute
   '/_authenticated/t/$tenantId/onboarding': typeof AuthenticatedTTenantIdOnboardingRoute
+  '/_authenticated/t/$tenantId/ops': typeof AuthenticatedTTenantIdOpsRoute
   '/_authenticated/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/_authenticated/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/_authenticated/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
   '/_authenticated/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/_authenticated/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
+  '/_authenticated/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
   '/_authenticated/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
 }
@@ -307,6 +347,7 @@ export interface FileRouteTypes {
     | '/select-tenant'
     | '/invite/$token'
     | '/t/$tenantId'
+    | '/t/$tenantId/alerts'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -315,12 +356,15 @@ export interface FileRouteTypes {
     | '/t/$tenantId/companies'
     | '/t/$tenantId/finance'
     | '/t/$tenantId/onboarding'
+    | '/t/$tenantId/ops'
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
     | '/t/$tenantId/price'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
+    | '/t/$tenantId/rules'
     | '/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/users'
   fileRoutesByTo: FileRoutesByTo
@@ -336,6 +380,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
+    | '/t/$tenantId/alerts'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -344,12 +389,15 @@ export interface FileRouteTypes {
     | '/t/$tenantId/companies'
     | '/t/$tenantId/finance'
     | '/t/$tenantId/onboarding'
+    | '/t/$tenantId/ops'
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
     | '/t/$tenantId/price'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
+    | '/t/$tenantId/rules'
     | '/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/t/$tenantId'
     | '/t/$tenantId/settings/users'
   id:
@@ -367,6 +415,7 @@ export interface FileRouteTypes {
     | '/_authenticated/select-tenant'
     | '/invite/$token'
     | '/_authenticated/t/$tenantId'
+    | '/_authenticated/t/$tenantId/alerts'
     | '/_authenticated/t/$tenantId/audit'
     | '/_authenticated/t/$tenantId/brand'
     | '/_authenticated/t/$tenantId/cash'
@@ -375,12 +424,15 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/companies'
     | '/_authenticated/t/$tenantId/finance'
     | '/_authenticated/t/$tenantId/onboarding'
+    | '/_authenticated/t/$tenantId/ops'
     | '/_authenticated/t/$tenantId/plans'
     | '/_authenticated/t/$tenantId/portfolio'
     | '/_authenticated/t/$tenantId/price'
     | '/_authenticated/t/$tenantId/regime'
     | '/_authenticated/t/$tenantId/reports'
+    | '/_authenticated/t/$tenantId/rules'
     | '/_authenticated/t/$tenantId/tenants'
+    | '/api/public/cron/weekly-digest'
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/users'
   fileRoutesById: FileRoutesById
@@ -396,6 +448,7 @@ export interface RootRouteChildren {
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -498,6 +551,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdIndexRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/alerts': {
+      id: '/_authenticated/t/$tenantId/alerts'
+      path: '/alerts'
+      fullPath: '/t/$tenantId/alerts'
+      preLoaderRoute: typeof AuthenticatedTTenantIdAlertsRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/audit': {
       id: '/_authenticated/t/$tenantId/audit'
       path: '/audit'
@@ -554,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdOnboardingRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/ops': {
+      id: '/_authenticated/t/$tenantId/ops'
+      path: '/ops'
+      fullPath: '/t/$tenantId/ops'
+      preLoaderRoute: typeof AuthenticatedTTenantIdOpsRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/plans': {
       id: '/_authenticated/t/$tenantId/plans'
       path: '/plans'
@@ -589,12 +656,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdReportsRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/rules': {
+      id: '/_authenticated/t/$tenantId/rules'
+      path: '/rules'
+      fullPath: '/t/$tenantId/rules'
+      preLoaderRoute: typeof AuthenticatedTTenantIdRulesRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/tenants': {
       id: '/_authenticated/t/$tenantId/tenants'
       path: '/tenants'
       fullPath: '/t/$tenantId/tenants'
       preLoaderRoute: typeof AuthenticatedTTenantIdTenantsRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
+    '/api/public/cron/weekly-digest': {
+      id: '/api/public/cron/weekly-digest'
+      path: '/api/public/cron/weekly-digest'
+      fullPath: '/api/public/cron/weekly-digest'
+      preLoaderRoute: typeof ApiPublicCronWeeklyDigestRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/t/$tenantId/settings/users': {
       id: '/_authenticated/t/$tenantId/settings/users'
@@ -607,6 +688,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedTTenantIdRouteChildren {
+  AuthenticatedTTenantIdAlertsRoute: typeof AuthenticatedTTenantIdAlertsRoute
   AuthenticatedTTenantIdAuditRoute: typeof AuthenticatedTTenantIdAuditRoute
   AuthenticatedTTenantIdBrandRoute: typeof AuthenticatedTTenantIdBrandRoute
   AuthenticatedTTenantIdCashRoute: typeof AuthenticatedTTenantIdCashRoute
@@ -615,11 +697,13 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdCompaniesRoute: typeof AuthenticatedTTenantIdCompaniesRoute
   AuthenticatedTTenantIdFinanceRoute: typeof AuthenticatedTTenantIdFinanceRoute
   AuthenticatedTTenantIdOnboardingRoute: typeof AuthenticatedTTenantIdOnboardingRoute
+  AuthenticatedTTenantIdOpsRoute: typeof AuthenticatedTTenantIdOpsRoute
   AuthenticatedTTenantIdPlansRoute: typeof AuthenticatedTTenantIdPlansRoute
   AuthenticatedTTenantIdPortfolioRoute: typeof AuthenticatedTTenantIdPortfolioRoute
   AuthenticatedTTenantIdPriceRoute: typeof AuthenticatedTTenantIdPriceRoute
   AuthenticatedTTenantIdRegimeRoute: typeof AuthenticatedTTenantIdRegimeRoute
   AuthenticatedTTenantIdReportsRoute: typeof AuthenticatedTTenantIdReportsRoute
+  AuthenticatedTTenantIdRulesRoute: typeof AuthenticatedTTenantIdRulesRoute
   AuthenticatedTTenantIdTenantsRoute: typeof AuthenticatedTTenantIdTenantsRoute
   AuthenticatedTTenantIdIndexRoute: typeof AuthenticatedTTenantIdIndexRoute
   AuthenticatedTTenantIdSettingsUsersRoute: typeof AuthenticatedTTenantIdSettingsUsersRoute
@@ -627,6 +711,7 @@ interface AuthenticatedTTenantIdRouteChildren {
 
 const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
   {
+    AuthenticatedTTenantIdAlertsRoute: AuthenticatedTTenantIdAlertsRoute,
     AuthenticatedTTenantIdAuditRoute: AuthenticatedTTenantIdAuditRoute,
     AuthenticatedTTenantIdBrandRoute: AuthenticatedTTenantIdBrandRoute,
     AuthenticatedTTenantIdCashRoute: AuthenticatedTTenantIdCashRoute,
@@ -637,11 +722,13 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
     AuthenticatedTTenantIdFinanceRoute: AuthenticatedTTenantIdFinanceRoute,
     AuthenticatedTTenantIdOnboardingRoute:
       AuthenticatedTTenantIdOnboardingRoute,
+    AuthenticatedTTenantIdOpsRoute: AuthenticatedTTenantIdOpsRoute,
     AuthenticatedTTenantIdPlansRoute: AuthenticatedTTenantIdPlansRoute,
     AuthenticatedTTenantIdPortfolioRoute: AuthenticatedTTenantIdPortfolioRoute,
     AuthenticatedTTenantIdPriceRoute: AuthenticatedTTenantIdPriceRoute,
     AuthenticatedTTenantIdRegimeRoute: AuthenticatedTTenantIdRegimeRoute,
     AuthenticatedTTenantIdReportsRoute: AuthenticatedTTenantIdReportsRoute,
+    AuthenticatedTTenantIdRulesRoute: AuthenticatedTTenantIdRulesRoute,
     AuthenticatedTTenantIdTenantsRoute: AuthenticatedTTenantIdTenantsRoute,
     AuthenticatedTTenantIdIndexRoute: AuthenticatedTTenantIdIndexRoute,
     AuthenticatedTTenantIdSettingsUsersRoute:
@@ -679,6 +766,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

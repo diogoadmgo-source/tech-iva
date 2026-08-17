@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Bell, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { BrandIcon, BrandLogo } from "@/components/brand/brand-logo";
@@ -24,14 +24,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
 import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
 import { JobCenter } from "@/components/app/job-center";
+import { ShellAlertBell } from "@/components/app/shell-alert-bell";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
 
 export type ShellTenant = {
@@ -243,19 +239,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
           <JobCenter tenantId={data.tenant.id} />
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Alertas">
-                <Bell className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-72">
-              <p className="text-sm font-medium text-foreground">Alertas</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Nenhum alerta. A central de alertas entra no bloco 1.7.6.
-              </p>
-            </PopoverContent>
-          </Popover>
+          <ShellAlertBell tenantId={data.tenant.id} />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
