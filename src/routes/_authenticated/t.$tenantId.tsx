@@ -1,10 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/auth/auth-shell";
+import { TenantShell, type ShellData, type ShellTenant } from "@/components/app/tenant-shell";
 import { supabase } from "@/integrations/supabase/client";
-import { KIND_LABELS, ROLE_LABELS, signOutAndRedirect } from "@/lib/auth";
+import { authErrorMessage } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId")({
   head: () => ({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId")({
       {
         name: "description",
         content:
-          "Painel da organização ativa no TECH-IVA, com papel do usuário e escopo hierárquico carregados do banco.",
+          "Painel da organização ativa no TECH-IVA, com papel do usuário, trilha hierárquica e escopo carregados do banco.",
       },
       { property: "og:title", content: "Painel da organização — TECH-IVA" },
       {
@@ -24,69 +25,88 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: TenantHome,
+  component: TenantLayout,
 });
 
-function TenantHome() {
-  const { tenantId } = Route.useParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["tenant", tenantId],
-    queryFn: async () => {
-      const [{ data: tenant, error }, { data: role }, { data: user }] = await Promise.all([
+export function useShellData(tenantId: string) {
+  return useQuery({
+    queryKey: ["tenant-shell", tenantId],
+    queryFn: async (): Promise<ShellData> => {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id ?? "";
+      const [{ data: tenants, error }, { data: role }, { data: profile }] = await Promise.all([
         supabase
           .from("tenants")
-          .select("id, name, kind, level, slug, status")
-          .eq("id", tenantId)
-          .maybeSingle(),
+          .select("id, name, kind, level, slug, status, brand, parent_id")
+          .order("level")
+          .order("name"),
         supabase.rpc("role_in", { p_tenant: tenantId }),
-        supabase.auth.getUser(),
+        supabase.from("profiles").select("full_name").eq("user_id", userId).maybeSingle(),
       ]);
       if (error) throw error;
-      return { tenant, role, email: user.user?.email ?? null };
+
+      const rows = tenants ?? [];
+      const byId = new Map(rows.map((t) => [t.id, t]));
+      const active = byId.get(tenantId);
+      if (!active) throw new Error("Organização fora do seu escopo.");
+
+      // Trilha: sobe por parent_id enquanto o ancestral estiver visível (RLS).
+      const chain: ShellTenant[] = [];
+      let cursor: (typeof rows)[number] | undefined = active;
+      while (cursor) {
+        chain.unshift(cursor as ShellTenant);
+        cursor = cursor.parent_id ? byId.get(cursor.parent_id) : undefined;
+      }
+
+      return {
+        tenant: active as ShellTenant,
+        chain,
+        role: role ?? null,
+        email: userData.user?.email ?? null,
+        fullName: profile?.full_name ?? null,
+        scope: rows as ShellTenant[],
+      };
     },
   });
+}
+
+function TenantLayout() {
+  const { tenantId } = Route.useParams();
+  const { data, isLoading, error } = useShellData(tenantId);
+
+  // Persiste a última organização usada.
+  useEffect(() => {
+    if (!data?.tenant) return;
+    void (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await supabase
+        .from("profiles")
+        .update({ last_tenant: tenantId })
+        .eq("user_id", userData.user.id);
+    })();
+  }, [data?.tenant, tenantId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+        <div className="mt-6 h-40 animate-pulse rounded-xl bg-muted/60" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <FormError message={authErrorMessage(error ?? new Error("Organização indisponível."))} />
+      </div>
+    );
+  }
 
   return (
-    <main className="auth-backdrop min-h-screen px-6 py-10">
-      <div className="mx-auto max-w-4xl">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="font-mono text-xs tracking-[0.35em] text-primary uppercase">fluxa</p>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-              {isLoading ? "Carregando…" : (data?.tenant?.name ?? "Organização não encontrada")}
-            </h1>
-            {data?.tenant ? (
-              <p className="mt-1 font-mono text-xs text-muted-foreground">
-                {KIND_LABELS[data.tenant.kind]} · nível {data.tenant.level} · {data.tenant.status}
-              </p>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-3">
-            {data?.role ? <Badge variant="secondary">{ROLE_LABELS[data.role]}</Badge> : null}
-            <Button variant="outline" onClick={() => navigate({ to: "/select-tenant" })}>
-              Trocar organização
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => void signOutAndRedirect(queryClient, navigate)}
-            >
-              Sair
-            </Button>
-          </div>
-        </header>
-
-        <section className="mt-10 rounded-xl border border-border bg-surface p-8">
-          <h2 className="text-base font-medium text-foreground">Fundação concluída</h2>
-          <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
-            Sessão ativa como <span className="font-mono">{data?.email ?? "—"}</span>. Os módulos
-            de gestão (seletor e shell, usuários, árvore de organizações, planos e auditoria)
-            entram nos blocos 1.7.2 a 1.7.6.
-          </p>
-        </section>
-      </div>
-    </main>
+    <TenantShell data={data}>
+      <Outlet />
+    </TenantShell>
   );
 }
