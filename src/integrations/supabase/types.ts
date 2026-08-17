@@ -3178,8 +3178,13 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
+      approve_price_scenario: {
+        Args: { p_scenario: string }
+        Returns: undefined
+      }
       auth_scopes: { Args: never; Returns: unknown[] }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
+      can_price: { Args: { p_tenant: string }; Returns: boolean }
       cancel_job: { Args: { p_job: string }; Returns: undefined }
       chain_map: {
         Args: {
@@ -3281,6 +3286,23 @@ export type Database = {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
       }
+      price_credit_factor: {
+        Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
+        Returns: number
+      }
+      price_scenario_compute: { Args: { p_scenario: string }; Returns: number }
+      price_scenario_create: {
+        Args: {
+          p_counterparty?: string
+          p_fiscal_year: number
+          p_name: string
+          p_target_margin: number
+          p_tenant: string
+          p_var_exp_pct?: number
+        }
+        Returns: string
+      }
+      price_scenario_detail: { Args: { p_scenario: string }; Returns: Json }
       refresh_cash_timeline: { Args: never; Returns: undefined }
       regime_iva_rate: { Args: { p_year: number }; Returns: number }
       regime_next_window: { Args: { p_from?: string }; Returns: string }
@@ -3348,6 +3370,14 @@ export type Database = {
         }[]
       }
       text2ltree: { Args: { "": string }; Returns: unknown }
+      update_product_price: {
+        Args: {
+          p_cost_cents?: number
+          p_current_price_cents?: number
+          p_product: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"
