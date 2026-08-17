@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -236,7 +235,6 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
       </div>
 
       <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
-        <Command>
           <CommandInput placeholder="Buscar organização no seu escopo…" />
           <CommandList>
             <CommandEmpty>Nada encontrado.</CommandEmpty>
@@ -258,7 +256,6 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
               ))}
             </CommandGroup>
           </CommandList>
-        </Command>
       </CommandDialog>
     </div>
   );
