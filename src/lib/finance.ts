@@ -177,7 +177,7 @@ export function useAcceptOffer(tenantId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["credit-offers", tenantId] });
       queryClient.invalidateQueries({ queryKey: ["credit-contracts", tenantId] });
-      queryClient.invalidateQueries({ queryKey: ["cash", tenantId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-cash", tenantId] });
     },
   });
 }
