@@ -19,7 +19,10 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
 
-    const { data: memberships } = await supabase.from("memberships").select("role");
+    const { data: memberships } = await supabase
+      .from("memberships")
+      .select("role")
+      .eq("user_id", data.user.id);
     const roles = (memberships ?? []).map((m) => m.role);
     const needsMfa = roles.some(roleRequiresMfa);
 

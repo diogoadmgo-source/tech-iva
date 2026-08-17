@@ -8,7 +8,11 @@ import { currentAal, roleRequiresMfa } from "@/lib/auth";
  * - /select-tenant  caso contrário
  */
 export async function resolvePostLoginRoute(): Promise<"/mfa" | "/select-tenant"> {
-  const { data: memberships } = await supabase.from("memberships").select("role");
+  const { data: userData } = await supabase.auth.getUser();
+  const { data: memberships } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("user_id", userData.user?.id ?? "");
   const needsMfa = (memberships ?? []).some((m) => roleRequiresMfa(m.role));
   if (!needsMfa) return "/select-tenant";
   const aal = await currentAal();
