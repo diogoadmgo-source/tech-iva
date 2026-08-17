@@ -185,11 +185,12 @@ function CashScreen() {
           valueCents={kpis?.provision_month_cents ?? 0}
           hint={
             kpis
-              ? `Reserva do mês · ${formatCents(kpis.provision_horizon_cents)} no horizonte`
+              ? `Reserva do mês · ${formatCents(kpis.provision_horizon_cents)} nos próximos ${horizon} dias`
               : "Reserva sugerida do mês"
           }
           loading={cash.isLoading}
         />
+
 
       </div>
 
@@ -309,7 +310,14 @@ function CashScreen() {
             {(events.data ?? []).map((e) => (
               <li key={e.id} className="flex items-start justify-between gap-3 py-3">
                 <div>
-                  <p className="text-sm font-medium">{KIND_LABELS[e.kind] ?? e.kind}</p>
+                  <p className="text-sm font-medium">
+                    {KIND_LABELS[e.kind] ?? e.kind}
+                    {e.kind === "provision" ? (
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        sugestão de reserva — fora do caixa
+                      </span>
+                    ) : null}
+                  </p>
                   <p className="mt-0.5 font-mono text-xs text-muted-foreground">
                     {new Date(`${e.event_date}T00:00:00`).toLocaleDateString("pt-BR")} · confiança{" "}
                     {Math.round(Number(e.confidence ?? 0) * 100)}%
@@ -320,6 +328,7 @@ function CashScreen() {
             ))}
           </ul>
         )}
+
       </SideSheet>
     </div>
   );
