@@ -18,6 +18,7 @@ import { Route as MfaRouteImport } from './routes/mfa'
 import { Route as ResetRouteImport } from './routes/reset'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authenticated/select-tenant'
+import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authenticated/t.$tenantId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -64,6 +65,11 @@ const AuthenticatedSelectTenantRoute =
     path: '/select-tenant',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedTTenantIdRoute = AuthenticatedTTenantIdRouteImport.update({
+  id: '/t/$tenantId',
+  path: '/t/$tenantId',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
   '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
+  '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/signup'
     | '/select-tenant'
+    | '/t/$tenantId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/signup'
     | '/select-tenant'
+    | '/t/$tenantId'
   id:
     | '__root__'
     | '/'
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/reset'
     | '/signup'
     | '/_authenticated/select-tenant'
+    | '/_authenticated/t/$tenantId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -207,15 +219,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSelectTenantRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/t/$tenantId': {
+      id: '/_authenticated/t/$tenantId'
+      path: '/t/$tenantId'
+      fullPath: '/t/$tenantId'
+      preLoaderRoute: typeof AuthenticatedTTenantIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSelectTenantRoute: typeof AuthenticatedSelectTenantRoute
+  AuthenticatedTTenantIdRoute: typeof AuthenticatedTTenantIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSelectTenantRoute: AuthenticatedSelectTenantRoute,
+  AuthenticatedTTenantIdRoute: AuthenticatedTTenantIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
