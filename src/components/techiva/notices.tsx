@@ -12,8 +12,8 @@ export function NoticeBody({ body, className = "" }: { body: string; className?:
   );
 }
 
-function NoticeCard({ notice }: { notice: Notice }) {
-  const warning = notice.severity === "warning" || notice.severity === "critical";
+function NoticeCard({ notice, highlight = false }: { notice: Notice; highlight?: boolean }) {
+  const warning = notice.severity === "warning" || notice.severity === "critical" || highlight;
   return (
     <section
       className={
@@ -38,17 +38,34 @@ function NoticeCard({ notice }: { notice: Notice }) {
 /**
  * Renderiza os avisos ativos de um escopo (notices_for). Warning em destaque,
  * info discreto. Nenhum texto é hardcoded aqui.
+ *
+ * `highlightKeys` promove avisos específicos (ex.: conformidade_2026 no
+ * validador, split_adiado no caixa) ao tratamento de destaque e os põe no topo,
+ * mesmo quando a plataforma os cadastrou como severidade info.
  */
-export function NoticeBoard({ scope, className = "" }: { scope: string; className?: string }) {
+export function NoticeBoard({
+  scope,
+  className = "",
+  highlightKeys = [],
+}: {
+  scope: string;
+  className?: string;
+  highlightKeys?: string[];
+}) {
   const notices = useNotices(scope);
 
   if (notices.isLoading) return <Skeleton className={`h-16 w-full ${className}`} />;
   if (notices.isError || (notices.data?.length ?? 0) === 0) return null;
 
+  const isHighlighted = (key: string) => highlightKeys.includes(key);
+  const ordered = [...(notices.data ?? [])].sort(
+    (a, b) => Number(isHighlighted(b.key)) - Number(isHighlighted(a.key)),
+  );
+
   return (
     <div className={`space-y-3 ${className}`}>
-      {notices.data?.map((n) => (
-        <NoticeCard key={n.key} notice={n} />
+      {ordered.map((n) => (
+        <NoticeCard key={n.key} notice={n} highlight={isHighlighted(n.key)} />
       ))}
     </div>
   );
