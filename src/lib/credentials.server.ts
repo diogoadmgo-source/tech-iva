@@ -183,14 +183,14 @@ export async function unsealSecret(blob: Uint8Array | string): Promise<Uint8Arra
   for (const candidate of candidates) {
     try {
       const dekRaw = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: wrapIv },
+        { name: "AES-GCM", iv: wrapIv as unknown as BufferSource },
         await kek(salt, candidate.value),
         wrappedDek as never,
       );
       const dek = await crypto.subtle.importKey("raw", dekRaw, { name: "AES-GCM" }, false, [
         "decrypt",
       ]);
-      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, dek, ct as never);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv as unknown as BufferSource }, dek, ct as never);
       return new Uint8Array(plain);
     } catch {
       // tenta a próxima chave do anel
