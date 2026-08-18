@@ -153,6 +153,11 @@ function SimuladorPage() {
         <EngineBanner status={engine.data} loading={engine.isLoading} />
       </header>
 
+      {/* posicionamento e avisos mantidos pela plataforma (notices_for) */}
+      <NoticeBoard scope="simulador" />
+
+
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
           <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
