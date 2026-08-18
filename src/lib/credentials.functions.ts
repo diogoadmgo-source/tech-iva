@@ -181,11 +181,20 @@ export const uploadCredential = createServerFn({ method: "POST" })
        * gravada ao lado do material.
        */
       const path = secretPath(data.tenantId, data.provider);
+      // renovação: material antigo do mesmo provider/kind sai do bucket depois do registro
+      const { data: previous } = await supabaseAdmin
+        .from("integration_credentials")
+        .select("secret_ref")
+        .eq("tenant_id", data.tenantId)
+        .eq("provider", data.provider)
+        .eq("kind", "certificado_a1")
+        .maybeSingle();
       const sealed = await sealCertificateBundle(pfx, data.password);
       const up = await supabaseAdmin.storage
         .from(SECRETS_BUCKET)
         .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
       if (up.error) throw new Error(up.error.message);
+
 
       let id: unknown;
       try {
