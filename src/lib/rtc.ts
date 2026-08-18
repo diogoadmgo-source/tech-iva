@@ -361,3 +361,128 @@ export const APURACAO_LIMITACAO =
 /** Copy de produto: o cálculo roda na nossa infraestrutura, offline. */
 export const CALCULADORA_OFFLINE =
   "O cálculo usa a calculadora oficial da Receita rodando na nossa infraestrutura, que opera sem coleta de dados, sem telemetria e sem transmissão automática de informações. Seu dado fiscal não sai daqui.";
+
+/* ------------------------------------ apuração assistida: estrutura real */
+
+/**
+ * A estrutura real do portal (observada na Apuração Assistida da GDB, ago/2026):
+ * situação em estágios, DOIS totais com natureza C/D, seis visões (abas) e uma
+ * árvore de contas cuja ORDEM de apresentação é parte do vocabulário do contador.
+ * Natureza é dado próprio — "8.253,73 C" — nunca sinal negativo.
+ */
+export type ApuracaoSituacao = "em_andamento" | "periodo_ajuste" | "concluida";
+export type ApuracaoNatureza = "credor" | "devedor" | "neutro";
+
+export type ApuracaoConta = {
+  caminho: string;
+  conta: string;
+  nivel: number;
+  valor_cents: number;
+  natureza: ApuracaoNatureza;
+  tem_detalhe: boolean;
+};
+
+export type ApuracaoDetalhe =
+  | { disponivel: false; competencia: string }
+  | {
+      disponivel: true;
+      competencia: string;
+      situacao: ApuracaoSituacao | null;
+      resultado_cents: number | null;
+      natureza_resultado: ApuracaoNatureza | null;
+      saldo_atualizado_cents: number | null;
+      natureza_saldo: ApuracaoNatureza | null;
+      intencao_ressarcimento: boolean;
+      recebido_em: string | null;
+      visoes: Record<string, ApuracaoConta[]>;
+    };
+
+/** RPC apuracao_detalhe — totais + árvore de contas por visão. */
+export function useApuracaoDetalhe(tenantId: string, competencia: string) {
+  return useQuery({
+    queryKey: ["apuracao-detalhe", tenantId, competencia],
+    enabled: Boolean(tenantId && competencia),
+    queryFn: async (): Promise<ApuracaoDetalhe> => {
+      const { data, error } = await rpc("apuracao_detalhe", {
+        p_tenant: tenantId,
+        p_competencia: competencia,
+      });
+      if (error) throw new Error(error.message);
+      return data as ApuracaoDetalhe;
+    },
+  });
+}
+
+export type ApuracaoListaRow = {
+  competencia: string;
+  situacao: ApuracaoSituacao | null;
+  natureza_resultado: ApuracaoNatureza | null;
+  resultado_cents: number | null;
+  saldo_atualizado_cents: number | null;
+  recebido_em: string | null;
+};
+
+/** RPC apuracoes_lista — equivalente ao "Minhas Apurações da CBS". */
+export function useApuracoesLista(tenantId: string, limite = 24) {
+  return useQuery({
+    queryKey: ["apuracoes-lista", tenantId, limite],
+    enabled: Boolean(tenantId),
+    queryFn: async (): Promise<ApuracaoListaRow[]> => {
+      const { data, error } = await rpc("apuracoes_lista", {
+        p_tenant: tenantId,
+        p_limite: limite,
+      });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ApuracaoListaRow[];
+    },
+  });
+}
+
+/** As seis abas do portal, na mesma ordem. */
+export const APURACAO_VISOES: Array<{ key: string; label: string; hint: string }> = [
+  { key: "resultado", label: "Resultado", hint: "Débitos, créditos apropriados e redutores da competência." },
+  { key: "saldo_atualizado", label: "Saldo Atualizado", hint: "Saldo após as movimentações posteriores ao fechamento." },
+  { key: "eventos", label: "Eventos", hint: "Movimentações registradas na apuração." },
+  { key: "em_processamento", label: "Em Processamento", hint: "Itens que a Receita ainda está processando." },
+  { key: "outras_informacoes", label: "Outras Informações", hint: "Inclui os créditos acumulados passíveis de apropriação." },
+  { key: "nao_aproveitados", label: "Não Aproveitados", hint: "Créditos e débitos que não entraram no resultado." },
+];
+
+export const SITUACAO_LABEL: Record<ApuracaoSituacao, string> = {
+  em_andamento: "Em andamento",
+  periodo_ajuste: "Período de ajuste",
+  concluida: "Concluída",
+};
+
+export const SITUACAO_ORDEM: ApuracaoSituacao[] = ["em_andamento", "periodo_ajuste", "concluida"];
+
+export const NATUREZA_SIGLA: Record<ApuracaoNatureza, string> = {
+  credor: "C",
+  devedor: "D",
+  neutro: "",
+};
+
+export const NATUREZA_LABEL: Record<ApuracaoNatureza, string> = {
+  credor: "Credor",
+  devedor: "Devedor",
+  neutro: "Neutro",
+};
+
+/**
+ * Créditos acumulados passíveis de apropriação — o número que conta a história
+ * do produto ("R$ 40 mil de crédito parado"). Vem em "Outras Informações".
+ */
+export function creditoAcumulado(detalhe: ApuracaoDetalhe | undefined): ApuracaoConta | null {
+  if (!detalhe?.disponivel) return null;
+  const contas = Object.values(detalhe.visoes).flat();
+  return (
+    contas.find(
+      (c) => /acumulad/i.test(c.conta) && /apropria/i.test(c.conta) && c.valor_cents > 0,
+    ) ?? null
+  );
+}
+
+/** Copy de caixa para o crédito acumulado — nunca vocabulário de conta contábil. */
+export const CREDITO_ACUMULADO_COPY =
+  "Isso é dinheiro seu parado. Esse crédito não é uma conta contábil: ele reduz o que você vai " +
+  "pagar quando houver débito de CBS, e enquanto não houver débito ele fica retido.";
