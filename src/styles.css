@@ -377,3 +377,75 @@
     transition: none;
   }
 }
+
+/* miniatura animada do gráfico de caixa (herói) — loop lento com pausa */
+@keyframes bar-rise {
+  0%,
+  6% {
+    transform: scaleY(0.04);
+    opacity: 0;
+  }
+  22%,
+  86% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0.04);
+    opacity: 0;
+  }
+}
+
+@keyframes line-draw {
+  0%,
+  24% {
+    stroke-dashoffset: 420;
+  }
+  56%,
+  88% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 420;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  62%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.cash-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-rise 7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.cash-line {
+  stroke-dasharray: 420;
+  animation: line-draw 7s ease-in-out infinite;
+}
+
+.cash-fade {
+  animation: soft-pulse 7s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-bar,
+  .cash-line,
+  .cash-fade {
+    animation: none;
+  }
+  .cash-line {
+    stroke-dasharray: none;
+  }
+}
