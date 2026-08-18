@@ -69,7 +69,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const { data: ctx, error: ctxErr } = await context.supabase.rpc("tenant_context", {
       p_tenant: data.tenantId,
     } as never);
-    if (ctxErr) throw new Error(ctxErr.message);
+    if (ctxErr) {
+      const m = ctxErr.message.toLowerCase();
+      if (m.includes("jwt") || m.includes("expired")) {
+        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+      }
+      throw new Error(ctxErr.message);
+    }
     const ctxRow = (Array.isArray(ctx) ? ctx[0] : ctx) as
       | { papel?: string | null; membership_direta?: boolean | null }
       | null
@@ -77,8 +83,11 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const role = ctxRow?.papel ?? null;
     const ALLOWED = ["platform_admin", "platform_ops", "channel_admin", "owner", "finance"];
     if (typeof role !== "string" || !ALLOWED.includes(role)) {
-      throw new Error("Seu papel neste tenant não permite gerenciar credenciais.");
+      throw new Error(
+        `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role ?? "nenhum vínculo encontrado"}).`,
+      );
     }
+
     const onBehalf = ctxRow?.membership_direta === false;
 
 
@@ -92,7 +101,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
     try {
       // (a) PROCURAÇÃO — caminho recomendado: nenhum material sensível existe.
       if (data.kind === "procuracao") {
-        const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
+        const { data: id, error } = await context.supabase.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "procuracao",
@@ -116,7 +125,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
         if (up.error) throw new Error(up.error.message);
 
-        const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
+        const { data: id, error } = await context.supabase.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "api_key",
@@ -155,7 +164,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
         );
       }
       // fonte autoritativa da regra: normaliza os dois lados com so_digitos no banco
-      const { data: confere, error: confereErr } = await supabaseAdmin.rpc(
+      const { data: confere, error: confereErr } = await context.supabase.rpc(
         "certificado_confere_titular",
         { p_tenant: data.tenantId, p_subject_cnpj: meta.subjectCnpj } as never,
       );
@@ -180,7 +189,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
 
       let id: unknown;
       try {
-        const registered = await supabaseAdmin.rpc("register_credential", {
+        const registered = await context.supabase.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "certificado_a1",
@@ -219,12 +228,21 @@ export const uploadCredential = createServerFn({ method: "POST" })
         notAfter: meta.notAfter,
       };
     } catch (error) {
-      const message =
-        error instanceof CredentialError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Falha ao registrar a credencial.";
-      throw new Error(message);
+      const raw =
+        error instanceof Error ? error.message : "Falha ao registrar a credencial.";
+      if (error instanceof CredentialError) throw new Error(raw);
+
+      // Erro de segurança pode ser discreto, mas não pode ser mudo.
+      const lower = raw.toLowerCase();
+      if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
+        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+      }
+      if (lower.includes("forbidden") || lower.includes("permission denied")) {
+        throw new Error(
+          `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role}).`,
+        );
+      }
+      throw new Error(raw);
     }
+
   });
