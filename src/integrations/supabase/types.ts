@@ -3815,6 +3815,10 @@ export type Database = {
       }
       cnpj_lookup: { Args: { p_cnpj: string }; Returns: Json }
       cnpj_registry_upsert: { Args: { p: Json }; Returns: undefined }
+      comparar_modalidades: {
+        Args: { p_horizon_days?: number; p_tenant: string }
+        Returns: Json
+      }
       counterparties_missing_registry: {
         Args: { p_tenant: string; p_ttl_days?: number }
         Returns: {
@@ -3872,6 +3876,14 @@ export type Database = {
       dashboard_cash: {
         Args: { p_horizon_days?: number; p_tenant: string }
         Returns: Json
+      }
+      data_saida_imposto: {
+        Args: {
+          p_emissao: string
+          p_modalidade: Database["public"]["Enums"]["modalidade_recolhimento"]
+          p_recebimento: string
+        }
+        Returns: string
       }
       enforce_mfa: { Args: { p_tenant: string }; Returns: undefined }
       enforce_regime_role: { Args: { p_tenant: string }; Returns: undefined }
@@ -4003,7 +4015,11 @@ export type Database = {
       }
       price_scenario_detail: { Args: { p_scenario: string }; Returns: Json }
       project_cash_sql: {
-        Args: { p_horizon_days?: number; p_tenant: string }
+        Args: {
+          p_horizon_days?: number
+          p_modalidade?: Database["public"]["Enums"]["modalidade_recolhimento"]
+          p_tenant: string
+        }
         Returns: Json
       }
       publish_rule_version: {
@@ -4151,6 +4167,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_tenant_modalidade: {
+        Args: {
+          p_modalidade: Database["public"]["Enums"]["modalidade_recolhimento"]
+          p_tenant: string
+        }
+        Returns: undefined
+      }
       share_regime_simulation: {
         Args: { p_note?: string; p_simulation: string }
         Returns: undefined
@@ -4168,6 +4191,10 @@ export type Database = {
           tenant_id: string
           user_id: string
         }[]
+      }
+      tenant_modalidade: {
+        Args: { p_tenant: string }
+        Returns: Database["public"]["Enums"]["modalidade_recolhimento"]
       }
       update_product_price: {
         Args: {
@@ -4221,6 +4248,7 @@ export type Database = {
         | "finance"
         | "commercial"
         | "viewer"
+      modalidade_recolhimento: "apuracao" | "rad" | "split"
       party_role: "customer" | "supplier" | "both"
       regime_kind:
         | "simples"
@@ -4385,6 +4413,7 @@ export const Constants = {
         "commercial",
         "viewer",
       ],
+      modalidade_recolhimento: ["apuracao", "rad", "split"],
       party_role: ["customer", "supplier", "both"],
       regime_kind: [
         "simples",
