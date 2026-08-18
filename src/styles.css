@@ -268,3 +268,184 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/* ==========================================================================
+   Ambiente visual — landing e auth (dark premium, sóbrio)
+   ========================================================================== */
+
+@utility ambient {
+  position: relative;
+  background:
+    radial-gradient(70rem 46rem at 50% -14%, oklch(0.55 0.22 264 / 20%), transparent 68%),
+    radial-gradient(48rem 34rem at 88% 4%, oklch(0.6 0.12 232 / 12%), transparent 70%),
+    radial-gradient(46rem 32rem at 6% 92%, oklch(0.55 0.22 264 / 8%), transparent 72%),
+    var(--background);
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+  }
+}
+
+/* linha divisória que some nas pontas */
+@utility hairline {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    transparent,
+    oklch(1 0 0 / 14%) 18%,
+    oklch(1 0 0 / 14%) 82%,
+    transparent
+  );
+}
+
+@utility card-lift {
+  border: 1px solid var(--border);
+  transition:
+    transform 200ms ease-out,
+    box-shadow 200ms ease-out,
+    border-color 200ms ease-out;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.55 0.22 264 / 45%);
+    box-shadow:
+      0 18px 40px -22px oklch(0 0 0 / 85%),
+      0 0 0 1px oklch(0.55 0.22 264 / 12%);
+  }
+}
+
+/* superfície elevada com luz vinda de cima */
+@utility surface-lit {
+  position: relative;
+  background: linear-gradient(180deg, oklch(0.255 0.026 265), oklch(0.218 0.025 265));
+  border: 1px solid oklch(1 0 0 / 10%);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 6%) inset,
+    0 2px 8px -2px oklch(0 0 0 / 55%),
+    0 32px 70px -34px oklch(0 0 0 / 90%);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 12%;
+    top: -1px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, oklch(0.7 0.16 264 / 55%), transparent);
+    pointer-events: none;
+  }
+}
+
+@utility focus-glow {
+  &:focus-visible {
+    outline: none;
+    border-color: oklch(0.55 0.22 264 / 70%);
+    box-shadow:
+      0 0 0 2px oklch(0.55 0.22 264 / 85%),
+      0 0 0 6px oklch(0.55 0.22 264 / 18%);
+  }
+}
+
+/* entrada escalonada: fade + translateY, disparada por IntersectionObserver */
+@utility reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 400ms ease-out,
+    transform 400ms ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+
+  &[data-shown="true"] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* miniatura animada do gráfico de caixa (herói) — loop lento com pausa */
+@keyframes bar-rise {
+  0%,
+  6% {
+    transform: scaleY(0.04);
+    opacity: 0;
+  }
+  22%,
+  86% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0.04);
+    opacity: 0;
+  }
+}
+
+@keyframes line-draw {
+  0%,
+  24% {
+    stroke-dashoffset: 420;
+  }
+  56%,
+  88% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 420;
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  62%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.cash-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: bar-rise 7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.cash-line {
+  stroke-dasharray: 420;
+  animation: line-draw 7s ease-in-out infinite;
+}
+
+.cash-fade {
+  animation: soft-pulse 7s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-bar,
+  .cash-line,
+  .cash-fade {
+    animation: none;
+  }
+  .cash-line {
+    stroke-dasharray: none;
+  }
+}

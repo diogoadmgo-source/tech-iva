@@ -3813,6 +3813,10 @@ export type Database = {
       can_credit: { Args: { p_tenant: string }; Returns: boolean }
       can_price: { Args: { p_tenant: string }; Returns: boolean }
       cancel_job: { Args: { p_job: string }; Returns: undefined }
+      certificado_confere_titular: {
+        Args: { p_subject_cnpj: string; p_tenant: string }
+        Returns: boolean
+      }
       chain_map: {
         Args: {
           p_filters?: Json
