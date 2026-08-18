@@ -17,6 +17,8 @@ import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { JobProgress } from "@/components/techiva/job-progress";
 import { Stepper } from "@/components/techiva/stepper";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { hasActiveDfe, useCredentials, useUploadCredential } from "@/lib/credentials";
 import { useJobs, useEnqueueJob, type JobKind } from "@/lib/jobs";
 import {
   isValidCnpj,
