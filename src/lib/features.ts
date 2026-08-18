@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 
 /** RPCs da migration 0050 (ainda não presentes nos tipos gerados). */
 const rpc = supabase.rpc.bind(supabase) as unknown as (
@@ -60,12 +61,17 @@ export function usePlatformFeatures(feature: FeatureKey = "credit", enabled = tr
       const rows = (data as PlatformFeatureRow[] | null) ?? [];
 
       // quem habilitou não vem da RPC; lemos a tabela (RLS: leitura por in_scope)
-      const { data: flags } = await supabase
-        .from("tenant_features")
-        .select("tenant_id, enabled_by")
-        .eq("feature", feature);
+      const flags = await fetchAllPages<{ tenant_id: string; enabled_by: string | null }>(
+        (from, to) =>
+          supabase
+            .from("tenant_features")
+            .select("tenant_id, enabled_by")
+            .eq("feature", feature)
+            .order("tenant_id")
+            .range(from, to),
+      );
       const byTenant = new Map<string, string | null>(
-        (flags ?? []).map((f) => [f.tenant_id as string, (f.enabled_by as string | null) ?? null]),
+        flags.map((f) => [f.tenant_id as string, (f.enabled_by as string | null) ?? null]),
       );
       const userIds = [...new Set([...byTenant.values()].filter(Boolean) as string[])];
       const labels = new Map<string, string>();

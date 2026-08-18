@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 import type { TenantKind } from "@/lib/auth";
 import { startImpersonation, stopImpersonation } from "@/lib/impersonation.functions";
 import type { Brand } from "@/lib/tenant-nav";
@@ -40,14 +41,19 @@ export function useTenantTree(rootId: string) {
   return useQuery({
     queryKey: ["tenant-tree", rootId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("id, parent_id, name, kind, level, slug, cnpj, status, brand, created_at")
-        .order("level")
-        .order("name");
-      if (error) throw error;
+      // a árvore inteira é necessária para montar hierarquia; varredura paginada
+      // porque o PostgREST corta em 1000 linhas silenciosamente
+      const data = await fetchAllPages<Omit<TenantNode, "children">>((from, to) =>
+        supabase
+          .from("tenants")
+          .select("id, parent_id, name, kind, level, slug, cnpj, status, brand, created_at")
+          .order("level")
+          .order("name")
+          .order("id")
+          .range(from, to),
+      );
 
-      const rows = (data ?? []) as Array<Omit<TenantNode, "children">>;
+      const rows = data;
       const nodes = new Map<string, TenantNode>(
         rows.map((row) => [row.id, { ...row, children: [] }]),
       );
