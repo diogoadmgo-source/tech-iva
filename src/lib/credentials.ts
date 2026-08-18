@@ -91,6 +91,26 @@ export function useCredentials(tenantId: string) {
   });
 }
 
+/**
+ * Extrato de uso do certificado — responde "onde o meu certificado foi usado?".
+ * A trilha vem do banco (credential_usage) e não pode ser editada por ninguém
+ * pelo app: é prova, não histórico decorativo.
+ */
+export function useCredentialUsage(tenantId: string, dias = 90) {
+  return useQuery({
+    queryKey: ["credential-usage", tenantId, dias],
+    enabled: Boolean(tenantId),
+    queryFn: async (): Promise<CredentialUsageRow[]> => {
+      const { data, error } = await rpc("credential_usage_report", {
+        p_tenant: tenantId,
+        p_dias: dias,
+      });
+      if (error) throw new Error(error.message);
+      return (data as CredentialUsageRow[] | null) ?? [];
+    },
+  });
+}
+
 /** O passo de autorização só está pronto quando existe credencial ativa de dfe. */
 export function hasActiveDfe(rows: CredentialRow[] | undefined): boolean {
   return (rows ?? []).some((r) => r.provider === "dfe" && r.status === "ativa");
