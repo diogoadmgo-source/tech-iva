@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { Button } from "@/components/ui/button";
+import { CashPreview } from "@/components/marketing/cash-preview";
 import { Reveal } from "@/components/marketing/reveal";
 import { cn } from "@/lib/utils";
 
@@ -39,14 +40,20 @@ export function AuthShell({
           </Reveal>
 
           <Reveal index={1}>
-            <section className="surface-lit rounded-2xl p-8">
-              <h1 className="text-2xl font-semibold tracking-[-0.02em] text-foreground">{title}</h1>
-              {subtitle ? (
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
-              ) : null}
-              <div className="mt-6">{children}</div>
-            </section>
+            <div className="lit-halo">
+              <section className="surface-lit lit-sheen overflow-hidden rounded-2xl p-8">
+                <h1 className="text-2xl font-semibold tracking-[-0.02em] text-foreground">
+                  {title}
+                </h1>
+                {subtitle ? (
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+                ) : null}
+                <div className="mt-6">{children}</div>
+              </section>
+            </div>
           </Reveal>
+
+
 
           {footer ? (
             <Reveal
@@ -59,10 +66,14 @@ export function AuthShell({
         </div>
 
         {aside ? (
-          <Reveal index={2} className="hidden lg:flex lg:items-center">
-            {aside}
-          </Reveal>
+          <div className="hidden lg:flex lg:flex-col lg:justify-center lg:gap-8">
+            <Reveal index={2} className="w-full max-w-md">
+              <CashPreview />
+            </Reveal>
+            <Reveal index={3}>{aside}</Reveal>
+          </div>
         ) : null}
+
       </div>
     </main>
   );
