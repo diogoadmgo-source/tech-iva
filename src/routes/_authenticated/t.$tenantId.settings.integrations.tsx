@@ -95,6 +95,8 @@ function IntegrationsPage() {
     role === "platform_admin" || role === "channel_admin" || role === "owner" || role === "finance";
 
   const credentials = useCredentials(tenantId);
+  const [tab, setTab] = useState("credenciais");
+
 
   if (shell.isLoading) return <Skeleton className="h-64 w-full" />;
   if (!canManage) {
