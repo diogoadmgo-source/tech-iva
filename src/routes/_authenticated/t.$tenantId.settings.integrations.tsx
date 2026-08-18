@@ -127,7 +127,7 @@ function IntegrationsPage() {
 /* ------------------------- Apuração da Receita: os dois caminhos possíveis */
 
 /** Passo a passo vem do banco (notices_for), nunca do código. */
-function PathSteps({ notice }: { notice?: Notice }) {
+function PathSteps({ notice }: { notice: Notice | undefined }) {
   if (!notice) {
     return (
       <p className="mt-2 text-xs text-muted-foreground">
@@ -143,7 +143,7 @@ function PathSteps({ notice }: { notice?: Notice }) {
   );
 }
 
-function CredentialStateBadge({ state }: { state?: RtcCredentialState }) {
+function CredentialStateBadge({ state }: { state: RtcCredentialState | undefined }) {
   if (!state) return <Skeleton className="h-5 w-24" />;
   if (!state.configurada) {
     return (
