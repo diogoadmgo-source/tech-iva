@@ -115,14 +115,15 @@ function IntegrationsPage() {
         </p>
       </header>
 
-      <Tabs defaultValue="credenciais">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="credenciais">Credenciais desta empresa</TabsTrigger>
           <TabsTrigger value="uso">Onde meu certificado foi usado</TabsTrigger>
         </TabsList>
         <TabsContent value="credenciais" className="mt-4">
-          <CredentialsList tenantId={tenantId} query={credentials} />
+          <CredentialsList tenantId={tenantId} query={credentials} onOpenUsage={() => setTab("uso")} />
         </TabsContent>
+
         <TabsContent value="uso" className="mt-4">
           <Card>
             <h2 className="text-base font-medium">Onde meu certificado foi usado</h2>
