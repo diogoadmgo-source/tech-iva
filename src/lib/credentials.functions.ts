@@ -279,11 +279,11 @@ export const uploadCredential = createServerFn({ method: "POST" })
       // Erro de segurança pode ser discreto, mas não pode ser mudo.
       const lower = raw.toLowerCase();
       if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
-        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+        throw new Error("Sua sessão expirou, entre novamente.");
       }
       if (lower.includes("forbidden") || lower.includes("permission denied")) {
         throw new Error(
-          `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role}).`,
+          `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador. (detalhe técnico: ${raw})`,
         );
       }
       throw new Error(raw);
