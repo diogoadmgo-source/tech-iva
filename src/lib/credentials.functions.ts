@@ -56,29 +56,31 @@ export const uploadCredential = createServerFn({ method: "POST" })
     } = await import("@/lib/credentials.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // O papel é validado com o client do usuário (RLS/hierarquia), não com service role.
-    // role_in() é a função exposta a authenticated; has_role() é interna (service_role).
-    const { data: role, error: roleErr } = await context.supabase.rpc("role_in", {
-      p_tenant: data.tenantId,
-    } as never);
-    if (roleErr) throw new Error(roleErr.message);
-    const ALLOWED = ["platform_admin", "channel_admin", "owner", "finance"];
-    if (typeof role !== "string" || !ALLOWED.includes(role)) throw new Error("forbidden");
-
     /*
+     * Papel EFETIVO (herdado pela hierarquia), não a membership direta:
+     * role_in() só enxerga vínculo direto, então um platform_admin/channel_admin
+     * atuando na empresa do cliente era recusado com "forbidden".
+     *
      * uploaded_on_behalf: quem sobe o certificado NÃO é membro direto desta
      * empresa (ex.: o contador do canal subindo pelo cliente). Isso não é
      * proibido — é o fluxo normal do canal — mas o cliente tem direito de ver
      * quem mexeu no certificado dele, então fica gravado.
      */
-    const { data: ctx } = await context.supabase.rpc("tenant_context", {
+    const { data: ctx, error: ctxErr } = await context.supabase.rpc("tenant_context", {
       p_tenant: data.tenantId,
     } as never);
+    if (ctxErr) throw new Error(ctxErr.message);
     const ctxRow = (Array.isArray(ctx) ? ctx[0] : ctx) as
-      | { membership_direta?: boolean | null }
+      | { papel?: string | null; membership_direta?: boolean | null }
       | null
       | undefined;
+    const role = ctxRow?.papel ?? null;
+    const ALLOWED = ["platform_admin", "platform_ops", "channel_admin", "owner", "finance"];
+    if (typeof role !== "string" || !ALLOWED.includes(role)) {
+      throw new Error("Seu papel neste tenant não permite gerenciar credenciais.");
+    }
     const onBehalf = ctxRow?.membership_direta === false;
+
 
     const { data: tenant } = await supabaseAdmin
       .from("tenants")
