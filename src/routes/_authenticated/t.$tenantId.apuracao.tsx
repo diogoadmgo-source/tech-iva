@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, ShieldCheck } fr
 import { toast } from "sonner";
 
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { KpiCard } from "@/components/techiva/metrics";
 import { MoneyText, formatCents } from "@/components/techiva/money";
 import { ClassTribValidator, ItemsList } from "@/components/techiva/rtc";
