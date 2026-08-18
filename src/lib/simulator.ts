@@ -129,6 +129,8 @@ export type SimulationRow = {
   memory: CalcResult["memory"] | null;
   calc_version: string | null;
   share_token: string | null;
+  /** Validade do link público (90 dias). Link vencido não abre mais. */
+  share_expires_at: string | null;
   created_at: string;
 };
 
@@ -138,7 +140,9 @@ export function useSimulations(tenantId: string) {
     enabled: Boolean(tenantId),
     queryFn: async (): Promise<SimulationRow[]> => {
       const { data, error } = await from("calc_simulations")
-        .select("id, nome, inputs, results, memory, calc_version, share_token, created_at")
+        .select(
+          "id, nome, inputs, results, memory, calc_version, share_token, share_expires_at, created_at",
+        )
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -173,18 +177,47 @@ export function useSaveSimulation(tenantId: string) {
   });
 }
 
+/**
+ * share_simulation — devolve token + validade. Link novo (ou vencido) nasce com
+ * 90 dias: um link compartilhado que vale para sempre é um link que vaza para
+ * sempre. A leitura pública NÃO usa a chave anon; ver src/lib/share.functions.ts.
+ */
 export function useShareSimulation(tenantId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string): Promise<string> => {
+    mutationFn: async (id: string): Promise<{ token: string; expires_at: string }> => {
       const { data, error } = await rpc("share_simulation", { p_id: id });
       if (error) throw new Error(error.message);
-      return data as string;
+      return data as { token: string; expires_at: string };
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["calc-simulations", tenantId] });
     },
   });
+}
+
+/** unshare_simulation — corta o link antes do prazo. */
+export function useUnshareSimulation(tenantId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await rpc("unshare_simulation", { p_id: id });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["calc-simulations", tenantId] });
+    },
+  });
+}
+
+/** Link ativo = tem token e a validade ainda não passou. */
+export function shareIsActive(row: {
+  share_token: string | null;
+  share_expires_at: string | null;
+}): boolean {
+  if (!row.share_token) return false;
+  if (!row.share_expires_at) return true;
+  return new Date(row.share_expires_at).getTime() > Date.now();
 }
 
 /* -------------------------------------------------------------- validador */
