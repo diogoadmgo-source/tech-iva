@@ -250,7 +250,8 @@ function AuditPage() {
 
       <div className="flex items-center justify-between">
         <p className="font-mono text-xs text-muted-foreground">
-          {total} registro(s) · página {page + 1} de {lastPage + 1}
+          {total.toLocaleString("pt-BR")}
+          {audit.data?.approx ? " (aprox.)" : ""} registro(s) · página {page + 1} de {lastPage + 1}
         </p>
         <div className="flex gap-2">
           <Button variant="outline" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>

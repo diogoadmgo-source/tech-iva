@@ -8,11 +8,14 @@
  *
  *  - toda consulta de lista usa `.range()` com ordenação ESTÁVEL (desempate por
  *    coluna única, senão a mesma linha aparece em duas páginas);
- *  - toda contagem exibida na tela vem de `count: "exact"` do servidor, NUNCA
- *    de `data.length`;
+ *  - toda contagem exibida na tela vem do servidor, NUNCA de `data.length`, e é
+ *    pedida em consulta SEPARADA (uma vez por conjunto de filtros) porque
+ *    `count` varre a tabela — ver `useRowCount` no fim deste arquivo;
  *  - quando é preciso mesmo varrer tudo (ex.: ids de escopo), use
  *    `fetchAllPages`, que percorre página por página até o fim.
  */
+
+import { useQuery } from "@tanstack/react-query";
 
 export const DEFAULT_PAGE_SIZE = 50;
 
@@ -21,6 +24,8 @@ export const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
 export type Paged<T> = {
   rows: T[];
+  /** true quando `total` é estimativa do planejador, não contagem exata. */
+  approx?: boolean;
   /** contagem EXATA do servidor (count: "exact"), não o tamanho do array. */
   total: number;
   page: number;
@@ -84,4 +89,45 @@ export async function fetchAllPages<T>(
       );
     }
   }
+}
+
+/* ────────────────────────────── contagem ────────────────────────────────── */
+
+/**
+ * `count: "exact"` no PostgREST vira `count(*)` com os mesmos filtros: em tabela
+ * grande isso VARRE A TABELA. Pedir a contagem junto de cada página faz o custo
+ * ser pago de novo a cada clique em "próxima" — com 100 mil notas, a segunda
+ * página fica tão lenta quanto a primeira sem nenhum motivo, porque o total não
+ * muda enquanto o filtro é o mesmo.
+ *
+ * Então a contagem virou consulta SEPARADA, cacheada pela chave dos FILTROS (sem
+ * a página): pedida uma vez por conjunto de filtros e reaproveitada em todas as
+ * páginas seguintes.
+ */
+export function useRowCount(
+  key: readonly unknown[],
+  fetchCount: () => Promise<number>,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["row-count", ...key],
+    queryFn: fetchCount,
+    enabled,
+    staleTime: 60_000,
+    gcTime: 300_000,
+  });
+}
+
+/**
+ * Acima deste volume o `count` deixa de ser exato e passa a ser a estimativa do
+ * planejador (`count: "estimated"`), que não varre nada. A tela sinaliza com "≈".
+ */
+export const EXACT_COUNT_LIMIT = 50_000;
+
+/** Rótulo com "≈" quando o total é estimado. */
+export function pageLabelApprox(
+  p: { page: number; pageSize: number; total: number },
+  approx: boolean,
+): string {
+  return approx ? `${pageLabel(p)} (aprox.)` : pageLabel(p);
 }

@@ -69,7 +69,8 @@ function ApuracaoPage() {
   const [invPageSize, setInvPageSize] = useState(DEFAULT_PAGE_SIZE);
   const invoices = useCompetenciaInvoices(tenantId, competencia, invPage, invPageSize);
   const invoiceRows = invoices.data?.rows ?? [];
-  // total EXATO do servidor: a competência pode ter 100 mil notas
+  // total do servidor (estimado acima de 50 mil linhas, e a tela avisa):
+  // a competência pode ter 100 mil notas
   const invoiceTotal = invoices.data?.total ?? 0;
   const items = useInvoiceItems(invoice?.id ?? null);
 
@@ -269,6 +270,7 @@ function ApuracaoPage() {
             page={invPage}
             pageSize={invPageSize}
             total={invoiceTotal}
+            approx={invoices.data?.approx ?? false}
             loading={invoices.isFetching}
             unit="nota(s) de saída"
             onPageChange={setInvPage}

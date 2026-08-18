@@ -168,7 +168,18 @@ export function usePriceCustomers(tenantId: string, search = "") {
         .order("name")
         .order("id", { ascending: true })
         .range(0, 49); // 50 sugestões por busca — nunca a carteira inteira
-      if (term) q = q.or(`name.ilike.%${term}%,cnpj.ilike.%${term}%`);
+      if (term) {
+        // Busca INFIXA nos dois campos, sustentada pelos índices trigram
+        // counterparties_name_trgm e counterparties_cnpj_trgm. O CNPJ não pode
+        // ser buscado só por prefixo porque a coluna tem formatos misturados
+        // (dígitos puros e pontuados) — prefixo deixaria de fora justamente as
+        // linhas formatadas, e a tela responderia "nenhum resultado" para um
+        // cliente que existe.
+        const digits = term.replace(/\D/g, "");
+        const clauses = [`name.ilike.%${term}%`];
+        if (digits.length >= 2) clauses.push(`cnpj.ilike.%${digits}%`);
+        q = q.or(clauses.join(","));
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((c) => ({
