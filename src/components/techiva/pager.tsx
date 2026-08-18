@@ -2,13 +2,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PAGE_SIZE_OPTIONS, pageLabel } from "@/lib/paginate";
+import { PAGE_SIZE_OPTIONS, pageLabelApprox } from "@/lib/paginate";
 import { cn } from "@/lib/utils";
 
 /**
- * Rodapé de paginação de servidor. O total vem SEMPRE do `count: "exact"` do
- * banco — nunca do tamanho do array carregado, senão uma empresa com 100 mil
- * notas veria "1.000 notas" e acreditaria.
+ * Rodapé de paginação de servidor. O total vem SEMPRE do banco — nunca do
+ * tamanho do array carregado, senão uma empresa com 100 mil notas veria
+ * "1.000 notas" e acreditaria. Em tabela grande o total é estimado (`approx`),
+ * porque contar exato varreria a tabela a cada troca de página.
  */
 export function Pager({
   page,
@@ -17,6 +18,7 @@ export function Pager({
   onPageChange,
   onPageSizeChange,
   unit = "registro(s)",
+  approx = false,
   loading,
   className,
 }: {
@@ -26,6 +28,8 @@ export function Pager({
   onPageChange: (page: number) => void;
   onPageSizeChange?: ((size: number) => void) | undefined;
   unit?: string | undefined;
+  /** total é estimativa do planejador (tabela grande): mostra "(aprox.)". */
+  approx?: boolean | undefined;
   loading?: boolean | undefined;
   className?: string | undefined;
 }) {
@@ -40,7 +44,7 @@ export function Pager({
       )}
     >
       <span>
-        {pageLabel({ page: current, pageSize, total })} {unit}
+        {pageLabelApprox({ page: current, pageSize, total }, approx)} {unit}
         {loading && " · carregando…"}
       </span>
 
