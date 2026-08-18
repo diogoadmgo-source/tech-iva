@@ -163,76 +163,18 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
           </span>
         </div>
       ) : null}
-      <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
-          collapsed ? "w-16" : "w-60"
-        }`}
-      >
-        <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-          {brand.color ? (
-            <span
-              className="grid size-8 shrink-0 place-items-center rounded-md font-mono text-xs font-semibold"
-              style={{
-                backgroundColor: brand.color,
-                color: "hsl(var(--primary-foreground))",
-              }}
-            >
-              {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
-            </span>
-          ) : collapsed || brand.name ? (
-            <BrandIcon className="size-8 shrink-0" />
-          ) : null}
-          {!collapsed ? (
-            brand.name ? (
-              <span className="truncate text-sm font-medium text-foreground">{brand.name}</span>
-            ) : (
-              <BrandLogo className="h-5 w-auto" />
-            )
-          ) : null}
+      <TenantSidebar
+        tenant={data.tenant}
+        chain={data.chain}
+        context={data.context}
+        role={data.role}
+        email={data.email}
+        fullName={data.fullName}
+        collapsed={collapsed}
+        onToggle={toggleSidebar}
+        onOpenScopePicker={() => setPaletteOpen(true)}
+      />
 
-        </div>
-
-
-        <nav className="flex-1 space-y-1 p-2" aria-label="Navegação da organização">
-          {items.map((item) =>
-            item.to ? (
-              <Link
-                key={item.label}
-                to={item.to}
-                params={{ tenantId: data.tenant.id }}
-                activeProps={{ className: "bg-accent text-foreground" }}
-                className={navItemClass}
-                title={collapsed ? item.label : undefined}
-              >
-                <span className="size-1.5 shrink-0 rounded-full bg-primary" />
-                {!collapsed ? <span className="truncate">{item.label}</span> : null}
-              </Link>
-            ) : (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() =>
-                  toast.info(`${item.label} entra no bloco ${item.block}`, {
-                    description: "Nesta fase a fundação entrega o shell, o seletor e a gestão de usuários.",
-                  })
-                }
-                className={navItemClass}
-                title={collapsed ? item.label : undefined}
-              >
-                <span className="size-1.5 shrink-0 rounded-full bg-primary/60" />
-                {!collapsed ? <span className="truncate">{item.label}</span> : null}
-              </button>
-            ),
-          )}
-        </nav>
-
-        <div className="border-t border-border p-2">
-          <Button variant="ghost" size="sm" className="w-full justify-start" onClick={toggleSidebar}>
-            {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-            {!collapsed ? <span className="ml-2">Recolher</span> : null}
-          </Button>
-        </div>
-      </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur">
