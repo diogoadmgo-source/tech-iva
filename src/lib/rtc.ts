@@ -79,22 +79,38 @@ export function useRtcQuota(tenantId: string) {
   });
 }
 
-/** Enfileira fetch_apuracao (o worker é desenhado à parte). */
+/**
+ * Solicita a apuração à Receita pelo próprio aplicativo: registra, debita cota,
+ * chama a API com a URL de retorno deste ambiente e (quando o tíquete chega)
+ * baixa e grava o JSON. Sem worker externo na jogada.
+ */
 export function useRequestApuracao(tenantId: string) {
   const queryClient = useQueryClient();
+  const solicitar = useServerFn(apuracaoSolicitar);
   return useMutation({
     mutationFn: async (competencia: string) => {
-      const { data, error } = await rpc("enqueue_job", {
-        p_tenant: tenantId,
-        p_kind: "fetch_apuracao",
-        p_params: { competencia },
-      });
-      if (error) throw new Error(error.message);
-      return data as string;
+      const result = await solicitar({ data: { tenantId, competencia } });
+      if (!result.ok) throw new Error(result.motivo);
+      return result.id;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["rtc-quota", tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ["rtc-apuracoes", tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ["apuracao-detalhe", tenantId] });
       void queryClient.invalidateQueries({ queryKey: ["jobs", tenantId] });
+    },
+  });
+}
+
+/** Recuperação manual do passo 3 quando um retorno ficou para trás. */
+export function useProcessarPendentesApuracao(tenantId: string) {
+  const queryClient = useQueryClient();
+  const processar = useServerFn(apuracaoProcessarPendentes);
+  return useMutation({
+    mutationFn: async () => processar({ data: { tenantId } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["rtc-apuracoes", tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ["apuracao-detalhe", tenantId] });
     },
   });
 }
