@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { Button } from "@/components/ui/button";
-import { CashPreview } from "@/components/marketing/cash-preview";
+import { AuthBackdrop } from "@/components/auth/auth-backdrop";
 import { Reveal } from "@/components/marketing/reveal";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,8 @@ export function AuthShell({
   aside?: ReactNode;
 }) {
   return (
-    <main className="ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
+    <main className="ambient relative flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <AuthBackdrop />
       <div
         className={cn(
           "grid w-full gap-12",
@@ -66,11 +67,8 @@ export function AuthShell({
         </div>
 
         {aside ? (
-          <div className="hidden lg:flex lg:flex-col lg:justify-center lg:gap-8">
-            <Reveal index={2} className="w-full max-w-md">
-              <CashPreview />
-            </Reveal>
-            <Reveal index={3}>{aside}</Reveal>
+          <div className="hidden lg:flex lg:flex-col lg:justify-center">
+            <Reveal index={2}>{aside}</Reveal>
           </div>
         ) : null}
 
