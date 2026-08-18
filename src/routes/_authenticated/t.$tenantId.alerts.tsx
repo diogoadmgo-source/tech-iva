@@ -27,6 +27,7 @@ import {
   type AlertStatusFilter,
 } from "@/lib/alerts";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { useFeature } from "@/lib/features";
 
 const ADMIN_ROLES = ["platform_admin", "channel_admin", "owner"];
 
@@ -63,12 +64,19 @@ function AlertsPage() {
   const [prefsOpen, setPrefsOpen] = useState(false);
 
   const alerts = useAlertCenter(tenantId, { status, severity, kind });
+  // Módulo de crédito desligado: nada de "oferta de crédito disponível".
+  const credit = useFeature(tenantId, "credit");
+  const alertKinds = ALERT_KINDS_FOR_EMAIL.filter(
+    (k) => k !== "offer_available" || credit.enabled,
+  );
   const ack = useAckAlert(tenantId);
   const resolve = useResolveAlert(tenantId);
   const prefs = useAlertPrefs(tenantId);
   const savePrefs = useSetAlertPrefs(tenantId);
 
-  const rows = alerts.data ?? [];
+  const rows = (alerts.data ?? []).filter(
+    (a) => a.kind !== "offer_available" || credit.enabled,
+  );
   const critical = rows.filter((a) => a.severity === "critical" && !a.resolved_at).length;
   const unread = rows.filter((a) => !a.read_at && !a.resolved_at).length;
 
@@ -133,7 +141,7 @@ function AlertsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os tipos</SelectItem>
-              {ALERT_KINDS_FOR_EMAIL.map((k) => (
+              {alertKinds.map((k) => (
                 <SelectItem key={k} value={k}>
                   {alertKindLabel(k)}
                 </SelectItem>
@@ -225,7 +233,7 @@ function AlertsPage() {
           <div className="space-y-5">
             <div className="space-y-2">
               <Label className="text-xs">Alertas enviados por e-mail</Label>
-              {ALERT_KINDS_FOR_EMAIL.map((k) => (
+              {alertKinds.map((k) => (
                 <label key={k} className="flex items-center gap-2 text-sm">
                   <Checkbox
                     checked={prefs.data.email_kinds.includes(k)}
