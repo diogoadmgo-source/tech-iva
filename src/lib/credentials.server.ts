@@ -30,15 +30,44 @@ export type PfxMetadata = {
 export class CredentialError extends Error {}
 
 const enc = new TextEncoder();
+const dec = new TextDecoder();
 
-function masterKey(): string {
-  const key = process.env["DFE_SECRET_KEY"];
-  if (!key) throw new CredentialError("Chave mestra de cifra não configurada no servidor.");
-  return key;
+/**
+ * ROTAÇÃO DE CHAVE MESTRA.
+ *
+ * Cada envelope carrega o identificador da chave usada (`kid`). A cifra sempre
+ * usa a chave ATIVA; a decifra resolve a chave pelo `kid` gravado. Assim é
+ * possível trocar a chave mestra sem invalidar o que já está cifrado: a antiga
+ * continua configurada como chave de leitura até o material ser re-selado.
+ *
+ * Variáveis:
+ *  - DFE_SECRET_KEY            chave ativa (cifra e decifra)
+ *  - DFE_SECRET_KEY_ID         kid da chave ativa (padrão "k1")
+ *  - DFE_SECRET_KEY_PREVIOUS   chave anterior, somente leitura (opcional)
+ *  - DFE_SECRET_KEY_PREVIOUS_ID kid da chave anterior (padrão "k0")
+ *
+ * Envelopes antigos (v1, sem `kid`) são abertos tentando todas as chaves
+ * configuradas, na ordem ativa -> anterior.
+ */
+type MasterKey = { kid: string; value: string };
+
+function activeMasterKey(): MasterKey {
+  const value = process.env["DFE_SECRET_KEY"];
+  if (!value) throw new CredentialError("Chave mestra de cifra não configurada no servidor.");
+  return { kid: process.env["DFE_SECRET_KEY_ID"] || "k1", value };
 }
 
-async function kek(salt: Uint8Array): Promise<CryptoKey> {
-  const material = await crypto.subtle.importKey("raw", enc.encode(masterKey()), "HKDF", false, [
+function masterKeyRing(): MasterKey[] {
+  const ring: MasterKey[] = [activeMasterKey()];
+  const previous = process.env["DFE_SECRET_KEY_PREVIOUS"];
+  if (previous) {
+    ring.push({ kid: process.env["DFE_SECRET_KEY_PREVIOUS_ID"] || "k0", value: previous });
+  }
+  return ring;
+}
+
+async function kek(salt: Uint8Array, keyValue: string): Promise<CryptoKey> {
+  const material = await crypto.subtle.importKey("raw", enc.encode(keyValue), "HKDF", false, [
     "deriveKey",
   ]);
   return crypto.subtle.deriveKey(
@@ -54,6 +83,7 @@ async function kek(salt: Uint8Array): Promise<CryptoKey> {
     ["encrypt", "decrypt"],
   );
 }
+
 
 const b64 = (bytes: ArrayBuffer | Uint8Array) => {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
