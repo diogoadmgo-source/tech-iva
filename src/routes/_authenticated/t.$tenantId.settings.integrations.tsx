@@ -425,10 +425,13 @@ const DOT: Record<string, string> = {
 function CredentialsList({
   tenantId,
   query,
+  onOpenUsage,
 }: {
   tenantId: string;
   query: ReturnType<typeof useCredentials>;
+  onOpenUsage?: () => void;
 }) {
+
   const revoke = useRevokeCredential(tenantId);
   const [pending, setPending] = useState<CredentialRow | null>(null);
   const [reason, setReason] = useState("");
