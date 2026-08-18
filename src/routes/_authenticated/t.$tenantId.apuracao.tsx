@@ -260,7 +260,23 @@ function ApuracaoPage() {
             ))}
           </ul>
         )}
+        {invoiceTotal > 0 && (
+          <Pager
+            page={invPage}
+            pageSize={invPageSize}
+            total={invoiceTotal}
+            loading={invoices.isFetching}
+            unit="nota(s) de saída"
+            onPageChange={setInvPage}
+            onPageSizeChange={(n) => {
+              setInvPageSize(n);
+              setInvPage(0);
+            }}
+            className="-mx-4 -mb-4 mt-3"
+          />
+        )}
       </section>
+
 
       {/* histórico de consultas */}
       <section className="rounded-xl border border-border bg-surface-1 p-4">
