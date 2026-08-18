@@ -4456,6 +4456,7 @@ export type Database = {
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
       register_credential: {
         Args: {
+          p_caller?: string
           p_finalidades?: string[]
           p_fingerprint?: string
           p_kind: Database["public"]["Enums"]["credential_kind"]

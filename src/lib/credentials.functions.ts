@@ -128,6 +128,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_finalidades: ["ingest_dfe", "consulta_apuracao"],
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (error) throw new Error(error.message);
         return { ok: true as const, id: id as string, kind: data.kind };
@@ -159,6 +160,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_finalidades: ["consulta_apuracao"],
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (error) {
           // mesma regra do certificado: nada de material cifrado sem registro
@@ -241,6 +243,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_finalidades: data.finalidades,
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (registered.error) throw new Error(registered.error.message);
         id = registered.data;
@@ -281,16 +284,15 @@ export const uploadCredential = createServerFn({ method: "POST" })
       if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
         throw new Error("Sua sessão expirou, entre novamente.");
       }
-      // Privilégio de execução ausente é defeito nosso, não culpa do usuário.
-      if (lower.includes("permission denied for function") || lower.includes("permission denied for schema")) {
+      /*
+       * O papel já foi autorizado por can_admin() antes de qualquer escrita.
+       * Portanto "permission denied" que chega aqui é privilégio de banco/
+       * storage faltando — defeito nosso, nunca culpa do usuário.
+       */
+      if (lower.includes("permission denied") || lower.includes("forbidden") || lower.includes("row-level security")) {
         console.error("[credentials] falha de privilégio no registro:", raw);
         throw new Error(
           "Falha interna ao registrar a credencial. O arquivo não foi salvo. Avise o suporte.",
-        );
-      }
-      if (lower.includes("forbidden") || lower.includes("permission denied")) {
-        throw new Error(
-          `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador.`,
         );
       }
       console.error("[credentials] erro ao registrar credencial:", raw);
