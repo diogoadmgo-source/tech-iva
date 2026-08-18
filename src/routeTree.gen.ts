@@ -50,6 +50,7 @@ import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/publ
 import { Route as AuthenticatedTTenantIdSettingsIndexRouteImport } from './routes/_authenticated/t.$tenantId.settings.index'
 import { Route as AuthenticatedTTenantIdSettingsIntegrationsRouteImport } from './routes/_authenticated/t.$tenantId.settings.integrations'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
+import { Route as ApiPublicRtcApuracaoRefRouteImport } from './routes/api/public/rtc.apuracao.$ref'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -283,6 +284,11 @@ const AuthenticatedTTenantIdSettingsUsersRoute =
     path: '/settings/users',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const ApiPublicRtcApuracaoRefRoute = ApiPublicRtcApuracaoRefRouteImport.update({
+  id: '/api/public/rtc/apuracao/$ref',
+  path: '/api/public/rtc/apuracao/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -324,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/_authenticated/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -453,6 +462,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -494,6 +504,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings'
   id:
     | '__root__'
@@ -537,6 +548,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/integrations'
     | '/_authenticated/t/$tenantId/settings/users'
+    | '/api/public/rtc/apuracao/$ref'
     | '/_authenticated/t/$tenantId/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -553,6 +565,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   STokenRoute: typeof STokenRoute
   ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
+  ApiPublicRtcApuracaoRefRoute: typeof ApiPublicRtcApuracaoRefRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -844,6 +857,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/api/public/rtc/apuracao/$ref': {
+      id: '/api/public/rtc/apuracao/$ref'
+      path: '/api/public/rtc/apuracao/$ref'
+      fullPath: '/api/public/rtc/apuracao/$ref'
+      preLoaderRoute: typeof ApiPublicRtcApuracaoRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -944,6 +964,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   STokenRoute: STokenRoute,
   ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
+  ApiPublicRtcApuracaoRefRoute: ApiPublicRtcApuracaoRefRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
