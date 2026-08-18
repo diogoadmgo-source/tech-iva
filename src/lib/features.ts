@@ -72,13 +72,10 @@ export function usePlatformFeatures(feature: FeatureKey = "credit", enabled = tr
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, full_name, email")
-          .in("id", userIds);
+          .select("user_id, full_name")
+          .in("user_id", userIds);
         for (const p of profiles ?? []) {
-          labels.set(
-            p.id as string,
-            ((p.full_name as string | null) ?? (p.email as string | null) ?? "") || "—",
-          );
+          labels.set(p.user_id as string, (p.full_name as string | null) ?? "—");
         }
       }
 
