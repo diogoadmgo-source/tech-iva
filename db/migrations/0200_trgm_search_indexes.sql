@@ -1,4 +1,4 @@
--- 0143_trgm_search_indexes.sql
+-- 0200_trgm_search_indexes.sql (minha faixa começa em 0200)
 -- Índices para BUSCA POR TEXTO das listas paginadas.
 --
 -- Regra: `ilike 'texto%'` (prefixo) usa índice btree comum; `ilike '%texto%'`

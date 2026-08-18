@@ -1,4 +1,4 @@
--- 0152_credencial_finalidades_e_autoria.sql
+-- 0201_credencial_finalidades_e_autoria.sql (minha faixa começa em 0200)
 -- MINHA migration (não é espelho): o que a 0150 criou no banco não estava
 -- alcançável pelo front. register_credential não recebia finalidades nem autoria,
 -- e credentials_status não devolvia finalidades, falhas_consecutivas nem quem
