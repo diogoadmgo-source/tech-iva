@@ -3,6 +3,7 @@ import { useEffect } from "react";
 
 import type { AlertItem, AlertSeverity } from "@/components/techiva/alerts";
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_PAGE_SIZE, paged, rangeOf, type Paged } from "@/lib/paginate";
 
 /** Bloco 3.10 — central de alertas e preferências de notificação. */
 
@@ -57,28 +58,42 @@ export const ALERT_KINDS_FOR_EMAIL = [
 export function useAlertCenter(
   tenantId: string,
   filters: { status: AlertStatusFilter; severity?: AlertSeverity | "all"; kind?: string | "all" },
+  page = 0,
+  pageSize = DEFAULT_PAGE_SIZE,
 ) {
   const queryClient = useQueryClient();
-  const key = ["alert-center", tenantId, filters.status, filters.severity ?? "all", filters.kind ?? "all"] as const;
+  const key = [
+    "alert-center",
+    tenantId,
+    filters.status,
+    filters.severity ?? "all",
+    filters.kind ?? "all",
+    page,
+    pageSize,
+  ] as const;
 
   const query = useQuery({
     queryKey: key,
-    queryFn: async (): Promise<AlertRow[]> => {
+    queryFn: async (): Promise<Paged<AlertRow>> => {
+      const [from, to] = rangeOf(page, pageSize);
       let q = supabase
         .from("alerts")
-        .select("id, kind, severity, title, payload, created_at, read_at, resolved_at, resolved_by")
+        .select("id, kind, severity, title, payload, created_at, read_at, resolved_at, resolved_by", {
+          count: "exact",
+        })
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
-        .limit(300);
+        .order("id", { ascending: true })
+        .range(from, to);
 
       if (filters.status === "open") q = q.is("resolved_at", null);
       if (filters.status === "resolved") q = q.not("resolved_at", "is", null);
       if (filters.severity && filters.severity !== "all") q = q.eq("severity", filters.severity);
       if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
 
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return (data ?? []).map((a) => ({
+      const rows: AlertRow[] = (data ?? []).map((a) => ({
         id: a.id,
         kind: a.kind,
         severity: a.severity as AlertSeverity,
@@ -89,6 +104,7 @@ export function useAlertCenter(
         resolved_at: a.resolved_at,
         resolved_by: a.resolved_by ?? null,
       }));
+      return paged(rows, count ?? 0, page, pageSize);
     },
   });
 

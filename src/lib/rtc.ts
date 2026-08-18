@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { DEFAULT_PAGE_SIZE, fetchAllPages, paged, rangeOf, type Paged } from "@/lib/paginate";
 
 /**
  * Integração RTC (Plataforma CBS — Manual RFB maio/2026).
@@ -136,24 +137,36 @@ export type InvoiceRow = {
   counterparty_id: string | null;
 };
 
-export function useCompetenciaInvoices(tenantId: string, competencia: string) {
+export function useCompetenciaInvoices(
+  tenantId: string,
+  competencia: string,
+  page = 0,
+  pageSize = DEFAULT_PAGE_SIZE,
+) {
   return useQuery({
-    queryKey: ["competencia-invoices", tenantId, competencia],
+    queryKey: ["competencia-invoices", tenantId, competencia, page, pageSize],
     enabled: Boolean(tenantId && competencia),
-    queryFn: async (): Promise<InvoiceRow[]> => {
+    queryFn: async (): Promise<Paged<InvoiceRow>> => {
       const start = competencia;
       const end = nextMonth(competencia);
-      const { data, error } = await supabase
+      const [from, to] = rangeOf(page, pageSize);
+      // paginação de servidor + contagem exata: o total exibido é o do banco,
+      // não o tamanho da página (PostgREST cortaria em 1000 sem avisar).
+      const { data, error, count } = await supabase
         .from("invoices")
-        .select("id, number, series, issued_at, total_cents, ibs_cents, cbs_cents, access_key, counterparty_id")
+        .select(
+          "id, number, series, issued_at, total_cents, ibs_cents, cbs_cents, access_key, counterparty_id",
+          { count: "exact" },
+        )
         .eq("tenant_id", tenantId)
         .eq("direction", "out")
         .gte("issued_at", start)
         .lt("issued_at", end)
         .order("issued_at", { ascending: false })
-        .limit(200);
+        .order("id", { ascending: true }) // desempate: ordenação estável entre páginas
+        .range(from, to);
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as InvoiceRow[];
+      return paged((data ?? []) as unknown as InvoiceRow[], count ?? 0, page, pageSize);
     },
   });
 }
@@ -199,15 +212,25 @@ export function useInvoiceItems(invoiceId: string | null) {
     queryKey: ["invoice-items", invoiceId],
     enabled: Boolean(invoiceId),
     queryFn: async (): Promise<InvoiceItemRow[]> => {
-      const { data, error } = await supabase
-        .from("invoice_items")
-        .select(
-          "id, line, description, ncm, cst, cclasstrib, qty, unit_price_cents, base_cents, ibs_cents, cbs_cents, is_cents, credit_eligible, credit_cents, calc_memory, inconsistency",
-        )
-        .eq("invoice_id", invoiceId as string)
-        .order("line", { ascending: true });
-      if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as InvoiceItemRow[];
+      // uma nota pode passar de 1000 itens; varremos página por página em vez de
+      // aceitar o corte padrão do PostgREST.
+      const rows = await fetchAllPages<InvoiceItemRow>(
+        (from, to) =>
+          supabase
+            .from("invoice_items")
+            .select(
+              "id, line, description, ncm, cst, cclasstrib, qty, unit_price_cents, base_cents, ibs_cents, cbs_cents, is_cents, credit_eligible, credit_cents, calc_memory, inconsistency",
+            )
+            .eq("invoice_id", invoiceId as string)
+            .order("line", { ascending: true })
+            .order("id", { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: InvoiceItemRow[] | null;
+            error: { message: string } | null;
+          }>,
+        { pageSize: 1000, hardCap: 20_000 },
+      );
+      return rows;
     },
   });
 }

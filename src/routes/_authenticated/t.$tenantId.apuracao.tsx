@@ -8,13 +8,17 @@ import { NoticeBoard } from "@/components/techiva/notices";
 import { KpiCard } from "@/components/techiva/metrics";
 import { MoneyText, formatCents } from "@/components/techiva/money";
 import { ClassTribValidator, ItemsList } from "@/components/techiva/rtc";
+import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import {
+
   CALCULADORA_OFFLINE,
   formatCompetencia,
   lastCompetencias,
@@ -61,7 +65,12 @@ function ApuracaoPage() {
   const quota = useRtcQuota(tenantId);
   const request = useRequestApuracao(tenantId);
   const apuracoes = useApuracoes(tenantId);
-  const invoices = useCompetenciaInvoices(tenantId, competencia);
+  const [invPage, setInvPage] = useState(0);
+  const [invPageSize, setInvPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const invoices = useCompetenciaInvoices(tenantId, competencia, invPage, invPageSize);
+  const invoiceRows = invoices.data?.rows ?? [];
+  // total EXATO do servidor: a competência pode ter 100 mil notas
+  const invoiceTotal = invoices.data?.total ?? 0;
   const items = useInvoiceItems(invoice?.id ?? null);
 
   const d = divergencia.data;
@@ -91,7 +100,7 @@ function ApuracaoPage() {
         <div className="flex items-end gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Competência</Label>
-            <Select value={competencia} onValueChange={setCompetencia}>
+            <Select value={competencia} onValueChange={(v) => { setInvPage(0); setCompetencia(v); }}>
               <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
@@ -220,18 +229,18 @@ function ApuracaoPage() {
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-base font-medium">Documentos de saída da competência</h2>
           <Badge variant="outline" className="text-xs">
-            {invoices.data?.length ?? 0} nota(s)
+            {invoiceTotal.toLocaleString("pt-BR")} nota(s)
           </Badge>
         </div>
         {invoices.isLoading ? (
           <Skeleton className="mt-4 h-32 w-full" />
-        ) : (invoices.data?.length ?? 0) === 0 ? (
+        ) : invoiceTotal === 0 ? (
           <div className="mt-4">
             <EmptyState title="Nenhuma nota de saída nesta competência" />
           </div>
         ) : (
           <ul className="mt-2 divide-y divide-border">
-            {invoices.data?.map((inv) => (
+            {invoiceRows.map((inv) => (
               <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-sm">
@@ -255,7 +264,23 @@ function ApuracaoPage() {
             ))}
           </ul>
         )}
+        {invoiceTotal > 0 && (
+          <Pager
+            page={invPage}
+            pageSize={invPageSize}
+            total={invoiceTotal}
+            loading={invoices.isFetching}
+            unit="nota(s) de saída"
+            onPageChange={setInvPage}
+            onPageSizeChange={(n) => {
+              setInvPageSize(n);
+              setInvPage(0);
+            }}
+            className="-mx-4 -mb-4 mt-3"
+          />
+        )}
       </section>
+
 
       {/* histórico de consultas */}
       <section className="rounded-xl border border-border bg-surface-1 p-4">

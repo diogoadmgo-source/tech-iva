@@ -91,7 +91,8 @@ export function useWeekEvents(tenantId: string, week: string | null) {
         .gte("event_date", start)
         .lt("event_date", end)
         .order("event_date", { ascending: true })
-        .limit(500);
+        .order("id", { ascending: true })
+        .range(0, 999); // uma semana não passa disso; range explícito e ordenação estável
       if (error) throw error;
       return data;
     },

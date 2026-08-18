@@ -116,8 +116,16 @@ export function JobCenter({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                {job.status === "running" ? (
-                  <Progress value={Number(job.progress ?? 0)} className="h-1.5" />
+                {job.status === "running" || job.status === "queued" ? (
+                  <>
+                    <Progress value={Number(job.progress ?? 0)} className="h-1.5" />
+                    {/* progresso real de jobs.progress: carga inicial de cliente
+                        grande leva minutos, então nada de spinner infinito */}
+                    <p className="flex items-center justify-between gap-2 font-mono text-[11px] text-muted-foreground">
+                      <span>{Number(job.progress ?? 0).toFixed(0)}%</span>
+                      <span>{job.status === "queued" ? "aguardando na fila" : "em execução"}</span>
+                    </p>
+                  </>
                 ) : null}
 
                 {job.message ? (

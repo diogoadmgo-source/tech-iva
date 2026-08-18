@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { fetchAllPages } from "@/lib/paginate";
 
 export type AuditEntry = {
   id: number;
@@ -45,12 +46,17 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
   return useQuery({
     queryKey: ["audit-log", tenantId, filters, page],
     queryFn: async (): Promise<{ rows: AuditEntry[]; total: number }> => {
-      const { data: descendants, error: scopeError } = await supabase
-        .from("tenants")
-        .select("id")
-        .order("level");
-      if (scopeError) throw scopeError;
-      const ids = (descendants ?? []).map((t) => t.id);
+      // escopo pode passar de 1000 tenants numa plataforma grande: varre página
+      // por página em vez de aceitar o corte silencioso do PostgREST.
+      const descendants = await fetchAllPages<{ id: string }>((from, to) =>
+        supabase
+          .from("tenants")
+          .select("id")
+          .order("level")
+          .order("id", { ascending: true })
+          .range(from, to),
+      );
+      const ids = descendants.map((t) => t.id);
 
       let query = supabase
         .from("audit_log")
@@ -59,6 +65,7 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
           { count: "exact" },
         )
         .order("at", { ascending: false })
+        .order("id", { ascending: false }) // desempate estável entre páginas
         .range(page * AUDIT_PAGE_SIZE, page * AUDIT_PAGE_SIZE + AUDIT_PAGE_SIZE - 1);
 
       if (ids.length > 0) query = query.in("tenant_id", ids);

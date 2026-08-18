@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 import type { MemberRole, TenantKind } from "@/lib/auth";
 
 export type TenantMember = {
@@ -63,13 +64,16 @@ export function useInvitations(tenantId: string) {
   return useQuery({
     queryKey: ["tenant-invitations", tenantId],
     queryFn: async (): Promise<Invitation[]> => {
-      const { data, error } = await supabase
-        .from("invitations")
-        .select("id, email, role, status, expires_at, created_at, accepted_at")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Invitation[];
+      const data = await fetchAllPages((from, to) =>
+        supabase
+          .from("invitations")
+          .select("id, email, role, status, expires_at, created_at, accepted_at")
+          .eq("tenant_id", tenantId)
+          .order("created_at", { ascending: false })
+          .order("id")
+          .range(from, to),
+      );
+      return data as unknown as Invitation[];
     },
   });
 }
