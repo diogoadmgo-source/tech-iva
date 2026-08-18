@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, FileUp, Loader2, XCircle } from "lucide-re
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { useValidateClassTrib } from "@/lib/rtc";
 import { KpiCard } from "@/components/techiva/metrics";
 import {
