@@ -140,6 +140,7 @@ function SimuladorPage() {
     setUfOrigem(i.uf_origem ?? "DF");
     setUfDestino(i.uf_destino ?? "DF");
     setMunicipio(i.municipio_destino ?? "");
+    setMunicipioCodigo("");
     setData(i.data_fato_gerador ?? todayIso());
     setNome(row.nome ?? "");
     setResult(row.results ?? null);
