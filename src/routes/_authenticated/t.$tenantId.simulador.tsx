@@ -76,6 +76,8 @@ function SimuladorPage() {
   const [ufOrigem, setUfOrigem] = useState("DF");
   const [ufDestino, setUfDestino] = useState("DF");
   const [municipio, setMunicipio] = useState("");
+  // Código IBGE do município escolhido — exibido na tela para conferência.
+  const [municipioCodigo, setMunicipioCodigo] = useState("");
   const [data, setData] = useState(todayIso());
   const [nome, setNome] = useState("");
   const [result, setResult] = useState<CalcResult | null>(null);
