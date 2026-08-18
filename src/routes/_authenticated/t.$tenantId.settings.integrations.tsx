@@ -29,13 +29,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   credentialSemaphore,
+  FINALIDADE_LABEL,
+  FINALIDADES_PADRAO,
   hasActiveDfe,
   KIND_LABEL,
   STATUS_LABEL,
   useCredentials,
+  useCredentialUsage,
   useRevokeCredential,
   useUploadCredential,
   type CredentialRow,
@@ -111,7 +115,27 @@ function IntegrationsPage() {
         </p>
       </header>
 
-      <CredentialsList tenantId={tenantId} query={credentials} />
+      <Tabs defaultValue="credenciais">
+        <TabsList>
+          <TabsTrigger value="credenciais">Credenciais desta empresa</TabsTrigger>
+          <TabsTrigger value="uso">Onde meu certificado foi usado</TabsTrigger>
+        </TabsList>
+        <TabsContent value="credenciais" className="mt-4">
+          <CredentialsList tenantId={tenantId} query={credentials} />
+        </TabsContent>
+        <TabsContent value="uso" className="mt-4">
+          <Card>
+            <h2 className="text-base font-medium">Onde meu certificado foi usado</h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Toda vez que usamos a sua credencial, registramos: quando, para quê e se deu certo.
+              Você não precisa confiar na nossa palavra — confira aqui.
+            </p>
+            <div className="mt-4">
+              <UsageTab tenantId={tenantId} />
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ProcuracaoCard tenantId={tenantId} />
@@ -416,7 +440,7 @@ function CredentialsList({
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">Credenciais desta empresa</h2>
+        <h2 className="text-base font-medium">Credenciais registradas</h2>
         {hasActiveDfe(rows) && (
           <Badge className="bg-flow-in/15 text-flow-in">leitura de notas autorizada</Badge>
         )}
@@ -475,6 +499,50 @@ function CredentialsList({
                     Revogar
                   </Button>
                 </div>
+
+                {/* Quem subiu, quando — e se subiu em nome da empresa.
+                    Transparência protege o cliente e protege quem operou. */}
+                {row.uploaded_on_behalf && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Enviada por{" "}
+                    <span className="text-foreground">
+                      {row.uploaded_by_name ?? "usuário do canal/plataforma"}
+                    </span>
+                    {row.uploaded_by_role ? ` (${row.uploaded_by_role})` : ""}
+                    {row.created_at
+                      ? ` em ${new Date(row.created_at).toLocaleString("pt-BR")}`
+                      : ""}{" "}
+                    — não é membro direto desta empresa.
+                  </p>
+                )}
+
+                {(row.finalidades?.length ?? 0) > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Autorizada para:{" "}
+                    {row.finalidades!
+                      .map((f) => FINALIDADE_LABEL[f] ?? f)
+                      .join("; ")}
+                    .
+                  </p>
+                )}
+
+                {(row.falhas_consecutivas ?? 0) > 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
+                    <div>
+                      <p className="font-medium">
+                        {row.falhas_consecutivas} falha
+                        {row.falhas_consecutivas === 1 ? "" : "s"} consecutiva
+                        {row.falhas_consecutivas === 1 ? "" : "s"}
+                      </p>
+                      <p className="mt-0.5 text-muted-foreground">
+                        Falhas isoladas costumam ser instabilidade da Receita e não param nada. Após
+                        3 falhas seguidas, pausamos a ingestão e avisamos. O contador zera no
+                        primeiro sucesso.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {row.last_error && (
                   <div className="mt-3 flex items-start gap-2 rounded-lg border border-flow-out/40 bg-flow-out/10 px-3 py-2 text-xs">
@@ -680,18 +748,33 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
   return (
     <Card>
       <div className="flex items-center gap-2">
-        <ShieldCheck className="size-4 text-muted-foreground" aria-hidden />
+        <ShieldCheck className="size-4 text-primary" aria-hidden />
         <h3 className="text-sm font-medium">Certificado A1 (.pfx)</h3>
-        <Badge variant="outline" className="text-xs text-muted-foreground">
-          último recurso
-        </Badge>
       </div>
       <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
         <p>
           Um certificado A1 é uma <strong>chave privada</strong> que assina em nome da sua empresa.
-          Preferimos a procuração exatamente para não precisar guardá-la. Se enviar, o arquivo é
-          cifrado e nunca pode ser baixado de volta — nem por nós.
+          O arquivo é cifrado no envio, guardado em área privada e{" "}
+          <strong>nunca pode ser baixado de volta</strong> — nem por nós. A senha também é cifrada e
+          não é exibida novamente.
+        </p>
+      </div>
+
+      {/* O cliente autoriza usos ESPECÍFICOS, não acesso genérico. */}
+      <div className="mt-3 rounded-lg border border-border bg-surface-2 px-3 py-2">
+        <p className="text-xs font-medium">Para que vamos usar este certificado</p>
+        <ul className="mt-2 space-y-1.5">
+          {FINALIDADES_PADRAO.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Check className="mt-0.5 size-3.5 shrink-0 text-flow-in" aria-hidden />
+              <span>{FINALIDADE_LABEL[f]}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Nada além disso. Cada uso fica registrado e você consulta na aba “Onde meu certificado foi
+          usado”.
         </p>
       </div>
 
@@ -717,11 +800,12 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
         </div>
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} />
-          <span>Entendo que estou enviando um certificado digital da minha empresa.</span>
+          <span>
+            Autorizo o uso do certificado desta empresa para as finalidades listadas acima.
+          </span>
         </label>
         <Button
           className="w-full"
-          variant="outline"
           disabled={!file || password.length === 0 || !ack || upload.isPending}
           onClick={async () => {
             if (!file) return;
@@ -730,6 +814,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
                 kind: "certificado_a1",
                 file,
                 password,
+                finalidades: FINALIDADES_PADRAO,
               });
               setFile(null);
               setPassword("");
@@ -749,7 +834,69 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
           )}
           Enviar certificado
         </Button>
+        <p className="text-[11px] text-muted-foreground">
+          Validamos abrindo o arquivo com a senha e conferindo se o titular é o CNPJ desta empresa.
+          Se não bater, recusamos e nada é guardado.
+        </p>
       </div>
     </Card>
+  );
+}
+
+/* ------------------------------ onde o certificado foi usado (extrato) */
+
+function UsageTab({ tenantId }: { tenantId: string }) {
+  const usage = useCredentialUsage(tenantId, 90);
+
+  if (usage.isLoading) return <Skeleton className="h-28 w-full" />;
+  if (usage.isError) {
+    return <ErrorState message={usage.error instanceof Error ? usage.error.message : "Falha."} />;
+  }
+
+  const rows = usage.data ?? [];
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="Nenhum uso registrado ainda"
+        hint="Assim que usarmos a sua credencial, cada operação aparece aqui com data, finalidade e resultado."
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead className="text-muted-foreground">
+          <tr className="border-b border-border">
+            <th className="py-2 pr-4 font-medium">Data</th>
+            <th className="py-2 pr-4 font-medium">Finalidade</th>
+            <th className="py-2 pr-4 font-medium">Resultado</th>
+            <th className="py-2 font-medium">Detalhe</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={`${row.usado_em}-${i}`} className="border-b border-border/50">
+              <td className="py-2 pr-4 font-mono text-[11px]">
+                {new Date(row.usado_em).toLocaleString("pt-BR")}
+              </td>
+              <td className="py-2 pr-4">{FINALIDADE_LABEL[row.finalidade] ?? row.finalidade}</td>
+              <td className="py-2 pr-4">
+                {row.sucesso ? (
+                  <span className="text-flow-in">sucesso</span>
+                ) : (
+                  <span className="text-flow-out">falha</span>
+                )}
+              </td>
+              <td className="py-2 text-muted-foreground">{row.detalhe ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        Últimos 90 dias. Esta trilha é somente leitura: nem você nem nós podemos editá-la pelo
+        aplicativo.
+      </p>
+    </div>
   );
 }

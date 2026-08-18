@@ -3933,7 +3933,10 @@ export type Database = {
       credentials_status: {
         Args: { p_tenant: string }
         Returns: {
+          created_at: string
           dias_para_expirar: number
+          falhas_consecutivas: number
+          finalidades: string[]
           id: string
           kind: Database["public"]["Enums"]["credential_kind"]
           last_error: string
@@ -3943,6 +3946,9 @@ export type Database = {
           status: Database["public"]["Enums"]["credential_status"]
           subject_cn: string
           subject_cnpj: string
+          uploaded_by_name: string
+          uploaded_by_role: string
+          uploaded_on_behalf: boolean
         }[]
       }
       credit_contract_detail: { Args: { p_contract: string }; Returns: Json }
@@ -3976,6 +3982,10 @@ export type Database = {
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
       feature_enabled: {
         Args: { p_feature: string; p_tenant: string }
+        Returns: boolean
+      }
+      finalidades_validas: {
+        Args: { p_finalidades: string[] }
         Returns: boolean
       }
       get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
@@ -4134,6 +4144,7 @@ export type Database = {
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
       register_credential: {
         Args: {
+          p_finalidades?: string[]
           p_fingerprint?: string
           p_kind: Database["public"]["Enums"]["credential_kind"]
           p_not_after?: string
@@ -4144,6 +4155,8 @@ export type Database = {
           p_subject_cn?: string
           p_subject_cnpj?: string
           p_tenant: string
+          p_uploaded_by_role?: string
+          p_uploaded_on_behalf?: boolean
         }
         Returns: string
       }
@@ -4277,6 +4290,7 @@ export type Database = {
         Returns: undefined
       }
       share_simulation: { Args: { p_id: string }; Returns: Json }
+      so_digitos: { Args: { p: string }; Returns: string }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
       tenant_members: {
         Args: { p_tenant: string }

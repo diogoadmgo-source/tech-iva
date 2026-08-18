@@ -22,6 +22,11 @@ const INPUT = z.discriminatedUnion("kind", [
     file: z.string().min(100),
     password: z.string().min(1).max(200),
     acknowledged: z.literal(true),
+    /** usos que o cliente autorizou explicitamente (lista fechada) */
+    finalidades: z
+      .array(z.enum(["ingest_dfe", "consulta_apuracao", "emissao_documento"]))
+      .min(1)
+      .default(["ingest_dfe", "consulta_apuracao"]),
   }),
   z.object({
     kind: z.literal("api_key"),
@@ -60,6 +65,21 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const ALLOWED = ["platform_admin", "channel_admin", "owner", "finance"];
     if (typeof role !== "string" || !ALLOWED.includes(role)) throw new Error("forbidden");
 
+    /*
+     * uploaded_on_behalf: quem sobe o certificado NÃO é membro direto desta
+     * empresa (ex.: o contador do canal subindo pelo cliente). Isso não é
+     * proibido — é o fluxo normal do canal — mas o cliente tem direito de ver
+     * quem mexeu no certificado dele, então fica gravado.
+     */
+    const { data: ctx } = await context.supabase.rpc("tenant_context", {
+      p_tenant: data.tenantId,
+    } as never);
+    const ctxRow = (Array.isArray(ctx) ? ctx[0] : ctx) as
+      | { membership_direta?: boolean | null }
+      | null
+      | undefined;
+    const onBehalf = ctxRow?.membership_direta === false;
+
     const { data: tenant } = await supabaseAdmin
       .from("tenants")
       .select("id, cnpj")
@@ -77,6 +97,9 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_secret_ref: null,
           p_subject_cnpj: tenant.cnpj,
           p_scopes: ["dfe.consulta"],
+          p_finalidades: ["ingest_dfe", "consulta_apuracao"],
+          p_uploaded_by_role: role,
+          p_uploaded_on_behalf: onBehalf,
         } as never);
         if (error) throw new Error(error.message);
         return { ok: true as const, id: id as string, kind: data.kind };
@@ -98,6 +121,9 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_secret_ref: path,
           p_subject_cnpj: tenant.cnpj,
           p_scopes: ["rtc.api"],
+          p_finalidades: ["consulta_apuracao"],
+          p_uploaded_by_role: role,
+          p_uploaded_on_behalf: onBehalf,
         } as never);
         if (error) throw new Error(error.message);
         return { ok: true as const, id: id as string, kind: data.kind };
@@ -142,6 +168,9 @@ export const uploadCredential = createServerFn({ method: "POST" })
         p_not_before: meta.notBefore,
         p_not_after: meta.notAfter,
         p_scopes: ["dfe.consulta", "dfe.assinatura"],
+        p_finalidades: data.finalidades,
+        p_uploaded_by_role: role,
+        p_uploaded_on_behalf: onBehalf,
       } as never);
       if (error) throw new Error(error.message);
 

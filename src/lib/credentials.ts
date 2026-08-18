@@ -12,6 +12,18 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 export type CredentialKind = "procuracao" | "api_key" | "certificado_a1";
 export type CredentialStatus = "pendente" | "ativa" | "expirada" | "revogada" | "erro";
 
+/** Finalidades autorizadas (lista fechada — validada por trigger no banco). */
+export type Finalidade = "ingest_dfe" | "consulta_apuracao" | "emissao_documento";
+
+/** O que o certificado será usado para fazer. O cliente autoriza usos específicos. */
+export const FINALIDADES_PADRAO: Finalidade[] = ["ingest_dfe", "consulta_apuracao"];
+
+export const FINALIDADE_LABEL: Record<string, string> = {
+  ingest_dfe: "Baixar seus documentos fiscais (notas emitidas e recebidas)",
+  consulta_apuracao: "Consultar a sua apuração de CBS/IBS na Receita",
+  emissao_documento: "Assinar e emitir documentos fiscais em seu nome",
+};
+
 export type CredentialRow = {
   id: string;
   provider: string;
@@ -23,6 +35,22 @@ export type CredentialRow = {
   dias_para_expirar: number | null;
   last_used_at: string | null;
   last_error: string | null;
+  finalidades: string[] | null;
+  falhas_consecutivas: number | null;
+  uploaded_on_behalf: boolean | null;
+  uploaded_by_role: string | null;
+  uploaded_by_name: string | null;
+  created_at: string | null;
+};
+
+/** Uma linha do extrato "onde meu certificado foi usado". */
+export type CredentialUsageRow = {
+  usado_em: string;
+  finalidade: string;
+  sucesso: boolean;
+  detalhe: string | null;
+  subject_cn: string | null;
+  fingerprint: string | null;
 };
 
 export const KIND_LABEL: Record<CredentialKind, string> = {
@@ -63,6 +91,26 @@ export function useCredentials(tenantId: string) {
   });
 }
 
+/**
+ * Extrato de uso do certificado — responde "onde o meu certificado foi usado?".
+ * A trilha vem do banco (credential_usage) e não pode ser editada por ninguém
+ * pelo app: é prova, não histórico decorativo.
+ */
+export function useCredentialUsage(tenantId: string, dias = 90) {
+  return useQuery({
+    queryKey: ["credential-usage", tenantId, dias],
+    enabled: Boolean(tenantId),
+    queryFn: async (): Promise<CredentialUsageRow[]> => {
+      const { data, error } = await rpc("credential_usage_report", {
+        p_tenant: tenantId,
+        p_dias: dias,
+      });
+      if (error) throw new Error(error.message);
+      return (data as CredentialUsageRow[] | null) ?? [];
+    },
+  });
+}
+
 /** O passo de autorização só está pronto quando existe credencial ativa de dfe. */
 export function hasActiveDfe(rows: CredentialRow[] | undefined): boolean {
   return (rows ?? []).some((r) => r.provider === "dfe" && r.status === "ativa");
@@ -85,7 +133,14 @@ export function useRevokeCredential(tenantId: string) {
 export type UploadInput =
   | { kind: "procuracao"; provider?: string }
   | { kind: "api_key"; provider?: string; apiKey: string }
-  | { kind: "certificado_a1"; provider?: string; file: File; password: string };
+  | {
+      kind: "certificado_a1";
+      provider?: string;
+      file: File;
+      password: string;
+      /** usos autorizados pelo cliente; padrão = ingest_dfe + consulta_apuracao */
+      finalidades?: Finalidade[];
+    };
 
 /** Envia o material para o servidor. O segredo sai do navegador e não volta. */
 export function useUploadCredential(tenantId: string) {
@@ -102,6 +157,7 @@ export function useUploadCredential(tenantId: string) {
             file: base64,
             password: input.password,
             acknowledged: true,
+            finalidades: input.finalidades ?? FINALIDADES_PADRAO,
           },
         });
       }
@@ -121,6 +177,7 @@ export function useUploadCredential(tenantId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["credentials", tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ["credential-usage", tenantId] });
       void queryClient.invalidateQueries({ queryKey: ["onboarding", tenantId] });
     },
   });
