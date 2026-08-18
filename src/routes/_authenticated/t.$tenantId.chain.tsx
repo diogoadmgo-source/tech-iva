@@ -282,6 +282,7 @@ function ChainScreen() {
             </button>
           ))}
         </div>
+        </div>
       </header>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
