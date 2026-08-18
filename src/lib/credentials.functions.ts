@@ -125,7 +125,11 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
         } as never);
-        if (error) throw new Error(error.message);
+        if (error) {
+          // mesma regra do certificado: nada de material cifrado sem registro
+          await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
+          throw new Error(error.message);
+        }
         return { ok: true as const, id: id as string, kind: data.kind };
       }
 
