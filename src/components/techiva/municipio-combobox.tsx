@@ -112,25 +112,29 @@ export function MunicipioCombobox({
     if (!rows) return [] as Row[];
     const q = fold(term);
     const digits = term.replace(/\D/g, "");
-    const inUf = uf ? rows.filter((r) => r[2] === uf) : rows;
-    const base = uf && inUf.length > 0 ? inUf : rows;
 
-    const matched = base.filter((r) => {
+    // A busca é sempre nacional: a UF apenas ordena (municípios da UF de
+    // destino primeiro). Filtrar por UF esconderia o município procurado.
+    const matched = rows.filter((r) => {
       if (digits.length >= 2 && r[0].startsWith(digits)) return true;
-      if (!q) return true;
+      if (!q) return !uf || r[2] === uf;
       return fold(r[1]).includes(q);
     });
 
-    // Quem começa com o termo aparece primeiro.
-    if (q) {
-      matched.sort((a, b) => {
+    matched.sort((a, b) => {
+      const aUf = uf && a[2] === uf ? 0 : 1;
+      const bUf = uf && b[2] === uf ? 0 : 1;
+      if (aUf !== bUf) return aUf - bUf;
+      if (q) {
         const aStarts = fold(a[1]).startsWith(q) ? 0 : 1;
         const bStarts = fold(b[1]).startsWith(q) ? 0 : 1;
-        return aStarts - bStarts || a[1].localeCompare(b[1], "pt-BR");
-      });
-    }
+        if (aStarts !== bStarts) return aStarts - bStarts;
+      }
+      return a[1].localeCompare(b[1], "pt-BR");
+    });
     return matched.slice(0, MAX_ITEMS);
   }, [rows, term, uf]);
+
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -172,10 +176,13 @@ export function MunicipioCombobox({
               ) : (
                 <CommandGroup
                   heading={
-                    uf
-                      ? `Municípios de ${uf} (tabela IBGE 2024)`
-                      : "Municípios do Brasil (tabela IBGE 2024)"
+                    term
+                      ? "Municípios do Brasil (tabela IBGE 2024)"
+                      : uf
+                        ? `Municípios de ${uf} — digite para buscar em todo o Brasil`
+                        : "Municípios do Brasil (tabela IBGE 2024)"
                   }
+
                 >
                   {results.map(([codigo, nome, sigla]) => (
                     <CommandItem
