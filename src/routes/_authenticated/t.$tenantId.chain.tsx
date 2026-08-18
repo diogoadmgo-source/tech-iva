@@ -10,6 +10,8 @@ import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { formatCents, formatCnpj, formatPct, MoneyText } from "@/components/techiva/money";
 import { SideSheet } from "@/components/techiva/side-sheet";
+import { ItemsList } from "@/components/techiva/rtc";
+import { useInvoiceItems } from "@/lib/rtc";
 import { useChartColors } from "@/components/techiva/use-chart-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -550,18 +552,14 @@ function PartySheet({
           ) : (
             <ul className="divide-y divide-border text-sm">
               {detail.data?.invoices_12m.map((inv) => (
-                <li key={inv.id} className="flex items-center justify-between gap-3 py-2">
-                  <div>
-                    <p className="font-mono text-xs">
-                      {new Date(inv.issued_at).toLocaleDateString("pt-BR")} ·{" "}
-                      {inv.direction === "out" ? "saída" : "entrada"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Crédito {formatCents(inv.credit_cents ?? 0)}
-                    </p>
-                  </div>
-                  <MoneyText cents={inv.total_cents} className="text-sm" />
-                </li>
+                <InvoiceLine
+                  key={inv.id}
+                  invoiceId={inv.id}
+                  issuedAt={inv.issued_at}
+                  direction={inv.direction}
+                  creditCents={inv.credit_cents ?? 0}
+                  totalCents={inv.total_cents}
+                />
               ))}
             </ul>
           )}
@@ -594,6 +592,49 @@ function PartySheet({
         </TabsContent>
       </Tabs>
     </SideSheet>
+  );
+}
+
+/** Linha de nota com abertura dos itens e memória de cálculo por item. */
+function InvoiceLine({
+  invoiceId,
+  issuedAt,
+  direction,
+  creditCents,
+  totalCents,
+}: {
+  invoiceId: string;
+  issuedAt: string;
+  direction: "in" | "out";
+  creditCents: number;
+  totalCents: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const items = useInvoiceItems(open ? invoiceId : null);
+
+  return (
+    <li className="py-2">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-mono text-xs">
+            {new Date(issuedAt).toLocaleDateString("pt-BR")} ·{" "}
+            {direction === "out" ? "saída" : "entrada"}
+          </p>
+          <p className="text-[11px] text-muted-foreground">Crédito {formatCents(creditCents)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <MoneyText cents={totalCents} className="text-sm" />
+          <Button type="button" size="sm" variant="ghost" onClick={() => setOpen((v) => !v)}>
+            {open ? "Fechar" : "Itens"}
+          </Button>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-2 rounded-lg border border-border bg-surface-2 px-3">
+          <ItemsList items={items.data} loading={items.isLoading} />
+        </div>
+      )}
+    </li>
   );
 }
 
