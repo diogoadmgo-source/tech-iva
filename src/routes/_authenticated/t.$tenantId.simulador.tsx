@@ -13,6 +13,7 @@ import {
   MotorOficialNote,
   PrintButton,
 } from "@/components/techiva/simulator";
+import { NbsCombobox, nbsCapitulo } from "@/components/techiva/nbs-combobox";
 import { MunicipioCombobox } from "@/components/techiva/municipio-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ function SimuladorPage() {
   const [cclasstrib, setCclasstrib] = useState("");
   const [ncm, setNcm] = useState("");
   const [nbs, setNbs] = useState("");
+  const [nbsDescricao, setNbsDescricao] = useState("");
   const [base, setBase] = useState("1.000,00");
   const [ufOrigem, setUfOrigem] = useState("DF");
   const [ufDestino, setUfDestino] = useState("DF");
@@ -137,6 +139,7 @@ function SimuladorPage() {
     setCclasstrib(i.cclasstrib ?? "");
     setNcm(i.ncm ?? "");
     setNbs(i.nbs ?? "");
+    setNbsDescricao("");
     setBase(((i.base_cents ?? 0) / 100).toFixed(2).replace(".", ","));
     setUfOrigem(i.uf_origem ?? "DF");
     setUfDestino(i.uf_destino ?? "DF");
