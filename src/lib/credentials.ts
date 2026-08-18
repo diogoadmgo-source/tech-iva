@@ -133,7 +133,14 @@ export function useRevokeCredential(tenantId: string) {
 export type UploadInput =
   | { kind: "procuracao"; provider?: string }
   | { kind: "api_key"; provider?: string; apiKey: string }
-  | { kind: "certificado_a1"; provider?: string; file: File; password: string };
+  | {
+      kind: "certificado_a1";
+      provider?: string;
+      file: File;
+      password: string;
+      /** usos autorizados pelo cliente; padrão = ingest_dfe + consulta_apuracao */
+      finalidades?: Finalidade[];
+    };
 
 /** Envia o material para o servidor. O segredo sai do navegador e não volta. */
 export function useUploadCredential(tenantId: string) {
@@ -150,6 +157,7 @@ export function useUploadCredential(tenantId: string) {
             file: base64,
             password: input.password,
             acknowledged: true,
+            finalidades: input.finalidades ?? FINALIDADES_PADRAO,
           },
         });
       }
@@ -169,6 +177,7 @@ export function useUploadCredential(tenantId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["credentials", tenantId] });
+      void queryClient.invalidateQueries({ queryKey: ["credential-usage", tenantId] });
       void queryClient.invalidateQueries({ queryKey: ["onboarding", tenantId] });
     },
   });
