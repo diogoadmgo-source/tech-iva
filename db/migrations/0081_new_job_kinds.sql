@@ -31,23 +31,4 @@ begin
   return v_id;
 end $function$;
 
--- job_kind_allowed no estado atual do banco (guardas por has_role, sem NULL silencioso)
-create or replace function public.job_kind_allowed(p_tenant uuid, p_kind text)
-returns boolean
-language plpgsql stable security definer set search_path to 'public', 'extensions'
-as $function$
-begin
-  if not in_scope(p_tenant) then return false; end if;
-  if is_platform() then return true; end if;
-  if p_kind = 'reprocess_rules' then
-    return false;
-  elsif p_kind = 'price_scenario' then
-    return has_role(p_tenant, array['owner','commercial','channel_admin','channel_analyst']::member_role[]);
-  elsif p_kind in ('ingest_dfe','classify_chain','compute_taxes','project_cash','regime_sim','bank_sync','ingest_erp') then
-    return has_role(p_tenant, array['owner','finance','channel_admin','channel_analyst']::member_role[]);
-  end if;
-  return false;
-end $function$;
-
-revoke execute on function public.job_kind_allowed(uuid, text) from anon, authenticated;
 grant execute on function public.enqueue_job(uuid, text, jsonb) to authenticated;
