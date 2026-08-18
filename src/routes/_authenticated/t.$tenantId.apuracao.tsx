@@ -42,6 +42,7 @@ import {
   useCompetenciaInvoices,
   useInvoiceItems,
   useRequestApuracao,
+  useProcessarPendentesApuracao,
   useRtcQuota,
   type InvoiceRow,
 } from "@/lib/rtc";
@@ -80,6 +81,7 @@ function ApuracaoPage() {
   const divergencia = useApuracaoDivergencia(tenantId, competencia);
   const quota = useRtcQuota(tenantId);
   const request = useRequestApuracao(tenantId);
+  const pendentes = useProcessarPendentesApuracao(tenantId);
   const lista = useApuracoesLista(tenantId);
   const cash = useDashboardCash(tenantId, 90);
   const [invPage, setInvPage] = useState(0);
