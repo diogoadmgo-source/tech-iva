@@ -211,7 +211,7 @@ export async function solicitarApuracao(
     return { ok: false, motivo: row.motivo ?? "Não foi possível registrar a solicitação." };
   }
 
-  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+  const { data: tenant } = await table(admin, "tenants")
     .select("cnpj")
     .eq("id", tenantId)
     .maybeSingle();
@@ -270,7 +270,7 @@ export type ProcessarResult =
 export async function processarApuracao(apuracaoId: string): Promise<ProcessarResult> {
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
-  const { data: row, error } = await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+  const { data: row, error } = await table(admin, "rtc_apuracao")
     .select("id, tenant_id, competencia, status, tiquete_download")
     .eq("id", apuracaoId)
     .maybeSingle();
@@ -281,7 +281,7 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
-  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+  const { data: tenant } = await table(admin, "tenants")
     .select("cnpj")
     .eq("id", row.tenant_id)
     .maybeSingle();
