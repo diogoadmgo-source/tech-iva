@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
-import { fetchAllPages } from "@/lib/paginate";
+import { EXACT_COUNT_LIMIT, fetchAllPages, useRowCount } from "@/lib/paginate";
 
 export type AuditEntry = {
   id: number;
@@ -38,17 +38,17 @@ export const EMPTY_AUDIT_FILTERS: AuditFilters = {
   to: "",
 };
 
-type AuditQuery = ReturnType<typeof supabase.from<"audit_log", never>>;
+type Filterable = {
+  in: (c: string, v: string[]) => Filterable;
+  ilike: (c: string, v: string) => Filterable;
+  eq: (c: string, v: string) => Filterable;
+  gte: (c: string, v: string) => Filterable;
+  lte: (c: string, v: string) => Filterable;
+};
 
 /** Mesmos filtros para a página e para a contagem — não podem divergir. */
-function applyAuditFilters<Q extends { ilike: unknown }>(query: Q, filters: AuditFilters, ids: string[]): Q {
-  let q = query as never as {
-    in: (c: string, v: string[]) => typeof q;
-    ilike: (c: string, v: string) => typeof q;
-    eq: (c: string, v: string) => typeof q;
-    gte: (c: string, v: string) => typeof q;
-    lte: (c: string, v: string) => typeof q;
-  };
+function applyAuditFilters<Q>(query: Q, filters: AuditFilters, ids: string[]): Q {
+  let q = query as unknown as Filterable;
   if (ids.length > 0) q = q.in("tenant_id", ids);
   // '%texto%' (trecho no meio): atendido pelos índices trigram audit_log_action_trgm
   // e audit_log_entity_trgm — índice btree comum não serve para busca infixa.
@@ -57,7 +57,7 @@ function applyAuditFilters<Q extends { ilike: unknown }>(query: Q, filters: Audi
   if (filters.actor.trim()) q = q.eq("actor_id", filters.actor.trim());
   if (filters.from) q = q.gte("at", `${filters.from}T00:00:00Z`);
   if (filters.to) q = q.lte("at", `${filters.to}T23:59:59Z`);
-  return q as never as Q;
+  return q as unknown as Q;
 }
 
 /** Ids do escopo (tenant ativo + descendentes), cacheados por 5 min. */
@@ -111,7 +111,7 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
         .order("id", { ascending: false }) // desempate estável entre páginas
         .range(page * AUDIT_PAGE_SIZE, page * AUDIT_PAGE_SIZE + AUDIT_PAGE_SIZE - 1);
 
-      const { data, error } = await applyAuditFilters(query as never as AuditQuery, filters, ids);
+      const { data, error } = await applyAuditFilters(query, filters, ids);
       if (error) throw error;
       return (data ?? []) as AuditEntry[];
     },
@@ -123,7 +123,7 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
       // "estimated": abaixo do limite o PostgREST devolve contagem exata; acima,
       // a estimativa do planejador — sem varrer a trilha inteira.
       const query = supabase.from("audit_log").select("id", { count: "estimated", head: true });
-      const { count: n, error } = await applyAuditFilters(query as never as AuditQuery, filters, ids);
+      const { count: n, error } = await applyAuditFilters(query, filters, ids);
       if (error) throw error;
       return n ?? 0;
     },
