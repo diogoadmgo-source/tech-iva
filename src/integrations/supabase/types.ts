@@ -258,6 +258,66 @@ export type Database = {
           },
         ]
       }
+      calc_rule_cache: {
+        Row: {
+          aliq_cbs: number
+          aliq_ibs_mun: number
+          aliq_ibs_uf: number
+          aliq_is: number
+          ano: number
+          base_legal: string | null
+          calculado_em: string
+          cclasstrib: string
+          classificacao: string
+          cst: string
+          memoria: Json | null
+          municipio: string
+          permite_credito: boolean
+          reducao_pct: number
+          rule_version: string
+          uf_destino: string
+          uf_origem: string
+        }
+        Insert: {
+          aliq_cbs?: number
+          aliq_ibs_mun?: number
+          aliq_ibs_uf?: number
+          aliq_is?: number
+          ano: number
+          base_legal?: string | null
+          calculado_em?: string
+          cclasstrib: string
+          classificacao?: string
+          cst: string
+          memoria?: Json | null
+          municipio?: string
+          permite_credito?: boolean
+          reducao_pct?: number
+          rule_version: string
+          uf_destino?: string
+          uf_origem?: string
+        }
+        Update: {
+          aliq_cbs?: number
+          aliq_ibs_mun?: number
+          aliq_ibs_uf?: number
+          aliq_is?: number
+          ano?: number
+          base_legal?: string | null
+          calculado_em?: string
+          cclasstrib?: string
+          classificacao?: string
+          cst?: string
+          memoria?: Json | null
+          municipio?: string
+          permite_credito?: boolean
+          reducao_pct?: number
+          rule_version?: string
+          uf_destino?: string
+          uf_origem?: string
+        }
+        Relationships: []
+      }
       calc_simulations: {
         Row: {
           calc_version: string | null
@@ -3665,6 +3725,10 @@ export type Database = {
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
       alert_prefs_default: { Args: never; Returns: Json }
+      apply_calc_rules: {
+        Args: { p_batch?: number; p_rule_version: string; p_tenant: string }
+        Returns: Json
+      }
       apply_registry_to_counterparties: {
         Args: { p_tenant: string }
         Returns: Json
@@ -3678,6 +3742,7 @@ export type Database = {
         Returns: Json
       }
       auth_scopes: { Args: never; Returns: unknown[] }
+      calc_rule_cache_upsert: { Args: { p: Json }; Returns: number }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
       can_credit: { Args: { p_tenant: string }; Returns: boolean }
       can_price: { Args: { p_tenant: string }; Returns: boolean }
@@ -3893,6 +3958,19 @@ export type Database = {
           title: string
         }[]
       }
+      pending_calc_signatures: {
+        Args: { p_limit?: number; p_rule_version: string; p_tenant: string }
+        Returns: {
+          ano: number
+          cclasstrib: string
+          classificacao: string
+          cst: string
+          itens: number
+          municipio: string
+          uf_destino: string
+          uf_origem: string
+        }[]
+      }
       platform_features: {
         Args: { p_feature?: string }
         Returns: {
@@ -3924,6 +4002,10 @@ export type Database = {
         Returns: string
       }
       price_scenario_detail: { Args: { p_scenario: string }; Returns: Json }
+      project_cash_sql: {
+        Args: { p_horizon_days?: number; p_tenant: string }
+        Returns: Json
+      }
       publish_rule_version: {
         Args: { p_dry_run?: boolean; p_id: string }
         Returns: Json

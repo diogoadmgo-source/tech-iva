@@ -103,6 +103,26 @@ function OnboardingPage() {
         </p>
       </header>
 
+      <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
+        <h2 className="text-sm font-semibold">Use agora, antes de conectar as notas</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Cálculo pelo motor oficial da Receita Federal, com memória de cálculo e base legal. Seus
+          dados não saem da nossa infraestrutura.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/t/$tenantId/simulador" params={{ tenantId }}>
+              Simulador de CBS, IBS e IS
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/t/$tenantId/validador" params={{ tenantId }}>
+              Validador de XML
+            </Link>
+          </Button>
+        </div>
+      </section>
+
       <Stepper steps={STEPS} current={current} />
 
       {current === 0 && <StepCompany tenantId={tenantId} onNext={() => setStep(1)} />}
