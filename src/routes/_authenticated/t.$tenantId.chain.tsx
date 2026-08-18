@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { RegimeBadge, Semaphore, type RegimeKind, type SemaphoreLevel } from "@/components/techiva/badges";
@@ -32,6 +33,8 @@ import {
   type ChainRow,
   type PartyRole,
 } from "@/lib/chain";
+import { RegistrySummary } from "@/components/techiva/cnpj-autofill";
+import { useClassifyCounterparties, useCnpjRecord } from "@/lib/cnpj";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { cn } from "@/lib/utils";
 
@@ -598,4 +601,81 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <dd className="text-sm">{value}</dd>
     </div>
   );
+}
+
+/**
+ * "Classificar contrapartes": busca no cadastro público os CNPJs sem cache
+ * (ou vencidos) e aplica regime + crédito transferido na carteira.
+ */
+function ClassifyCounterpartiesButton({ tenantId }: { tenantId: string }) {
+  const classify = useClassifyCounterparties(tenantId);
+  const { progress } = classify;
+  const running = classify.isPending;
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={running}
+        onClick={() =>
+          classify.mutate(undefined, {
+            onSuccess: (r) => {
+              if (r.total === 0) {
+                toast.success("Carteira já classificada — nenhum CNPJ pendente.");
+                return;
+              }
+              toast.success(
+                `${r.ok} de ${r.total} CNPJ(s) encontrados na Receita · ${r.updated} contraparte(s) atualizada(s)` +
+                  (r.regimeChanged ? ` · ${r.regimeChanged} mudança(s) de regime` : "") +
+                  (r.notFound ? ` · ${r.notFound} sem registro público` : ""),
+              );
+            },
+            onError: (e) =>
+              toast.error(
+                e.message === "forbidden"
+                  ? "Seu papel não permite classificar contrapartes."
+                  : "Falha ao classificar contrapartes.",
+              ),
+          })
+        }
+      >
+        {running ? (
+          <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+        ) : (
+          <RefreshCw className="mr-2 size-4" aria-hidden />
+        )}
+        Classificar contrapartes
+      </Button>
+      {running && (
+        <span className="text-[11px] text-muted-foreground">
+          {progress.phase === "listing" && "Levantando CNPJs pendentes…"}
+          {progress.phase === "fetching" &&
+            `Consultando Receita ${progress.fetched}/${progress.total}…`}
+          {progress.phase === "applying" && "Aplicando na carteira…"}
+        </span>
+      )}
+      {!running && progress.phase === "done" && progress.total > 0 && (
+        <span className="text-[11px] text-muted-foreground">
+          {progress.updated} atualizada(s) · {progress.notFound} sem registro
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Dados cadastrais da contraparte no painel lateral, com a data da consulta. */
+function CounterpartyRegistry({ cnpj }: { cnpj: string }) {
+  const { data, isLoading } = useCnpjRecord(cnpj);
+
+  if (isLoading) return <Skeleton className="h-24 w-full" />;
+  if (!data?.found) {
+    return (
+      <p className="rounded-lg border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+        Sem dados do cadastro público para este CNPJ. Use “Classificar contrapartes” para consultar a
+        Receita.
+      </p>
+    );
+  }
+  return <RegistrySummary record={data} />;
 }
