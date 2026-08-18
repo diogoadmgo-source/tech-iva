@@ -124,10 +124,12 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_kind: "procuracao",
           p_secret_ref: null,
           p_subject_cnpj: tenant.cnpj,
+          p_caller: context.userId,
           p_scopes: ["dfe.consulta"],
           p_finalidades: ["ingest_dfe", "consulta_apuracao"],
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (error) throw new Error(error.message);
         return { ok: true as const, id: id as string, kind: data.kind };
@@ -159,6 +161,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_finalidades: ["consulta_apuracao"],
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (error) {
           // mesma regra do certificado: nada de material cifrado sem registro
@@ -241,6 +244,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_finalidades: data.finalidades,
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
+          p_caller: context.userId,
         } as never);
         if (registered.error) throw new Error(registered.error.message);
         id = registered.data;
