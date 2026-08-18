@@ -36,22 +36,50 @@ function NotFoundComponent() {
   );
 }
 
+/** Falha de carregamento de módulo (deploy/atualização no meio da navegação). */
+function isChunkLoadError(error: unknown) {
+  const message = error instanceof Error ? `${error.name} ${error.message}` : String(error);
+  return /dynamically imported module|Importing a module script failed|Loading chunk|ChunkLoadError|Failed to fetch dynamically/i.test(
+    message,
+  );
+}
+
+const RELOAD_KEY = "techiva:chunk-reload";
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const chunk = isChunkLoadError(error);
+
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
+
+  // Recuperação automática (uma única vez) quando o app foi atualizado durante a navegação.
+  useEffect(() => {
+    if (!chunk || typeof window === "undefined") return;
+    const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
+    if (Date.now() - last < 20_000) return;
+    window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+    window.location.reload();
+  }, [chunk]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          {chunk ? "Recarregando a aplicação…" : "Esta tela não carregou"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          {chunk
+            ? "O app foi atualizado durante a navegação. Estamos recarregando automaticamente."
+            : "Algo falhou do nosso lado. Você pode tentar novamente ou voltar ao início."}
         </p>
+        {!chunk && error?.message ? (
+          <p className="mt-3 break-words font-mono text-xs text-muted-foreground/80">
+            {error.message}
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -60,19 +88,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Tentar novamente
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Ir para o início
           </a>
         </div>
       </div>
     </div>
   );
 }
+
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
