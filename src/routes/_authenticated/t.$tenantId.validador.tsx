@@ -139,6 +139,11 @@ function ValidadorPage() {
         <EngineBanner status={engine.data} loading={engine.isLoading} />
       </header>
 
+      {/* avisos mantidos pela plataforma (notices_for) */}
+      <NoticeBoard scope="validador" />
+
+
+
       <section className="grid gap-4 sm:grid-cols-3">
         <KpiCard
           label="Documentos validados (30 dias)"
