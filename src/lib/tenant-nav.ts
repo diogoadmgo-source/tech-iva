@@ -7,7 +7,9 @@ export type NavItem = {
   /** Rota já implementada (relativa ao tenant ativo); ausente = tela futura. */
   to?:
     | "/t/$tenantId/cash"
+    | "/t/$tenantId/apuracao"
     | "/t/$tenantId/chain"
+
     | "/t/$tenantId/regime"
     | "/t/$tenantId/portfolio"
     | "/t/$tenantId/brand"
