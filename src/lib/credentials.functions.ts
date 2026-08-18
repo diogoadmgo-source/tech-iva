@@ -172,22 +172,30 @@ export const uploadCredential = createServerFn({ method: "POST" })
         .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
       if (up.error) throw new Error(up.error.message);
 
-      const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
-        p_tenant: data.tenantId,
-        p_provider: data.provider,
-        p_kind: "certificado_a1",
-        p_secret_ref: path,
-        p_subject_cn: meta.subjectCn,
-        p_subject_cnpj: meta.subjectCnpj,
-        p_fingerprint: meta.fingerprint,
-        p_not_before: meta.notBefore,
-        p_not_after: meta.notAfter,
-        p_scopes: ["dfe.consulta", "dfe.assinatura"],
-        p_finalidades: data.finalidades,
-        p_uploaded_by_role: role,
-        p_uploaded_on_behalf: onBehalf,
-      } as never);
-      if (error) throw new Error(error.message);
+      let id: unknown;
+      try {
+        const registered = await supabaseAdmin.rpc("register_credential", {
+          p_tenant: data.tenantId,
+          p_provider: data.provider,
+          p_kind: "certificado_a1",
+          p_secret_ref: path,
+          p_subject_cn: meta.subjectCn,
+          p_subject_cnpj: meta.subjectCnpj,
+          p_fingerprint: meta.fingerprint,
+          p_not_before: meta.notBefore,
+          p_not_after: meta.notAfter,
+          p_scopes: ["dfe.consulta", "dfe.assinatura"],
+          p_finalidades: data.finalidades,
+          p_uploaded_by_role: role,
+          p_uploaded_on_behalf: onBehalf,
+        } as never);
+        if (registered.error) throw new Error(registered.error.message);
+        id = registered.data;
+      } catch (regError) {
+        // sem registro no banco, o material cifrado seria órfão: remove antes de propagar
+        await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
+        throw regError;
+      }
 
       // único identificador que pode ir para log
       console.info("[credential-upload] certificado registrado", {
