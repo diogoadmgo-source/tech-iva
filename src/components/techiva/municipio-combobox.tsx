@@ -92,8 +92,7 @@ export function MunicipioCombobox({
     const inUf = uf ? rows.filter((r) => r[2] === uf) : rows;
     const base = uf && inUf.length > 0 ? inUf : rows;
 
-    const pool = q || digits ? base : base;
-    const matched = pool.filter((r) => {
+    const matched = base.filter((r) => {
       if (digits.length >= 2 && r[0].startsWith(digits)) return true;
       if (!q) return true;
       return fold(r[1]).includes(q);
