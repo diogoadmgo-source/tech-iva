@@ -680,18 +680,33 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
   return (
     <Card>
       <div className="flex items-center gap-2">
-        <ShieldCheck className="size-4 text-muted-foreground" aria-hidden />
+        <ShieldCheck className="size-4 text-primary" aria-hidden />
         <h3 className="text-sm font-medium">Certificado A1 (.pfx)</h3>
-        <Badge variant="outline" className="text-xs text-muted-foreground">
-          último recurso
-        </Badge>
       </div>
       <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
         <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
         <p>
           Um certificado A1 é uma <strong>chave privada</strong> que assina em nome da sua empresa.
-          Preferimos a procuração exatamente para não precisar guardá-la. Se enviar, o arquivo é
-          cifrado e nunca pode ser baixado de volta — nem por nós.
+          O arquivo é cifrado no envio, guardado em área privada e{" "}
+          <strong>nunca pode ser baixado de volta</strong> — nem por nós. A senha também é cifrada e
+          não é exibida novamente.
+        </p>
+      </div>
+
+      {/* O cliente autoriza usos ESPECÍFICOS, não acesso genérico. */}
+      <div className="mt-3 rounded-lg border border-border bg-surface-2 px-3 py-2">
+        <p className="text-xs font-medium">Para que vamos usar este certificado</p>
+        <ul className="mt-2 space-y-1.5">
+          {FINALIDADES_PADRAO.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+              <Check className="mt-0.5 size-3.5 shrink-0 text-flow-in" aria-hidden />
+              <span>{FINALIDADE_LABEL[f]}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Nada além disso. Cada uso fica registrado e você consulta na aba “Onde meu certificado foi
+          usado”.
         </p>
       </div>
 
@@ -717,11 +732,12 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
         </div>
         <label className="flex items-start gap-2 text-xs text-muted-foreground">
           <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} />
-          <span>Entendo que estou enviando um certificado digital da minha empresa.</span>
+          <span>
+            Autorizo o uso do certificado desta empresa para as finalidades listadas acima.
+          </span>
         </label>
         <Button
           className="w-full"
-          variant="outline"
           disabled={!file || password.length === 0 || !ack || upload.isPending}
           onClick={async () => {
             if (!file) return;
@@ -730,6 +746,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
                 kind: "certificado_a1",
                 file,
                 password,
+                finalidades: FINALIDADES_PADRAO,
               });
               setFile(null);
               setPassword("");
@@ -749,7 +766,69 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
           )}
           Enviar certificado
         </Button>
+        <p className="text-[11px] text-muted-foreground">
+          Validamos abrindo o arquivo com a senha e conferindo se o titular é o CNPJ desta empresa.
+          Se não bater, recusamos e nada é guardado.
+        </p>
       </div>
     </Card>
+  );
+}
+
+/* ------------------------------ onde o certificado foi usado (extrato) */
+
+function UsageTab({ tenantId }: { tenantId: string }) {
+  const usage = useCredentialUsage(tenantId, 90);
+
+  if (usage.isLoading) return <Skeleton className="h-28 w-full" />;
+  if (usage.isError) {
+    return <ErrorState message={usage.error instanceof Error ? usage.error.message : "Falha."} />;
+  }
+
+  const rows = usage.data ?? [];
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        title="Nenhum uso registrado ainda"
+        hint="Assim que usarmos a sua credencial, cada operação aparece aqui com data, finalidade e resultado."
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead className="text-muted-foreground">
+          <tr className="border-b border-border">
+            <th className="py-2 pr-4 font-medium">Data</th>
+            <th className="py-2 pr-4 font-medium">Finalidade</th>
+            <th className="py-2 pr-4 font-medium">Resultado</th>
+            <th className="py-2 font-medium">Detalhe</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={`${row.usado_em}-${i}`} className="border-b border-border/50">
+              <td className="py-2 pr-4 font-mono text-[11px]">
+                {new Date(row.usado_em).toLocaleString("pt-BR")}
+              </td>
+              <td className="py-2 pr-4">{FINALIDADE_LABEL[row.finalidade] ?? row.finalidade}</td>
+              <td className="py-2 pr-4">
+                {row.sucesso ? (
+                  <span className="text-flow-in">sucesso</span>
+                ) : (
+                  <span className="text-flow-out">falha</span>
+                )}
+              </td>
+              <td className="py-2 text-muted-foreground">{row.detalhe ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-[11px] text-muted-foreground">
+        Últimos 90 dias. Esta trilha é somente leitura: nem você nem nós podemos editá-la pelo
+        aplicativo.
+      </p>
+    </div>
   );
 }
