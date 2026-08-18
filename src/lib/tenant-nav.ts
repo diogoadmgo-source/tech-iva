@@ -18,6 +18,7 @@ export type NavItem = {
     | "/t/$tenantId/price"
     | "/t/$tenantId/finance"
     | "/t/$tenantId/settings/users"
+    | "/t/$tenantId/settings/integrations"
     | "/t/$tenantId/tenants"
     | "/t/$tenantId/plans"
     | "/t/$tenantId/audit"
@@ -62,6 +63,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
+    { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
@@ -72,6 +74,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
+    { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
