@@ -4512,6 +4512,10 @@ export type Database = {
         Returns: boolean
       }
       rtc_apuracao_expirar_pendentes: { Args: never; Returns: number }
+      rtc_apuracao_falhar: {
+        Args: { p_devolver_cota?: boolean; p_erro: string; p_id: string }
+        Returns: Json
+      }
       rtc_apuracao_ingest_json: {
         Args: { p_apuracao: string; p_json: Json }
         Returns: Json
