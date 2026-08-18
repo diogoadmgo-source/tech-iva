@@ -146,9 +146,7 @@ async function logUse(
   sucesso: boolean,
   detalhe?: string,
 ) {
-  await (
-    admin.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>
-  )("log_credential_use", {
+  await rpc(admin)("log_credential_use", {
     p_credential: credentialId,
     p_finalidade: finalidade,
     p_sucesso: sucesso,
@@ -157,14 +155,21 @@ async function logUse(
   });
 }
 
-const rpc = (admin: AdminClient) =>
-  admin.rpc as unknown as (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+/**
+ * IMPORTANTE: nunca destacar `admin.rpc` / `admin.from` da instância — o cliente
+ * é um Proxy e o método perde o `this` (erro "Cannot read properties of
+ * undefined (reading 'rest')"). Sempre chamar através do objeto.
+ */
+const rpc =
+  (admin: AdminClient) =>
+  (fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }> =>
+    (admin.rpc as unknown as (f: string, a: Record<string, unknown>) => any).call(admin, fn, args);
+
+const table = (admin: AdminClient, name: string): any =>
+  (admin.from as unknown as (t: string) => any).call(admin, name);
 
 async function marcarErro(admin: AdminClient, id: string, motivo: string) {
-  await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+  await table(admin, "rtc_apuracao")
     .update({ status: "erro", erro: motivo.slice(0, 400) })
     .eq("id", id);
 }
@@ -206,7 +211,7 @@ export async function solicitarApuracao(
     return { ok: false, motivo: row.motivo ?? "Não foi possível registrar a solicitação." };
   }
 
-  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+  const { data: tenant } = await table(admin, "tenants")
     .select("cnpj")
     .eq("id", tenantId)
     .maybeSingle();
@@ -265,7 +270,7 @@ export type ProcessarResult =
 export async function processarApuracao(apuracaoId: string): Promise<ProcessarResult> {
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
-  const { data: row, error } = await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+  const { data: row, error } = await table(admin, "rtc_apuracao")
     .select("id, tenant_id, competencia, status, tiquete_download")
     .eq("id", apuracaoId)
     .maybeSingle();
@@ -276,7 +281,7 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
-  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+  const { data: tenant } = await table(admin, "tenants")
     .select("cnpj")
     .eq("id", row.tenant_id)
     .maybeSingle();
