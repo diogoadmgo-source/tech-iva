@@ -116,109 +116,252 @@ function IntegrationsPage() {
   );
 }
 
-/* -------------------------------------------------- Plataforma RTC (CBS) */
+/* ------------------------- Apuração da Receita: os dois caminhos possíveis */
 
-const RTC_PORTAL_URL = "https://consumo.tributos.gov.br";
+/** Passo a passo vem do banco (notices_for), nunca do código. */
+function PathSteps({ notice }: { notice?: Notice }) {
+  if (!notice) {
+    return (
+      <p className="mt-2 text-xs text-muted-foreground">
+        O passo a passo deste caminho ainda não foi publicado pela plataforma.
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className="mt-2 text-sm font-medium">{notice.title}</p>
+      <NoticeBody body={notice.body} className="mt-2" />
+    </>
+  );
+}
 
-function RtcPlatformCard({ tenantId }: { tenantId: string }) {
-  const credentials = useCredentials(tenantId);
+function CredentialStateBadge({ state }: { state?: RtcCredentialState }) {
+  if (!state) return <Skeleton className="h-5 w-24" />;
+  if (!state.configurada) {
+    return (
+      <Badge variant="outline" className="text-xs text-muted-foreground">
+        não configurada
+      </Badge>
+    );
+  }
+  return <Badge className="bg-flow-in/15 text-flow-in">ativa</Badge>;
+}
+
+function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
+  const state = useRtcCredentialState(tenantId);
+  const notices = useNotices("integracoes_rtc");
+  const identity = usePlatformIdentity();
   const upload = useUploadCredential(tenantId);
+
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
+  const [copied, setCopied] = useState(false);
 
-  const rtc = (credentials.data ?? []).find((c) => c.provider === "rtc_cbs");
+  const noticeProprio = notices.data?.find((n) => n.key === "rtc_credencial_proprio");
+  const noticeProcurador = notices.data?.find((n) => n.key === "rtc_credencial_procurador");
+
+  const caminho = state.data?.caminho ?? null;
+  const cnpj = identity.data?.cnpj ?? "";
+  const cnpjPendente = cnpj.startsWith("(");
 
   return (
-    <Card>
+    <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <KeyRound className="size-4 text-primary" aria-hidden />
-        <h2 className="text-base font-medium">Plataforma RTC (CBS)</h2>
-        {rtc ? (
-          <Badge className="bg-flow-in/15 text-flow-in">{STATUS_LABEL[rtc.status]}</Badge>
-        ) : (
-          <Badge variant="outline" className="text-xs text-muted-foreground">
-            não configurada
+        <h2 className="text-base font-medium">Apuração assistida de CBS (Plataforma RTC)</h2>
+        <CredentialStateBadge state={state.data} />
+        {caminho && (
+          <Badge variant="outline" className="text-[10px] uppercase">
+            caminho: {caminho === "proprio" ? "credencial própria" : "procurador"}
           </Badge>
         )}
       </div>
 
-      <p className="mt-2 max-w-3xl text-xs text-muted-foreground">
-        A credencial da Plataforma RTC é gerada por você, no portal da Receita, pelo serviço
-        “Gerar Credencial” — ele devolve um <strong>ClientId</strong> e um{" "}
-        <strong>ClientSecret</strong>. Um procurador digital da empresa também pode gerar. O
-        ClientSecret é cifrado no envio, nunca é exibido de novo e não pode ser baixado.
+      <p className="max-w-3xl text-xs text-muted-foreground">
+        {state.data?.mensagem ??
+          "Existem dois caminhos para conectar a sua apuração da Receita. Ambos funcionam igual para você aqui dentro — escolha o que preferir."}
       </p>
 
-      <p className="mt-2 max-w-3xl text-xs text-muted-foreground">
-        Esta credencial serve à apuração assistida e às consultas de parametrização. O cálculo em si
-        roda na nossa infraestrutura, com o componente oficial offline — sem telemetria e sem envio
-        automático dos seus dados.
-      </p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* caminho 1 — o cliente gera a credencial */}
+        <Card>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <KeyRound className="size-4 text-primary" aria-hidden />
+              <h3 className="text-sm font-medium">Credencial própria</h3>
+            </div>
+            {caminho === "proprio" && (
+              <Badge className="bg-flow-in/15 text-flow-in text-[10px]">em uso</Badge>
+            )}
+          </div>
 
-      <div className="mt-3">
-        <a
-          href={RTC_PORTAL_URL}
-          target="_blank"
-          rel="noreferrer noopener"
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-        >
-          Abrir consumo.tributos.gov.br <ExternalLink className="size-3" aria-hidden />
-        </a>
+          <PathSteps notice={noticeProprio} />
+
+          <a
+            href={identity.data?.portal_rtc ?? "https://consumo.tributos.gov.br"}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            Abrir o portal da Receita <ExternalLink className="size-3" aria-hidden />
+          </a>
+
+          <div className="mt-4 space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="rtc-client-id">ClientId</Label>
+              <Input
+                id="rtc-client-id"
+                autoComplete="off"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                placeholder="identificador gerado no portal"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rtc-client-secret">ClientSecret</Label>
+              <Input
+                id="rtc-client-secret"
+                type="password"
+                autoComplete="off"
+                value={clientSecret}
+                onChange={(e) => setClientSecret(e.target.value)}
+                placeholder="cole o segredo gerado no portal"
+              />
+            </div>
+          </div>
+
+          <Button
+            className="mt-4"
+            variant="outline"
+            disabled={clientId.trim().length < 4 || clientSecret.trim().length < 8 || upload.isPending}
+            onClick={async () => {
+              try {
+                await upload.mutateAsync({
+                  kind: "api_key",
+                  provider: "rtc_cbs",
+                  apiKey: `${clientId.trim()}:${clientSecret.trim()}`,
+                });
+                setClientId("");
+                setClientSecret("");
+                void state.refetch();
+                toast.success("Credencial da Plataforma RTC registrada e cifrada.");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Falha ao registrar.");
+              }
+            }}
+          >
+            {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Salvar credencial
+          </Button>
+
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            O ClientSecret é cifrado no envio, nunca é exibido de novo e não pode ser baixado. Você
+            pode revogá-lo no portal da Receita ou aqui, quando quiser.
+          </p>
+        </Card>
+
+        {/* caminho 2 — nos autoriza como procurador */}
+        <Card>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <FileCheck2 className="size-4 text-primary" aria-hidden />
+              <h3 className="text-sm font-medium">Nos autorizar como procurador</h3>
+            </div>
+            {caminho === "procurador" && (
+              <Badge className="bg-flow-in/15 text-flow-in text-[10px]">em uso</Badge>
+            )}
+          </div>
+
+          <PathSteps notice={noticeProcurador} />
+
+          <div className="mt-4 rounded-lg border border-border bg-surface-2 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              CNPJ que você deve autorizar
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="font-mono text-sm">{identity.isLoading ? "…" : cnpj}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={cnpjPendente || identity.isLoading}
+                onClick={async () => {
+                  await navigator.clipboard.writeText(cnpj);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                  toast.success("CNPJ copiado.");
+                }}
+              >
+                {copied ? (
+                  <Check className="mr-1 size-3.5" aria-hidden />
+                ) : (
+                  <Copy className="mr-1 size-3.5" aria-hidden />
+                )}
+                Copiar
+              </Button>
+            </div>
+            {identity.data?.razao_social && !identity.data.razao_social.startsWith("(") && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Razão social: {identity.data.razao_social}
+              </p>
+            )}
+            {cnpjPendente && (
+              <p className="mt-1 flex items-start gap-1 text-[11px] text-amber-400">
+                <AlertTriangle className="mt-0.5 size-3 shrink-0" aria-hidden />
+                CNPJ ainda não publicado pela plataforma — fale com o administrador antes de autorizar.
+              </p>
+            )}
+          </div>
+
+          <a
+            href={
+              identity.data?.ecac_controle_acesso ??
+              "https://www.gov.br/receitafederal/pt-br/assuntos/meu-cnpj/controle-de-acesso"
+            }
+            target="_blank"
+            rel="noreferrer noopener"
+            className="mt-3 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            Abrir Controle de Acesso da Receita <ExternalLink className="size-3" aria-hidden />
+          </a>
+
+          <Button
+            className="mt-4"
+            variant="outline"
+            disabled={upload.isPending || cnpjPendente}
+            onClick={async () => {
+              try {
+                await upload.mutateAsync({ kind: "procuracao", provider: "rtc_cbs" });
+                void state.refetch();
+                toast.success("Registramos a autorização. Vamos validar e gerar a credencial.");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Falha ao registrar.");
+              }
+            }}
+          >
+            {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+            Já autorizei
+          </Button>
+
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            A autorização é sua: você pode cancelá-la a qualquer momento no e-CAC, e revogar aqui
+            também. Nesse caminho usamos o nosso certificado — não guardamos chave privada sua.
+          </p>
+        </Card>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="rtc-client-id">ClientId</Label>
-          <Input
-            id="rtc-client-id"
-            autoComplete="off"
-            value={clientId}
-            onChange={(e) => setClientId(e.target.value)}
-            placeholder="identificador gerado no portal"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="rtc-client-secret">ClientSecret</Label>
-          <Input
-            id="rtc-client-secret"
-            type="password"
-            autoComplete="off"
-            value={clientSecret}
-            onChange={(e) => setClientSecret(e.target.value)}
-            placeholder="cole o segredo gerado no portal"
-          />
-        </div>
-      </div>
-
-      <Button
-        className="mt-4"
-        variant="outline"
-        disabled={clientId.trim().length < 4 || clientSecret.trim().length < 8 || upload.isPending}
-        onClick={async () => {
-          try {
-            await upload.mutateAsync({
-              kind: "api_key",
-              provider: "rtc_cbs",
-              apiKey: `${clientId.trim()}:${clientSecret.trim()}`,
-            });
-            setClientId("");
-            setClientSecret("");
-            toast.success("Credencial da Plataforma RTC registrada e cifrada.");
-          } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Falha ao registrar.");
-          }
-        }}
-      >
-        {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-        Registrar credencial RTC
-      </Button>
-
-      {rtc?.last_error && (
-        <p className="mt-3 text-xs text-flow-out">Última tentativa falhou: {rtc.last_error}</p>
+      {state.data?.ultimo_erro && (
+        <p className="text-xs text-flow-out">Última tentativa falhou: {state.data.ultimo_erro}</p>
       )}
-    </Card>
+      {state.data?.ultimo_uso && (
+        <p className="text-[11px] text-muted-foreground">
+          Último uso: {new Date(state.data.ultimo_uso).toLocaleString("pt-BR")}
+        </p>
+      )}
+    </section>
   );
 }
+
 
 /* ---------------------------------------------------------------- lista */
 
