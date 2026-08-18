@@ -1484,10 +1484,20 @@ export type Database = {
           debitos_cents: number | null
           erro: string | null
           id: string
+          intencao_ressarcimento: boolean
+          natureza_resultado:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
+          natureza_saldo:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
           pagamentos_cents: number | null
           payload: Json | null
           recebido_em: string | null
+          resultado_cents: number | null
+          saldo_atualizado_cents: number | null
           saldo_cents: number | null
+          situacao: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em: string
           status: string
           tenant_id: string
@@ -1500,10 +1510,20 @@ export type Database = {
           debitos_cents?: number | null
           erro?: string | null
           id?: string
+          intencao_ressarcimento?: boolean
+          natureza_resultado?:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
+          natureza_saldo?:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
           pagamentos_cents?: number | null
           payload?: Json | null
           recebido_em?: string | null
+          resultado_cents?: number | null
+          saldo_atualizado_cents?: number | null
           saldo_cents?: number | null
+          situacao?: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em?: string
           status?: string
           tenant_id: string
@@ -1516,10 +1536,20 @@ export type Database = {
           debitos_cents?: number | null
           erro?: string | null
           id?: string
+          intencao_ressarcimento?: boolean
+          natureza_resultado?:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
+          natureza_saldo?:
+            | Database["public"]["Enums"]["apuracao_natureza"]
+            | null
           pagamentos_cents?: number | null
           payload?: Json | null
           recebido_em?: string | null
+          resultado_cents?: number | null
+          saldo_atualizado_cents?: number | null
           saldo_cents?: number | null
+          situacao?: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em?: string
           status?: string
           tenant_id?: string
@@ -1529,6 +1559,66 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "rtc_apuracao_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtc_apuracao_conta: {
+        Row: {
+          apuracao_id: string
+          caminho: string
+          conta: string
+          id: number
+          natureza: Database["public"]["Enums"]["apuracao_natureza"]
+          nivel: number
+          ordem: number
+          payload: Json | null
+          tem_detalhe: boolean
+          tenant_id: string
+          valor_cents: number
+          visao: string
+        }
+        Insert: {
+          apuracao_id: string
+          caminho: string
+          conta: string
+          id?: number
+          natureza?: Database["public"]["Enums"]["apuracao_natureza"]
+          nivel?: number
+          ordem?: number
+          payload?: Json | null
+          tem_detalhe?: boolean
+          tenant_id: string
+          valor_cents?: number
+          visao: string
+        }
+        Update: {
+          apuracao_id?: string
+          caminho?: string
+          conta?: string
+          id?: number
+          natureza?: Database["public"]["Enums"]["apuracao_natureza"]
+          nivel?: number
+          ordem?: number
+          payload?: Json | null
+          tem_detalhe?: boolean
+          tenant_id?: string
+          valor_cents?: number
+          visao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_apuracao_conta_apuracao_id_fkey"
+            columns: ["apuracao_id"]
+            isOneToOne: false
+            referencedRelation: "rtc_apuracao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rtc_apuracao_conta_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3803,9 +3893,24 @@ export type Database = {
         Args: { p_scenario: string }
         Returns: undefined
       }
+      apuracao_detalhe: {
+        Args: { p_competencia: string; p_tenant: string }
+        Returns: Json
+      }
       apuracao_divergencia: {
         Args: { p_competencia: string; p_tenant: string }
         Returns: Json
+      }
+      apuracoes_lista: {
+        Args: { p_limite?: number; p_tenant: string }
+        Returns: {
+          competencia: string
+          natureza_resultado: Database["public"]["Enums"]["apuracao_natureza"]
+          recebido_em: string
+          resultado_cents: number
+          saldo_atualizado_cents: number
+          situacao: Database["public"]["Enums"]["apuracao_situacao"]
+        }[]
       }
       auth_scopes: { Args: never; Returns: unknown[] }
       calc_rule_cache_upsert: { Args: { p: Json }; Returns: number }
@@ -4207,6 +4312,10 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["member_role"] }
         Returns: boolean
       }
+      rtc_apuracao_upsert: {
+        Args: { p_payload: Json; p_tenant: string }
+        Returns: string
+      }
       rtc_class_trib_upsert: { Args: { p: Json }; Returns: number }
       rtc_credential_state: { Args: { p_tenant: string }; Returns: Json }
       rtc_quota_status: { Args: { p_tenant: string }; Returns: Json }
@@ -4348,6 +4457,8 @@ export type Database = {
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"
+      apuracao_natureza: "credor" | "devedor" | "neutro"
+      apuracao_situacao: "em_andamento" | "periodo_ajuste" | "concluida"
       cash_event_kind:
         | "tax_out"
         | "credit_in"
@@ -4511,6 +4622,8 @@ export const Constants = {
   public: {
     Enums: {
       alert_severity: ["info", "warning", "critical"],
+      apuracao_natureza: ["credor", "devedor", "neutro"],
+      apuracao_situacao: ["em_andamento", "periodo_ajuste", "concluida"],
       cash_event_kind: [
         "tax_out",
         "credit_in",
