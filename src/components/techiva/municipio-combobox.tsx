@@ -121,7 +121,9 @@ export function MunicipioCombobox({
             aria-expanded={open}
             className="w-full justify-between font-normal"
           >
-            <span className={cn("flex min-w-0 items-center gap-2", !value && "text-muted-foreground")}>
+            <span
+              className={cn("flex min-w-0 items-center gap-2", !value && "text-muted-foreground")}
+            >
               <MapPin className="size-4 shrink-0 opacity-60" aria-hidden />
               <span className="truncate">{value || "Pesquisar município..."}</span>
             </span>
@@ -131,11 +133,7 @@ export function MunicipioCombobox({
         <PopoverContent className="w-[min(28rem,90vw)] p-0" align="start">
           {/* shouldFilter=false: o filtro é nosso (sem acento, por código e limitado). */}
           <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Nome ou código IBGE"
-              value={term}
-              onValueChange={setTerm}
-            />
+            <CommandInput placeholder="Nome ou código IBGE" value={term} onValueChange={setTerm} />
             <CommandList>
               {busy ? (
                 <div className="flex items-center gap-2 px-3 py-6 text-sm text-muted-foreground">
