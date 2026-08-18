@@ -168,7 +168,16 @@ export function usePriceCustomers(tenantId: string, search = "") {
         .order("name")
         .order("id", { ascending: true })
         .range(0, 49); // 50 sugestões por busca — nunca a carteira inteira
-      if (term) q = q.or(`name.ilike.%${term}%,cnpj.ilike.%${term}%`);
+      if (term) {
+        // CNPJ: busca por PREFIXO dos dígitos, que usa o índice
+        // counterparties_tenant_cnpj (um '%' no início inutilizaria o btree).
+        // Nome: busca infixa mesmo, sustentada pelo índice trigram
+        // counterparties_name_trgm.
+        const digits = term.replace(/\D/g, "");
+        const clauses = [`name.ilike.%${term}%`];
+        if (digits.length >= 2) clauses.push(`cnpj.ilike.${digits}%`);
+        q = q.or(clauses.join(","));
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((c) => ({

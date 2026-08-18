@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
-import { DEFAULT_PAGE_SIZE, fetchAllPages, paged, rangeOf, type Paged } from "@/lib/paginate";
+import {
+  DEFAULT_PAGE_SIZE,
+  EXACT_COUNT_LIMIT,
+  fetchAllPages,
+  paged,
+  rangeOf,
+  useRowCount,
+  type Paged,
+} from "@/lib/paginate";
 
 /**
  * Integração RTC (Plataforma CBS — Manual RFB maio/2026).
