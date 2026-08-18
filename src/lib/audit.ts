@@ -65,6 +65,7 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
           { count: "exact" },
         )
         .order("at", { ascending: false })
+        .order("id", { ascending: false }) // desempate estável entre páginas
         .range(page * AUDIT_PAGE_SIZE, page * AUDIT_PAGE_SIZE + AUDIT_PAGE_SIZE - 1);
 
       if (ids.length > 0) query = query.in("tenant_id", ids);
