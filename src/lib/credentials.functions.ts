@@ -119,6 +119,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
       // (b) CHAVE DE API — segredo opaco: cifrado no bucket, nunca na tabela.
       if (data.kind === "api_key") {
         const path = secretPath(data.tenantId, data.provider);
+        const { data: prevKey } = await supabaseAdmin
+          .from("integration_credentials")
+          .select("secret_ref")
+          .eq("tenant_id", data.tenantId)
+          .eq("provider", data.provider)
+          .eq("kind", "api_key")
+          .maybeSingle();
         const sealed = await sealSecret(data.apiKey);
         const up = await supabaseAdmin.storage
           .from(SECRETS_BUCKET)
@@ -141,8 +148,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
           await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
           throw new Error(error.message);
         }
+        const prevRef = prevKey?.secret_ref ?? null;
+        if (prevRef && prevRef !== path) {
+          await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([prevRef]);
+        }
         return { ok: true as const, id: id as string, kind: data.kind };
       }
+
 
       // (c) CERTIFICADO A1 — CAMINHO PRINCIPAL do produto.
       const pfx = fromBase64(data.file);
@@ -181,11 +193,20 @@ export const uploadCredential = createServerFn({ method: "POST" })
        * gravada ao lado do material.
        */
       const path = secretPath(data.tenantId, data.provider);
+      // renovação: material antigo do mesmo provider/kind sai do bucket depois do registro
+      const { data: previous } = await supabaseAdmin
+        .from("integration_credentials")
+        .select("secret_ref")
+        .eq("tenant_id", data.tenantId)
+        .eq("provider", data.provider)
+        .eq("kind", "certificado_a1")
+        .maybeSingle();
       const sealed = await sealCertificateBundle(pfx, data.password);
       const up = await supabaseAdmin.storage
         .from(SECRETS_BUCKET)
         .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
       if (up.error) throw new Error(up.error.message);
+
 
       let id: unknown;
       try {
@@ -211,6 +232,12 @@ export const uploadCredential = createServerFn({ method: "POST" })
         await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
         throw regError;
       }
+
+      const oldRef = previous?.secret_ref ?? null;
+      if (oldRef && oldRef !== path) {
+        await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([oldRef]);
+      }
+
 
       // único identificador que pode ir para log
       console.info("[credential-upload] certificado registrado", {
