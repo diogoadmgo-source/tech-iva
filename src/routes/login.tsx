@@ -2,11 +2,20 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import { Scale } from "lucide-react";
+
+import {
+  AuthProof,
+  AuthSegmented,
+  AuthShell,
+  FieldError,
+  FormError,
+  FormSuccess,
+  SubmitButton,
+} from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
 import {
@@ -52,6 +61,7 @@ function LoginPage() {
   const [fields, setFields] = useState<FieldErrors>({});
   const [sent, setSent] = useState<string | null>(null);
   const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [mode, setMode] = useState<"password" | "magic">("password");
 
   // Erros devolvidos pelo próprio link do Supabase (ex.: otp_expired).
   useEffect(() => {
@@ -150,6 +160,14 @@ function LoginPage() {
     <AuthShell
       title="Entrar"
       subtitle="Use suas credenciais ou receba um link mágico por e-mail."
+      aside={
+        <AuthProof
+          icon={Scale}
+          label="prova"
+          title="Cálculo oficial, com base legal"
+          body="Usamos a Calculadora da Receita Federal. Cada número tem memória de cálculo e o artigo da lei por trás dele."
+        />
+      }
       footer={
         <span>
           Não tem conta?{" "}
@@ -159,13 +177,20 @@ function LoginPage() {
         </span>
       }
     >
-      <Tabs defaultValue="password" onValueChange={reset}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="password">Senha</TabsTrigger>
-          <TabsTrigger value="magic">Link mágico</TabsTrigger>
-        </TabsList>
+      <AuthSegmented
+        options={[
+          { value: "password", label: "Senha" },
+          { value: "magic", label: "Link mágico" },
+        ] as const}
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          reset();
+        }}
+      />
 
-        <TabsContent value="password" className="mt-6">
+      {mode === "password" ? (
+        <div className="mt-6">
           <form onSubmit={handlePassword} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -173,6 +198,7 @@ function LoginPage() {
                 id="email"
                 type="email"
                 autoComplete="email"
+                className="focus-glow"
                 aria-invalid={Boolean(fields["email"])}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -191,6 +217,7 @@ function LoginPage() {
                 id="password"
                 type="password"
                 autoComplete="current-password"
+                className="focus-glow"
                 aria-invalid={Boolean(fields["password"])}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -210,13 +237,13 @@ function LoginPage() {
                 Reenviar e-mail de confirmação
               </Button>
             ) : null}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Entrando…" : "Entrar"}
-            </Button>
+            <SubmitButton loading={loading} loadingLabel="Entrando...">
+              Entrar
+            </SubmitButton>
           </form>
-        </TabsContent>
-
-        <TabsContent value="magic" className="mt-6">
+        </div>
+      ) : (
+        <div className="mt-6">
           <form onSubmit={handleMagicLink} noValidate className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="magic-email">E-mail</Label>
@@ -224,6 +251,7 @@ function LoginPage() {
                 id="magic-email"
                 type="email"
                 autoComplete="email"
+                className="focus-glow"
                 aria-invalid={Boolean(fields["email"])}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -233,12 +261,12 @@ function LoginPage() {
             </div>
             <FormError message={error} />
             <FormSuccess message={sent} />
-            <Button type="submit" variant="secondary" className="w-full" disabled={loading}>
-              {loading ? "Enviando…" : "Enviar link mágico"}
-            </Button>
+            <SubmitButton loading={loading} loadingLabel="Enviando..." variant="secondary">
+              Enviar link mágico
+            </SubmitButton>
           </form>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </AuthShell>
   );
 }
