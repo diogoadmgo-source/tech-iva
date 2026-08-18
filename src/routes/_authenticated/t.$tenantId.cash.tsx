@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, Banknote, Landmark, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +21,7 @@ import {
   type CashHorizon,
 } from "@/lib/cash";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { useFeature } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/cash")({
@@ -63,6 +64,8 @@ function weekLabel(week: string) {
 function CashScreen() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
+  const navigate = useNavigate();
+  const credit = useFeature(tenantId, "credit");
   const [horizon, setHorizon] = useState<CashHorizon>(90);
   const [week, setWeek] = useState<string | null>(null);
 
@@ -227,11 +230,20 @@ function CashScreen() {
                 Semana de {weekLabel(nextGap.week)}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button type="button" size="sm" disabled={!nextGap.offer_available}>
-                  <Banknote className="size-4" aria-hidden /> Cobrir este buraco
-                </Button>
+                {credit.enabled ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!nextGap.offer_available}
+                    onClick={() =>
+                      void navigate({ to: "/t/$tenantId/finance", params: { tenantId } })
+                    }
+                  >
+                    <Banknote className="size-4" aria-hidden /> Cobrir este buraco
+                  </Button>
+                ) : null}
                 <Button type="button" size="sm" variant="outline" onClick={() => setWeek(nextGap.week)}>
-                  Ver provisão
+                  Ver provisão sugerida
                 </Button>
               </div>
             </>

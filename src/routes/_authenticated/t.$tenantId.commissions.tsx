@@ -27,6 +27,7 @@ import {
   type CommissionLine,
 } from "@/lib/commissions";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { useFeatureInScope } from "@/lib/features";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/commissions")({
   head: () => ({
@@ -54,6 +55,10 @@ function CommissionsPage() {
   const shell = useShellData(tenantId);
   const [month, setMonth] = useState(currentMonth());
   const statement = useCommissionStatement(tenantId, month);
+  // Sem nenhuma empresa da carteira com o módulo de crédito ligado, a comissão
+  // sobre crédito é uma promessa que o canal não pode cumprir: fica oculta.
+  const creditInScope = useFeatureInScope("credit");
+  const showCredit = creditInScope.data === true;
   const months = useMemo(() => recentMonths(12), []);
 
   const isPlatform = shell.data?.tenant.kind === "platform";
@@ -190,12 +195,14 @@ function CommissionsPage() {
           hint={`de ${totals?.companies ?? 0} na carteira`}
           loading={statement.isLoading}
         />
-        <KpiCard
-          label="Comissão sobre crédito"
-          value={rule ? formatPct(rule.credit_pct) : "—"}
-          hint="Aplicada quando o crédito é antecipado (fase 6)"
-          loading={statement.isLoading}
-        />
+        {showCredit ? (
+          <KpiCard
+            label="Comissão sobre crédito"
+            value={rule ? formatPct(rule.credit_pct) : "—"}
+            hint="Aplicada quando o crédito é antecipado"
+            loading={statement.isLoading}
+          />
+        ) : null}
       </div>
 
       <section className="rounded-lg border bg-card p-4">
@@ -205,9 +212,11 @@ function CommissionsPage() {
         </div>
         <p className="text-sm text-muted-foreground">
           {rule
-            ? `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa e ${formatPct(
-                rule.credit_pct,
-              )} sobre o crédito antecipado.`
+            ? showCredit
+              ? `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa e ${formatPct(
+                  rule.credit_pct,
+                )} sobre o crédito antecipado.`
+              : `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa.`
             : "Carregando…"}
           {rule?.note ? ` — ${rule.note}` : ""}
         </p>
@@ -216,6 +225,7 @@ function CommissionsPage() {
             tenantId={tenantId}
             mrrPct={rule.mrr_pct}
             creditPct={rule.credit_pct}
+            showCredit={showCredit}
           />
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">
@@ -241,10 +251,12 @@ function RuleEditor({
   tenantId,
   mrrPct,
   creditPct,
+  showCredit,
 }: {
   tenantId: string;
   mrrPct: number;
   creditPct: number;
+  showCredit: boolean;
 }) {
   const [mrr, setMrr] = useState(String(mrrPct));
   const [credit, setCredit] = useState(String(creditPct));
@@ -277,17 +289,19 @@ function RuleEditor({
         </Label>
         <Input id="mrr-pct" value={mrr} onChange={(e) => setMrr(e.target.value)} inputMode="decimal" />
       </div>
-      <div className="w-32">
-        <Label htmlFor="credit-pct" className="text-xs text-muted-foreground">
-          % crédito
-        </Label>
-        <Input
-          id="credit-pct"
-          value={credit}
-          onChange={(e) => setCredit(e.target.value)}
-          inputMode="decimal"
-        />
-      </div>
+      {showCredit ? (
+        <div className="w-32">
+          <Label htmlFor="credit-pct" className="text-xs text-muted-foreground">
+            % crédito
+          </Label>
+          <Input
+            id="credit-pct"
+            value={credit}
+            onChange={(e) => setCredit(e.target.value)}
+            inputMode="decimal"
+          />
+        </div>
+      ) : null}
       <div className="min-w-48 flex-1">
         <Label htmlFor="rule-note" className="text-xs text-muted-foreground">
           Observação
