@@ -24,12 +24,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Eye } from "lucide-react";
 import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
 import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
 import { JobCenter } from "@/components/app/job-center";
 import { ShellAlertBell } from "@/components/app/shell-alert-bell";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
 import { useFeature } from "@/lib/features";
+import {
+  filterScopeTree,
+  flattenScopeTree,
+  type ScopeNode,
+  type ScopeTreeNode,
+  type TenantContext,
+} from "@/lib/tenant-scope";
 
 export type ShellTenant = {
   id: string;
@@ -47,7 +55,10 @@ export type ShellData = {
   role: MemberRole | null;
   email: string | null;
   fullName: string | null;
-  scope: ShellTenant[]; // todos os tenants visíveis, para o ⌘K
+  /** Escopo completo vindo de my_tenants(): inclui acesso por hierarquia. */
+  scope: ScopeNode[];
+  scopeTree: ScopeTreeNode[];
+  context: TenantContext;
 };
 
 const navItemClass =
@@ -60,6 +71,7 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
   const queryClient = useQueryClient();
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteTerm, setPaletteTerm] = useState("");
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
@@ -89,6 +101,8 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
   const brand = resolveBrand(data.chain);
   const credit = useFeature(data.tenant.id, "credit");
   // Item de módulo desligado (ou ainda desconhecido) não aparece: nunca visível-e-quebrado.
+  // O menu é montado pelo KIND do tenant ABERTO, nunca pelo papel do usuário:
+  // o platform_admin que abre uma empresa vê o menu completo de empresa.
   const items = NAV_BY_KIND[data.tenant.kind].filter(
     (item) => item.feature !== "credit" || credit.enabled,
   );
@@ -132,6 +146,21 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
           >
             Sair da impersonação
           </Button>
+        </div>
+      ) : null}
+      {data.context.visitando ? (
+        <div
+          role="status"
+          className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-center justify-center gap-2 border-t border-border bg-surface-2/95 px-4 py-2 text-xs text-muted-foreground backdrop-blur"
+        >
+          <Eye className="size-3.5 text-primary" aria-hidden />
+          <span>
+            Você está visitando <strong className="text-foreground">{data.tenant.name}</strong> como{" "}
+            <strong className="text-foreground">
+              {data.role ? ROLE_LABELS[data.role] : "acesso por hierarquia"}
+            </strong>
+            . As ações que fizer aqui ficam registradas na auditoria.
+          </span>
         </div>
       ) : null}
       <aside
@@ -284,25 +313,44 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
           </span>
         </div>
 
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main
+          className={`min-w-0 flex-1 px-4 py-6 md:px-8 ${data.context.visitando ? "pb-16" : ""}`}
+        >
+          {children}
+        </main>
       </div>
 
       <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
-          <CommandInput placeholder="Buscar organização no seu escopo…" />
+          <CommandInput
+            placeholder="Buscar organização no seu escopo…"
+            value={paletteTerm}
+            onValueChange={setPaletteTerm}
+          />
           <CommandList>
             <CommandEmpty>Nada encontrado.</CommandEmpty>
-            <CommandGroup heading="Organizações">
-              {data.scope.map((node) => (
+            <CommandGroup heading="Plataforma > canais > empresas > unidades">
+              {flattenScopeTree(filterScopeTree(data.scopeTree, paletteTerm)).map((node) => (
                 <CommandItem
                   key={node.id}
-                  value={`${node.name} ${node.slug ?? ""}`}
+                  value={`${node.name} ${node.slug ?? ""} ${node.cnpj ?? ""}`}
                   onSelect={() => {
                     setPaletteOpen(false);
                     navigate({ to: "/t/$tenantId", params: { tenantId: node.id } });
                   }}
                 >
-                  <span className="flex-1 truncate">{node.name}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <span
+                    className="flex-1 truncate"
+                    style={{ paddingLeft: `${node.depth * 14}px` }}
+                  >
+                    {node.name}
+                  </span>
+                  <Badge
+                    variant={node.membership_direta ? "secondary" : "outline"}
+                    className="text-[10px]"
+                  >
+                    {node.membership_direta ? "vínculo direto" : "por hierarquia"}
+                  </Badge>
+                  <span className="ml-2 font-mono text-xs text-muted-foreground">
                     {KIND_LABELS[node.kind]}
                   </span>
                 </CommandItem>

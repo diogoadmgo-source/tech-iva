@@ -284,7 +284,7 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
 
           <div className="mt-4 rounded-lg border border-border bg-surface-2 p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              CNPJ que você deve autorizar
+              Confira os dois antes de autorizar no e-CAC
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <span className="font-mono text-sm">{identity.isLoading ? "…" : cnpj}</span>
@@ -309,9 +309,24 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
               </Button>
             </div>
             {identity.data?.razao_social && !identity.data.razao_social.startsWith("(") && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Razão social: {identity.data.razao_social}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  Razão social:{" "}
+                  <span className="text-foreground">{identity.data.razao_social}</span>
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(identity.data!.razao_social);
+                    toast.success("Razão social copiada.");
+                  }}
+                >
+                  <Copy className="mr-1 size-3.5" aria-hidden />
+                  Copiar
+                </Button>
+              </div>
             )}
             {cnpjPendente && (
               <p className="mt-1 flex items-start gap-1 text-[11px] text-amber-400">

@@ -1,20 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 
 import { AuthShell, FormError } from "@/components/auth/auth-shell";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  KIND_LABELS,
-  ROLE_LABELS,
-  authErrorMessage,
-  signOutAndRedirect,
-  type MemberRole,
-  type TenantKind,
-} from "@/lib/auth";
+import { KIND_LABELS, ROLE_LABELS, authErrorMessage, signOutAndRedirect } from "@/lib/auth";
+import { filterScopeTree, useMyTenants, type ScopeTreeNode } from "@/lib/tenant-scope";
 
 export const Route = createFileRoute("/_authenticated/select-tenant")({
   head: () => ({
@@ -37,56 +31,15 @@ export const Route = createFileRoute("/_authenticated/select-tenant")({
   component: SelectTenantPage,
 });
 
-type Row = {
-  id: string;
-  name: string;
-  kind: TenantKind;
-  level: number;
-  slug: string | null;
-  role: MemberRole | null;
-};
-
-const KIND_ORDER: TenantKind[] = ["platform", "channel", "company", "unit"];
-
 function SelectTenantPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
-
-  const { data, isLoading, error: queryError } = useQuery({
-    queryKey: ["select-tenant"],
-    queryFn: async (): Promise<Row[]> => {
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData.user?.id ?? "";
-      const [{ data: tenants, error: tenantsError }, { data: memberships }] = await Promise.all([
-        supabase
-          .from("tenants")
-          .select("id, name, kind, level, slug")
-          .order("level")
-          .order("name"),
-        // Só os vínculos do próprio usuário: o RLS permite ler os de outros no escopo.
-        supabase.from("memberships").select("tenant_id, role").eq("user_id", userId),
-      ]);
-      if (tenantsError) throw tenantsError;
-      const byTenant = new Map((memberships ?? []).map((m) => [m.tenant_id, m.role]));
-      return (tenants ?? []).map((t) => ({ ...t, role: byTenant.get(t.id) ?? null }));
-
-    },
-  });
-
-  const term = query.trim().toLowerCase();
-  const filtered = (data ?? []).filter(
-    (t) =>
-      term.length === 0 ||
-      t.name.toLowerCase().includes(term) ||
-      (t.slug ?? "").toLowerCase().includes(term),
-  );
-  const groups = KIND_ORDER.map(
-    (kind) => [kind, filtered.filter((t) => t.kind === kind)] as const,
-  ).filter(([, rows]) => rows.length > 0);
-
+  // my_tenants(): TODO o escopo hierárquico, não apenas os vínculos diretos.
+  const { data, isLoading, error: queryError } = useMyTenants();
+  const tree = filterScopeTree(data?.tree ?? [], query);
 
   async function choose(tenantId: string) {
     setError(null);
@@ -104,11 +57,48 @@ function SelectTenantPage() {
     }
   }
 
+  function renderNode(node: ScopeTreeNode) {
+    return (
+      <div key={node.id} className="space-y-1">
+        <button
+          type="button"
+          onClick={() => void choose(node.id)}
+          style={{ marginLeft: `${node.depth * 16}px` }}
+          className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
+        >
+          <span className="min-w-0">
+            <span className="flex items-center gap-2">
+              {node.depth > 0 ? (
+                <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              ) : null}
+              <span className="truncate text-sm font-medium text-foreground">{node.name}</span>
+              <Badge variant="outline" className="text-[10px]">
+                {KIND_LABELS[node.kind]}
+              </Badge>
+            </span>
+            <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
+              nível {node.level}
+              {node.slug ? ` · ${node.slug}` : ""}
+              {node.cnpj ? ` · ${node.cnpj}` : ""}
+            </span>
+          </span>
+          <span className="flex shrink-0 flex-col items-end gap-1">
+            {node.papel ? <Badge variant="secondary">{ROLE_LABELS[node.papel]}</Badge> : null}
+            <Badge variant={node.membership_direta ? "default" : "outline"} className="text-[10px]">
+              {node.membership_direta ? "vínculo direto" : "por hierarquia"}
+            </Badge>
+          </span>
+        </button>
+        {node.children.map(renderNode)}
+      </div>
+    );
+  }
+
   return (
     <AuthShell
       wide
       title="Selecionar organização"
-      subtitle="Você vê apenas o seu escopo e os níveis abaixo dele."
+      subtitle="Todo o seu escopo em árvore: você abre também os níveis abaixo do seu vínculo."
       footer={
         <button
           type="button"
@@ -122,54 +112,35 @@ function SelectTenantPage() {
       {isLoading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-lg border border-border bg-muted/40" />
+            <div
+              key={i}
+              className="h-16 animate-pulse rounded-lg border border-border bg-muted/40"
+            />
           ))}
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-4">
           <FormError message={error ?? (queryError ? authErrorMessage(queryError) : null)} />
 
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nome ou slug…"
+            placeholder="Buscar por nome, slug ou CNPJ…"
             aria-label="Buscar organização"
           />
 
-          {groups.length === 0 ? (
+          {tree.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma organização encontrada no seu escopo.
             </p>
-          ) : null}
+          ) : (
+            <div className="space-y-1">{tree.map(renderNode)}</div>
+          )}
 
-          {groups.map(([kind, rows]) => (
-            <section key={kind} className="space-y-2">
-              <h2 className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-                {KIND_LABELS[kind]}
-              </h2>
-              {rows.map((tenant) => (
-                <button
-                  key={tenant.id}
-                  type="button"
-                  onClick={() => void choose(tenant.id)}
-                  className="flex w-full items-center justify-between gap-4 rounded-lg border border-border bg-background/40 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-accent"
-                >
-                  <span>
-                    <span className="block text-sm font-medium text-foreground">{tenant.name}</span>
-                    <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
-                      nível {tenant.level}
-                      {tenant.slug ? ` · ${tenant.slug}` : ""}
-                    </span>
-                  </span>
-                  {tenant.role ? (
-                    <Badge variant="secondary">{ROLE_LABELS[tenant.role]}</Badge>
-                  ) : (
-                    <Badge variant="outline">herdado</Badge>
-                  )}
-                </button>
-              ))}
-            </section>
-          ))}
+          <p className="text-xs text-muted-foreground">
+            "Por hierarquia" significa acesso de visita: as ações ficam registradas na auditoria e o
+            seu papel efetivo continua valendo.
+          </p>
         </div>
       )}
     </AuthShell>
