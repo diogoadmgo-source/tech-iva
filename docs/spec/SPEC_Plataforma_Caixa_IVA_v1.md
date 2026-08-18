@@ -21,12 +21,19 @@
 
 ## 1. Tese de negócio
 
+> **Correção de premissa (CGIBS, 12/08/2026):** o split payment NÃO começa em
+> janeiro de 2027. O padrão de 2027 é a **apuração mensal** (guia no dia 20 do mês
+> seguinte); RAD e split payment são modalidades **opcionais**, e o split ainda sem
+> data e restrito a B2B na primeira etapa. Onde este documento diz "split payment"
+> como regra de 2027, leia "modalidade de recolhimento", premissa escolhida pela
+> empresa em /cash e comparável via `comparar_modalidades`.
+
 ### 1.1 A dor, em ordem de urgência (pesquisa ago/2026)
 | # | Dor | Quem sente | Quando dói | Durabilidade |
 |---|-----|-----------|-----------|--------------|
 | 1 | Nota rejeitada / parametrização CST × cClassTrib errada | Regime regular (Simples em 2027) | Agora | Curta (12–18 meses) — ERPs vão absorver |
 | 2 | Decisão Simples tradicional × híbrido | Simples com receita PJ | set/2026, mar/2027, depois anual | Média — vira rotina anual |
-| 3 | Buraco de caixa do split payment (imposto sai no recebimento, crédito volta em até 180 dias) | Todo B2B | 2027 em diante | Longa (até 2033+) |
+| 3 | Buraco de caixa do IVA (imposto sai na apuração mensal — guia dia 20 do mês seguinte —, crédito volta em até 180 dias) | Todo B2B | 2027 em diante | Longa (até 2033+) |
 | 4 | Conciliação para apuração assistida (IBS, CBS, ERP, DF-e, financeiro) | Todos | 2027 em diante | Longa, mas briga com SPED houses e ERPs |
 | 5 | Empresa do Simples "achando que está fora" — recebe XML com campos novos | Simples | Agora | Média |
 

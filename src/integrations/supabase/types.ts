@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _c: {
+        Row: {
+          resultado: string | null
+          teste: string | null
+        }
+        Insert: {
+          resultado?: string | null
+          teste?: string | null
+        }
+        Update: {
+          resultado?: string | null
+          teste?: string | null
+        }
+        Relationships: []
+      }
       alerts: {
         Row: {
           created_at: string | null
@@ -574,10 +589,62 @@ export type Database = {
           },
         ]
       }
+      credential_usage: {
+        Row: {
+          credential_id: string
+          detalhe: string | null
+          finalidade: string
+          id: number
+          job_id: string | null
+          sucesso: boolean
+          tenant_id: string
+          usado_em: string
+          worker: string | null
+        }
+        Insert: {
+          credential_id: string
+          detalhe?: string | null
+          finalidade: string
+          id?: number
+          job_id?: string | null
+          sucesso: boolean
+          tenant_id: string
+          usado_em?: string
+          worker?: string | null
+        }
+        Update: {
+          credential_id?: string
+          detalhe?: string | null
+          finalidade?: string
+          id?: number
+          job_id?: string | null
+          sucesso?: boolean
+          tenant_id?: string
+          usado_em?: string
+          worker?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credential_usage_credential_id_fkey"
+            columns: ["credential_id"]
+            isOneToOne: false
+            referencedRelation: "integration_credentials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credential_usage_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_credentials: {
         Row: {
           created_at: string
           created_by: string | null
+          finalidades: string[]
           fingerprint: string | null
           id: string
           kind: Database["public"]["Enums"]["credential_kind"]
@@ -594,10 +661,13 @@ export type Database = {
           subject_cn: string | null
           subject_cnpj: string | null
           tenant_id: string
+          uploaded_by_role: string | null
+          uploaded_on_behalf: boolean
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          finalidades?: string[]
           fingerprint?: string | null
           id?: string
           kind: Database["public"]["Enums"]["credential_kind"]
@@ -614,10 +684,13 @@ export type Database = {
           subject_cn?: string | null
           subject_cnpj?: string | null
           tenant_id: string
+          uploaded_by_role?: string | null
+          uploaded_on_behalf?: boolean
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          finalidades?: string[]
           fingerprint?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["credential_kind"]
@@ -634,6 +707,8 @@ export type Database = {
           subject_cn?: string | null
           subject_cnpj?: string | null
           tenant_id?: string
+          uploaded_by_role?: string | null
+          uploaded_on_behalf?: boolean
         }
         Relationships: [
           {
@@ -3784,6 +3859,7 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      check_credential_anomalies: { Args: never; Returns: number }
       check_expiring_credentials: { Args: never; Returns: number }
       claim_job: {
         Args: { p_kinds: string[]; p_lease_seconds?: number; p_worker: string }
@@ -3847,6 +3923,21 @@ export type Database = {
           p_slug?: string
         }
         Returns: string
+      }
+      credential_allows: {
+        Args: { p_credential: string; p_finalidade: string }
+        Returns: boolean
+      }
+      credential_usage_report: {
+        Args: { p_dias?: number; p_tenant: string }
+        Returns: {
+          detalhe: string
+          finalidade: string
+          fingerprint: string
+          subject_cn: string
+          sucesso: boolean
+          usado_em: string
+        }[]
       }
       credentials_status: {
         Args: { p_tenant: string }
@@ -3937,6 +4028,17 @@ export type Database = {
           p_entity_id: string
           p_rule?: string
           p_tenant: string
+        }
+        Returns: undefined
+      }
+      log_credential_use: {
+        Args: {
+          p_credential: string
+          p_detalhe?: string
+          p_finalidade: string
+          p_job?: string
+          p_sucesso: boolean
+          p_worker?: string
         }
         Returns: undefined
       }
