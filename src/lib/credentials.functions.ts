@@ -219,12 +219,21 @@ export const uploadCredential = createServerFn({ method: "POST" })
         notAfter: meta.notAfter,
       };
     } catch (error) {
-      const message =
-        error instanceof CredentialError
-          ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Falha ao registrar a credencial.";
-      throw new Error(message);
+      const raw =
+        error instanceof Error ? error.message : "Falha ao registrar a credencial.";
+      if (error instanceof CredentialError) throw new Error(raw);
+
+      // Erro de segurança pode ser discreto, mas não pode ser mudo.
+      const lower = raw.toLowerCase();
+      if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
+        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+      }
+      if (lower.includes("forbidden") || lower.includes("permission denied")) {
+        throw new Error(
+          `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role}).`,
+        );
+      }
+      throw new Error(raw);
     }
+
   });
