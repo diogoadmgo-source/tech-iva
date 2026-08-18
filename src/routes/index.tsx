@@ -14,7 +14,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Lemos as notas fiscais da empresa, calculamos com o motor oficial da Receita Federal e mostramos, semana a semana, quanto vai faltar no caixa antes de 2027.",
+          "Lemos as notas fiscais da empresa, calculamos com o motor oficial da Receita Federal e mostramos, semana a semana, quanto vai faltar no caixa.",
       },
       { property: "og:title", content: "TECH-IVA — quanto o IBS e a CBS vão tirar do seu caixa" },
       {
@@ -82,7 +82,7 @@ function Index() {
             index={1}
             className="text-sheen mt-6 max-w-2xl text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.5rem]"
           >
-            Descubra quanto o IBS e a CBS vão tirar do seu caixa — antes de 2027.
+            Descubra quanto o IBS e a CBS vão tirar do seu caixa.
           </Reveal>
           <Reveal
             as="p"
