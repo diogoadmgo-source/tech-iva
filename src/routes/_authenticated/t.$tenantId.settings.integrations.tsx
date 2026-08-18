@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
 import { Badge } from "@/components/ui/badge";
@@ -596,8 +597,9 @@ function CredentialsList({
           <DialogHeader>
             <DialogTitle>Revogar credencial</DialogTitle>
             <DialogDescription>
-              A credencial deixa de valer imediatamente e o material cifrado é descartado. A
-              ingestão de notas por esse caminho para até você registrar outra credencial.
+              A credencial deixa de valer imediatamente e o material cifrado é descartado — não há
+              como desfazer. A ingestão dos seus documentos fiscais por esse caminho <strong>para</strong>{" "}
+              até você registrar outra credencial.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -775,7 +777,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
   const [ack, setAck] = useState(false);
 
   return (
-    <Card>
+    <Card className="scroll-mt-24" id="cert-upload">
       <div className="flex items-center gap-2">
         <ShieldCheck className="size-4 text-primary" aria-hidden />
         <h3 className="text-sm font-medium">Certificado A1 (.pfx)</h3>
