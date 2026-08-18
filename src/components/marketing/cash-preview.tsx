@@ -125,7 +125,7 @@ export function CashPreview() {
 
 function Legend({ color, label, value }: { color: string; label: string; value: string }) {
   return (
-    <div className="cash-fade" style={{ animationDelay: "300ms" }}>
+    <div>
       <span className="flex items-center gap-1.5 text-muted-foreground">
         <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
         {label}
