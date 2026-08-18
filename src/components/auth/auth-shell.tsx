@@ -67,11 +67,8 @@ export function AuthShell({
         </div>
 
         {aside ? (
-          <div className="hidden lg:flex lg:flex-col lg:justify-center lg:gap-8">
-            <Reveal index={2} className="w-full max-w-md">
-              <CashPreview />
-            </Reveal>
-            <Reveal index={3}>{aside}</Reveal>
+          <div className="hidden lg:flex lg:flex-col lg:justify-center">
+            <Reveal index={2}>{aside}</Reveal>
           </div>
         ) : null}
 
