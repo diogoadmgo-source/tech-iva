@@ -174,23 +174,15 @@ function SimuladorPage() {
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="cst">CST</Label>
-                <Input
-                  id="cst"
-                  value={cst}
-                  maxLength={4}
-                  className="font-mono"
-                  onChange={(e) => setCst(e.target.value.replace(/\D/g, ""))}
-                />
+                <CstCombobox id="cst" value={cst} onChange={(row) => setCst(row?.[0] ?? "")} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="cclasstrib">cClassTrib</Label>
-                <Input
+                <ClassTribCombobox
                   id="cclasstrib"
                   value={cclasstrib}
-                  maxLength={8}
-                  className="font-mono"
-                  placeholder="000001"
-                  onChange={(e) => setCclasstrib(e.target.value.replace(/\D/g, ""))}
+                  cst={cst}
+                  onChange={(row) => setCclasstrib(row?.[0] ?? "")}
                 />
               </div>
               <div className="space-y-1.5">
