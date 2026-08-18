@@ -281,11 +281,19 @@ export const uploadCredential = createServerFn({ method: "POST" })
       if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
         throw new Error("Sua sessão expirou, entre novamente.");
       }
-      if (lower.includes("forbidden") || lower.includes("permission denied")) {
+      // Privilégio de execução ausente é defeito nosso, não culpa do usuário.
+      if (lower.includes("permission denied for function") || lower.includes("permission denied for schema")) {
+        console.error("[credentials] falha de privilégio no registro:", raw);
         throw new Error(
-          `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador. (detalhe técnico: ${raw})`,
+          "Falha interna ao registrar a credencial. O arquivo não foi salvo. Avise o suporte.",
         );
       }
+      if (lower.includes("forbidden") || lower.includes("permission denied")) {
+        throw new Error(
+          `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador.`,
+        );
+      }
+      console.error("[credentials] erro ao registrar credencial:", raw);
       throw new Error(raw);
     }
 
