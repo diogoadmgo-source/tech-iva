@@ -29,12 +29,14 @@ import {
   UF_LIST,
   engineUnavailableMessage,
   parseMoneyToCents,
+  shareIsActive,
   shareUrl,
   todayIso,
   useCalculate,
   useEngineStatus,
   useSaveSimulation,
   useShareSimulation,
+  useUnshareSimulation,
   useSimulations,
   type CalcResult,
   type SimulationRow,
@@ -84,6 +86,7 @@ function SimuladorPage() {
   const calculate = useCalculate(tenantId);
   const save = useSaveSimulation(tenantId);
   const share = useShareSimulation(tenantId);
+  const unshare = useUnshareSimulation(tenantId);
   const history = useSimulations(tenantId);
 
   const baseCents = useMemo(() => parseMoneyToCents(base), [base]);
@@ -374,18 +377,43 @@ function SimuladorPage() {
                       disabled={share.isPending}
                       onClick={() =>
                         share.mutate(row.id, {
-                          onSuccess: (token) => {
+                          onSuccess: ({ token, expires_at }) => {
                             void navigator.clipboard?.writeText(shareUrl(token));
-                            toast.success("Link copiado.");
+                            toast.success(
+                              `Link copiado. Vale até ${new Date(expires_at).toLocaleDateString("pt-BR")}.`,
+                            );
                           },
                           onError: (e) => toast.error((e as Error).message),
                         })
                       }
                     >
                       <Link2 className="size-3.5" aria-hidden />
-                      {row.share_token ? "Copiar link" : "Compartilhar"}
+                      {shareIsActive(row) ? "Copiar link" : "Compartilhar"}
                     </Button>
+                    {row.share_token ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-muted-foreground"
+                        disabled={unshare.isPending}
+                        onClick={() =>
+                          unshare.mutate(row.id, {
+                            onSuccess: () => toast.success("Link revogado."),
+                            onError: (e) => toast.error((e as Error).message),
+                          })
+                        }
+                      >
+                        Revogar link
+                      </Button>
+                    ) : null}
                   </div>
+                  {row.share_token ? (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      {shareIsActive(row)
+                        ? `Link público válido até ${new Date(row.share_expires_at ?? row.created_at).toLocaleDateString("pt-BR")}`
+                        : "Link público expirado — compartilhe de novo para gerar outro"}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
