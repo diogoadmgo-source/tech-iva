@@ -80,13 +80,22 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/settings/integ
 const PROCURADOR_CNPJ = import.meta.env["VITE_TECHIVA_PROCURADOR_CNPJ"] as string | undefined;
 const ECAC_URL = "https://cav.receita.fazenda.gov.br/autenticacao/login";
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
-    <section className={`rounded-xl border border-border bg-surface-1 p-5 ${className}`}>
+    <section id={id} className={`rounded-xl border border-border bg-surface-1 p-5 ${className}`}>
       {children}
     </section>
   );
 }
+
 
 function IntegrationsPage() {
   const { tenantId } = Route.useParams();
