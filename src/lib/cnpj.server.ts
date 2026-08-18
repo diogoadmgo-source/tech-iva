@@ -198,10 +198,12 @@ export function normalize(cnpj: string, raw: Record<string, unknown>): RegistryP
     email: str(raw["email"]),
     telefone: phone ? [str(phone["ddd"]), str(phone["numero"])].filter(Boolean).join(" ") : str(raw["telefone"]),
     simples_optante: simples,
-    simples_desde: date(raw["data_opcao_simples"]),
-    simples_ate: date(raw["data_exclusao_simples"]),
+    // O provedor devolve datas-sentinela mesmo para quem não é optante: só guardamos
+    // a data quando a opção é afirmativa, para não sugerir adesão inexistente.
+    simples_desde: simples === true ? date(raw["data_opcao_simples"]) : null,
+    simples_ate: simples === false ? date(raw["data_exclusao_simples"]) : null,
     mei_optante: mei,
-    mei_desde: date(raw["data_opcao_mei"]),
+    mei_desde: mei === true ? date(raw["data_opcao_mei"]) : null,
     matriz: typeof raw["matriz_filial"] === "string" ? raw["matriz_filial"] === "Matriz" : flag(raw["matriz"]),
     source: providerName(),
     raw,
