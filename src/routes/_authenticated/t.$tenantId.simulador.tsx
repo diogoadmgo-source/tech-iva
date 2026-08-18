@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
 import { formatCents } from "@/components/techiva/money";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { ClassTribFeedback } from "@/components/techiva/rtc";
 import {
   CalcResultPanel,
