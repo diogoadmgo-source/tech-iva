@@ -87,10 +87,10 @@ export function CertificateStatusCard({
   onOpenUsage,
 }: {
   row: CredentialRow;
-  onReplace?: () => void;
-  onRevoke?: () => void;
-  onRetry?: () => void;
-  onOpenUsage?: () => void;
+  onReplace?: (() => void) | undefined;
+  onRevoke?: (() => void) | undefined;
+  onRetry?: (() => void) | undefined;
+  onOpenUsage?: (() => void) | undefined;
 }) {
   const [copied, setCopied] = useState(false);
   const state = certificateState(row);
