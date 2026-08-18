@@ -313,7 +313,11 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
           </span>
         </div>
 
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main
+          className={`min-w-0 flex-1 px-4 py-6 md:px-8 ${data.context.visitando ? "pb-16" : ""}`}
+        >
+          {children}
+        </main>
       </div>
 
       <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
