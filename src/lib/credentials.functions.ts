@@ -49,8 +49,8 @@ export const uploadCredential = createServerFn({ method: "POST" })
       CredentialError,
       SECRETS_BUCKET,
       fromBase64,
-      onlyDigits,
       readPfx,
+      sealCertificateBundle,
       sealSecret,
       secretPath,
     } = await import("@/lib/credentials.server");
@@ -125,54 +125,81 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_uploaded_by_role: role,
           p_uploaded_on_behalf: onBehalf,
         } as never);
-        if (error) throw new Error(error.message);
+        if (error) {
+          // mesma regra do certificado: nada de material cifrado sem registro
+          await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
+          throw new Error(error.message);
+        }
         return { ok: true as const, id: id as string, kind: data.kind };
       }
 
-      // (c) CERTIFICADO A1 — último recurso.
+      // (c) CERTIFICADO A1 — CAMINHO PRINCIPAL do produto.
       const pfx = fromBase64(data.file);
       const meta = readPfx(pfx, data.password); // senha errada -> erro, sem gravar nada
 
-      const tenantCnpj = onlyDigits(tenant.cnpj);
-      if (tenantCnpj && meta.subjectCnpj && tenantCnpj !== meta.subjectCnpj) {
+      /*
+       * Verificação de titular FALHA FECHADO: só aceita quando conseguimos ler o
+       * CNPJ do titular E o tenant tem CNPJ E o banco confirma que conferem.
+       * Não conseguir ler o CNPJ é motivo de recusa, não de liberação.
+       */
+      if (!meta.subjectCnpj) {
+        throw new CredentialError(
+          "Não foi possível identificar o titular do certificado (CNPJ ausente no campo do titular). Envie o certificado e-CNPJ da empresa.",
+        );
+      }
+      if (!tenant.cnpj) {
+        throw new CredentialError(
+          "Esta empresa está sem CNPJ cadastrado. Complete o cadastro antes de enviar o certificado.",
+        );
+      }
+      // fonte autoritativa da regra: normaliza os dois lados com so_digitos no banco
+      const { data: confere, error: confereErr } = await supabaseAdmin.rpc(
+        "certificado_confere_titular",
+        { p_tenant: data.tenantId, p_subject_cnpj: meta.subjectCnpj } as never,
+      );
+      if (confereErr) throw new Error(confereErr.message);
+      if (confere !== true) {
         throw new CredentialError(
           "O CNPJ do titular do certificado não corresponde ao CNPJ desta empresa.",
         );
       }
 
+      /*
+       * Caminho único por upload (renovação anual não colide) + envelope ÚNICO
+       * com material e senha: um objeto só, sem operação parcial e sem senha
+       * gravada ao lado do material.
+       */
       const path = secretPath(data.tenantId, data.provider);
-      const sealed = await sealSecret(pfx);
+      const sealed = await sealCertificateBundle(pfx, data.password);
       const up = await supabaseAdmin.storage
         .from(SECRETS_BUCKET)
         .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
       if (up.error) throw new Error(up.error.message);
 
-      // a senha vai no mesmo envelope, em arquivo separado ao lado do material
-      const passSealed = await sealSecret(data.password);
-      const passUp = await supabaseAdmin.storage
-        .from(SECRETS_BUCKET)
-        .upload(`${path}.pass`, passSealed, {
-          contentType: "application/octet-stream",
-          upsert: false,
-        });
-      if (passUp.error) throw new Error(passUp.error.message);
-
-      const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
-        p_tenant: data.tenantId,
-        p_provider: data.provider,
-        p_kind: "certificado_a1",
-        p_secret_ref: path,
-        p_subject_cn: meta.subjectCn,
-        p_subject_cnpj: meta.subjectCnpj,
-        p_fingerprint: meta.fingerprint,
-        p_not_before: meta.notBefore,
-        p_not_after: meta.notAfter,
-        p_scopes: ["dfe.consulta", "dfe.assinatura"],
-        p_finalidades: data.finalidades,
-        p_uploaded_by_role: role,
-        p_uploaded_on_behalf: onBehalf,
-      } as never);
-      if (error) throw new Error(error.message);
+      let id: unknown;
+      try {
+        const registered = await supabaseAdmin.rpc("register_credential", {
+          p_tenant: data.tenantId,
+          p_provider: data.provider,
+          p_kind: "certificado_a1",
+          p_secret_ref: path,
+          p_subject_cn: meta.subjectCn,
+          p_subject_cnpj: meta.subjectCnpj,
+          p_fingerprint: meta.fingerprint,
+          p_not_before: meta.notBefore,
+          p_not_after: meta.notAfter,
+          p_scopes: ["dfe.consulta", "dfe.assinatura"],
+          p_finalidades: data.finalidades,
+          p_uploaded_by_role: role,
+          p_uploaded_on_behalf: onBehalf,
+        } as never);
+        if (registered.error) throw new Error(registered.error.message);
+        id = registered.data;
+      } catch (regError) {
+        // sem registro no banco, o material cifrado seria órfão: remove antes de propagar
+        await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
+        throw regError;
+      }
 
       // único identificador que pode ir para log
       console.info("[credential-upload] certificado registrado", {

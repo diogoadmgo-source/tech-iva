@@ -71,6 +71,18 @@ export function fromBase64(value: string): Uint8Array {
 }
 
 /** Envelope encryption do material. Devolve o blob que vai para o bucket privado. */
+/**
+ * Sela material + senha num ÚNICO envelope. Um objeto só no bucket: não existe
+ * operação parcial (material gravado sem senha) e não existe "senha ao lado do
+ * material" — quem alcança o objeto continua precisando da DFE_SECRET_KEY.
+ */
+export async function sealCertificateBundle(
+  pfx: Uint8Array,
+  password: string,
+): Promise<Uint8Array> {
+  return sealSecret(JSON.stringify({ v: 1, pfx: b64(pfx), password }));
+}
+
 export async function sealSecret(plain: Uint8Array | string): Promise<Uint8Array> {
   const material = typeof plain === "string" ? enc.encode(plain) : plain;
 
