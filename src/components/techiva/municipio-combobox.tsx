@@ -80,19 +80,28 @@ export function MunicipioCombobox({
   const [term, setTerm] = useState("");
   const [rows, setRows] = useState<Row[] | null>(cache);
   const [busy, setBusy] = useState(false);
+  const [erro, setErro] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => () => void (mounted.current = false), []);
 
+  // Pré-carrega assim que o campo entra na tela: quando o usuário abrir a
+  // lista, os dados já estão em memória.
   useEffect(() => {
-    if (!open || rows) return;
+    if (rows) return;
     setBusy(true);
-    void loadMunicipios().then((data) => {
-      if (!mounted.current) return;
-      setRows(data);
-      setBusy(false);
-    });
-  }, [open, rows]);
+    void loadMunicipios()
+      .then((data) => {
+        if (!mounted.current) return;
+        setRows(data);
+        setBusy(false);
+      })
+      .catch(() => {
+        if (!mounted.current) return;
+        setBusy(false);
+        setErro(true);
+      });
+  }, [rows]);
 
   const results = useMemo(() => {
     if (!rows) return [] as Row[];
@@ -148,6 +157,10 @@ export function MunicipioCombobox({
                 <div className="flex items-center gap-2 px-3 py-6 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                   Carregando tabela do IBGE...
+                </div>
+              ) : erro ? (
+                <div className="px-3 py-6 text-sm text-muted-foreground">
+                  Não foi possível carregar a tabela do IBGE. Recarregue a página.
                 </div>
               ) : results.length === 0 ? (
                 <CommandEmpty>Nenhum município encontrado.</CommandEmpty>
