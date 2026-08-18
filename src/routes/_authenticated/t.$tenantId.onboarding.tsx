@@ -23,8 +23,15 @@ import {
   REGIME_OPTIONS,
   useOnboarding,
   useOnboardingMutations,
+  type OnboardingCompanyData,
   type RegimeDeclarado,
 } from "@/lib/onboarding";
+import {
+  CnpjAutofillField,
+  FromRegistryHint,
+  formatCnpj,
+} from "@/components/techiva/cnpj-autofill";
+import { PRESUMIDO_DISCLAIMER, type CnpjRecord } from "@/lib/cnpj";
 import { useShellData } from "@/lib/tenant-shell-data";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/onboarding")({
