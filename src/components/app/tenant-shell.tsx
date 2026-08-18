@@ -275,34 +275,8 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
           <ShellAlertBell tenantId={data.tenant.id} />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Conta">
-                <span className="grid size-8 place-items-center rounded-full bg-muted font-mono text-xs text-foreground">
-                  {initials || "?"}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="truncate font-normal">
-                <span className="block text-sm text-foreground">{data.fullName ?? "Sem nome"}</span>
-                <span className="block font-mono text-xs text-muted-foreground">{data.email}</span>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => navigate({ to: "/profile" })}>
-                Perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => navigate({ to: "/select-tenant" })}>
-                Trocar organização
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => void signOutAndRedirect(queryClient, navigate)}
-              >
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+
         </header>
 
         <div className="flex items-center gap-2 border-b border-border bg-background px-4 py-2">
