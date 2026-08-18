@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
 import { formatCents } from "@/components/techiva/money";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { ClassTribFeedback } from "@/components/techiva/rtc";
 import {
   CalcResultPanel,
@@ -152,6 +153,11 @@ function SimuladorPage() {
         </div>
         <EngineBanner status={engine.data} loading={engine.isLoading} />
       </header>
+
+      {/* posicionamento e avisos mantidos pela plataforma (notices_for) */}
+      <NoticeBoard scope="simulador" />
+
+
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">

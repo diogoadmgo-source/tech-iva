@@ -29,7 +29,9 @@ export type NavItem = {
     | "/t/$tenantId/rules"
     | "/t/$tenantId/ops"
     | "/t/$tenantId/alerts"
-    | "/t/$tenantId/features";
+    | "/t/$tenantId/features"
+    | "/t/$tenantId/notices"
+    | "/t/$tenantId/settings";
   /** Módulo obrigatório: o item só aparece se feature_enabled(tenant, feature). */
   feature?: "credit";
 };
@@ -42,6 +44,8 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Regras", block: "3.9", to: "/t/$tenantId/rules" },
     { label: "Operações", block: "3.9", to: "/t/$tenantId/ops" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
+    { label: "Avisos", block: "3.13", to: "/t/$tenantId/notices" },
+    { label: "Configurações", block: "3.13", to: "/t/$tenantId/settings" },
     { label: "Módulo de crédito", block: "1.7.5", to: "/t/$tenantId/features" },
     { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },

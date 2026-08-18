@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, FileUp, Loader2, XCircle } from "lucide-re
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { useValidateClassTrib } from "@/lib/rtc";
 import { KpiCard } from "@/components/techiva/metrics";
 import {
@@ -138,6 +139,11 @@ function ValidadorPage() {
         </div>
         <EngineBanner status={engine.data} loading={engine.isLoading} />
       </header>
+
+      {/* avisos mantidos pela plataforma (notices_for) */}
+      <NoticeBoard scope="validador" />
+
+
 
       <section className="grid gap-4 sm:grid-cols-3">
         <KpiCard
