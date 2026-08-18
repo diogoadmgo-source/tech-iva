@@ -29,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   credentialSemaphore,
@@ -114,7 +115,27 @@ function IntegrationsPage() {
         </p>
       </header>
 
-      <CredentialsList tenantId={tenantId} query={credentials} />
+      <Tabs defaultValue="credenciais">
+        <TabsList>
+          <TabsTrigger value="credenciais">Credenciais desta empresa</TabsTrigger>
+          <TabsTrigger value="uso">Onde meu certificado foi usado</TabsTrigger>
+        </TabsList>
+        <TabsContent value="credenciais" className="mt-4">
+          <CredentialsList tenantId={tenantId} query={credentials} />
+        </TabsContent>
+        <TabsContent value="uso" className="mt-4">
+          <Card>
+            <h2 className="text-base font-medium">Onde meu certificado foi usado</h2>
+            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+              Toda vez que usamos a sua credencial, registramos: quando, para quê e se deu certo.
+              Você não precisa confiar na nossa palavra — confira aqui.
+            </p>
+            <div className="mt-4">
+              <UsageTab tenantId={tenantId} />
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <ProcuracaoCard tenantId={tenantId} />
@@ -419,7 +440,7 @@ function CredentialsList({
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">Credenciais desta empresa</h2>
+        <h2 className="text-base font-medium">Credenciais registradas</h2>
         {hasActiveDfe(rows) && (
           <Badge className="bg-flow-in/15 text-flow-in">leitura de notas autorizada</Badge>
         )}
@@ -478,6 +499,50 @@ function CredentialsList({
                     Revogar
                   </Button>
                 </div>
+
+                {/* Quem subiu, quando — e se subiu em nome da empresa.
+                    Transparência protege o cliente e protege quem operou. */}
+                {row.uploaded_on_behalf && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Enviada por{" "}
+                    <span className="text-foreground">
+                      {row.uploaded_by_name ?? "usuário do canal/plataforma"}
+                    </span>
+                    {row.uploaded_by_role ? ` (${row.uploaded_by_role})` : ""}
+                    {row.created_at
+                      ? ` em ${new Date(row.created_at).toLocaleString("pt-BR")}`
+                      : ""}{" "}
+                    — não é membro direto desta empresa.
+                  </p>
+                )}
+
+                {(row.finalidades?.length ?? 0) > 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Autorizada para:{" "}
+                    {row.finalidades!
+                      .map((f) => FINALIDADE_LABEL[f] ?? f)
+                      .join("; ")}
+                    .
+                  </p>
+                )}
+
+                {(row.falhas_consecutivas ?? 0) > 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
+                    <div>
+                      <p className="font-medium">
+                        {row.falhas_consecutivas} falha
+                        {row.falhas_consecutivas === 1 ? "" : "s"} consecutiva
+                        {row.falhas_consecutivas === 1 ? "" : "s"}
+                      </p>
+                      <p className="mt-0.5 text-muted-foreground">
+                        Falhas isoladas costumam ser instabilidade da Receita e não param nada. Após
+                        3 falhas seguidas, pausamos a ingestão e avisamos. O contador zera no
+                        primeiro sucesso.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {row.last_error && (
                   <div className="mt-3 flex items-start gap-2 rounded-lg border border-flow-out/40 bg-flow-out/10 px-3 py-2 text-xs">
