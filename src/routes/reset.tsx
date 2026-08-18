@@ -1,7 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import {
+  AuthShell,
+  FieldError,
+  FormError,
+  FormSuccess,
+  SubmitButton,
+} from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -147,6 +153,7 @@ function ResetPage() {
               id="password"
               type="password"
               autoComplete="new-password"
+              className="focus-glow"
               aria-invalid={Boolean(fields["password"])}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -175,6 +182,7 @@ function ResetPage() {
               id="confirm"
               type="password"
               autoComplete="new-password"
+              className="focus-glow"
               aria-invalid={Boolean(fields["confirm"])}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
@@ -182,9 +190,9 @@ function ResetPage() {
             <FieldError message={fields["confirm"]} />
           </div>
           <FormError message={error} />
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Salvando…" : "Salvar nova senha"}
-          </Button>
+          <SubmitButton loading={loading} loadingLabel="Salvando...">
+            Salvar nova senha
+          </SubmitButton>
         </form>
       )}
     </AuthShell>

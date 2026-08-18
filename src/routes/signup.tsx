@@ -1,7 +1,16 @@
+import { TrendingDown } from "lucide-react";
+
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import {
+  AuthProof,
+  AuthShell,
+  FieldError,
+  FormError,
+  FormSuccess,
+  SubmitButton,
+} from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -102,6 +111,14 @@ function SignupPage() {
 
   return (
     <AuthShell
+      aside={
+        <AuthProof
+          icon={TrendingDown}
+          label="caixa"
+          title="Seu caixa, semana a semana"
+          body="A projeção do imposto que sai e do crédito que volta, com a diferença explícita em cada semana."
+        />
+      }
       title="Criar conta"
       subtitle="A confirmação de e-mail é obrigatória antes do primeiro acesso."
       footer={
@@ -135,6 +152,7 @@ function SignupPage() {
             <Input
               id="name"
               autoComplete="name"
+              className="focus-glow"
               aria-invalid={Boolean(fields["fullName"])}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
@@ -148,6 +166,7 @@ function SignupPage() {
               id="email"
               type="email"
               autoComplete="email"
+              className="focus-glow"
               aria-invalid={Boolean(fields["email"])}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -161,6 +180,7 @@ function SignupPage() {
               id="password"
               type="password"
               autoComplete="new-password"
+              className="focus-glow"
               aria-invalid={Boolean(fields["password"])}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -184,9 +204,9 @@ function SignupPage() {
             <FieldError message={fields["password"]} />
           </div>
           <FormError message={error} />
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Criando…" : "Criar conta"}
-          </Button>
+          <SubmitButton loading={loading} loadingLabel="Criando...">
+            Criar conta
+          </SubmitButton>
         </form>
       )}
     </AuthShell>

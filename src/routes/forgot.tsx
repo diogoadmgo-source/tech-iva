@@ -1,7 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
-import { AuthShell, FieldError, FormError, FormSuccess } from "@/components/auth/auth-shell";
+import {
+  AuthShell,
+  FieldError,
+  FormError,
+  FormSuccess,
+  SubmitButton,
+} from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +100,7 @@ function ForgotPage() {
               id="email"
               type="email"
               autoComplete="email"
+              className="focus-glow"
               aria-invalid={Boolean(fields["email"])}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -102,9 +109,9 @@ function ForgotPage() {
             <FieldError message={fields["email"]} />
           </div>
           <FormError message={error} />
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Enviando…" : "Enviar link"}
-          </Button>
+          <SubmitButton loading={loading} loadingLabel="Enviando...">
+            Enviar link
+          </SubmitButton>
         </form>
       )}
     </AuthShell>
