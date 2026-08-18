@@ -8,12 +8,14 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Download, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "./empty-state";
+import { Pager } from "./pager";
 
 export type Density = "compact" | "normal";
 
@@ -45,6 +47,9 @@ export function DataTable<T>({
   exportName,
   density: densityProp,
   className,
+  serverPagination,
+  serverSearch,
+  virtualize,
 }: {
   columns: ColumnDef<T, unknown>[];
   data: T[];
@@ -55,6 +60,27 @@ export function DataTable<T>({
   exportName?: string | undefined;
   density?: Density | undefined;
   className?: string | undefined;
+  /**
+   * Paginação de servidor. Quando presente, `data` é APENAS a página atual e o
+   * total exibido vem do count exato do banco — a tabela não filtra nem ordena
+   * no cliente aquilo que não carregou.
+   */
+  serverPagination?:
+    | {
+        page: number;
+        pageSize: number;
+        total: number;
+        unit?: string | undefined;
+        onPageChange: (page: number) => void;
+        onPageSizeChange?: ((size: number) => void) | undefined;
+      }
+    | undefined;
+  /** Busca no servidor (controlada). Desliga o filtro local. */
+  serverSearch?:
+    | { value: string; onChange: (value: string) => void }
+    | undefined;
+  /** Virtualiza as linhas: obrigatório para páginas grandes. */
+  virtualize?: boolean | undefined;
 }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
@@ -63,7 +89,7 @@ export function DataTable<T>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, globalFilter },
+    state: { sorting, globalFilter: serverSearch ? "" : globalFilter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
@@ -73,6 +99,24 @@ export function DataTable<T>({
 
   const rows = table.getRowModel().rows;
   const cellPad = density === "compact" ? "px-3 py-1.5" : "px-3 py-2.5";
+  const rowHeight = density === "compact" ? 34 : 44;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const shouldVirtualize = (virtualize ?? rows.length > 120) && !loading;
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => rowHeight,
+    overscan: 12,
+    enabled: shouldVirtualize,
+  });
+  const virtualRows = shouldVirtualize ? virtualizer.getVirtualItems() : [];
+  const padTop = shouldVirtualize ? (virtualRows[0]?.start ?? 0) : 0;
+  const padBottom = shouldVirtualize
+    ? virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0)
+    : 0;
+  const visibleRows = shouldVirtualize ? virtualRows.map((v) => rows[v.index]!) : rows;
+  const colCount = table.getAllLeafColumns().length;
 
   const csv = useMemo(() => (exportName ? toCsv(columns, data) : ""), [columns, data, exportName]);
 
@@ -81,7 +125,9 @@ export function DataTable<T>({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${exportName}.csv`;
+    a.download = serverPagination
+      ? `${exportName}-pagina-${serverPagination.page + 1}.csv`
+      : `${exportName}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -92,8 +138,10 @@ export function DataTable<T>({
         <div className="relative min-w-52 flex-1">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={serverSearch ? serverSearch.value : globalFilter}
+            onChange={(e) =>
+              serverSearch ? serverSearch.onChange(e.target.value) : setGlobalFilter(e.target.value)
+            }
             placeholder={searchPlaceholder}
             className="h-8 pl-8 text-sm"
             aria-label="Buscar na tabela"
@@ -114,7 +162,7 @@ export function DataTable<T>({
         )}
       </div>
 
-      <div className="max-h-[32rem] overflow-auto">
+      <div ref={scrollRef} className="max-h-[32rem] overflow-auto">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-surface-2">
             {table.getHeaderGroups().map((hg) => (
@@ -159,8 +207,13 @@ export function DataTable<T>({
                   ))}
                 </tr>
               ))}
+            {!loading && padTop > 0 && (
+              <tr aria-hidden style={{ height: padTop }}>
+                <td colSpan={colCount} />
+              </tr>
+            )}
             {!loading &&
-              rows.map((row) => (
+              visibleRows.map((row) => (
                 <tr key={row.id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/60">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className={cellPad}>
@@ -169,9 +222,26 @@ export function DataTable<T>({
                   ))}
                 </tr>
               ))}
+            {!loading && padBottom > 0 && (
+              <tr aria-hidden style={{ height: padBottom }}>
+                <td colSpan={colCount} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
+
+      {serverPagination && (
+        <Pager
+          page={serverPagination.page}
+          pageSize={serverPagination.pageSize}
+          total={serverPagination.total}
+          unit={serverPagination.unit}
+          loading={loading}
+          onPageChange={serverPagination.onPageChange}
+          onPageSizeChange={serverPagination.onPageSizeChange}
+        />
+      )}
 
       {!loading && rows.length === 0 && (
         <div className="p-4">
