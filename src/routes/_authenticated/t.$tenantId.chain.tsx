@@ -492,6 +492,9 @@ function PartySheet({
             <Row label="Participação" value={formatPct(row.share_pct)} />
           </dl>
 
+          <CounterpartyRegistry cnpj={row.cnpj} />
+
+
           <div className="space-y-3 rounded-lg border border-border p-3">
             <p className="text-xs font-medium">Editar regime manualmente</p>
             <Select value={newRegime} onValueChange={(v) => setNewRegime(v as RegimeKind)}>
