@@ -12,6 +12,18 @@ const rpc = supabase.rpc.bind(supabase) as unknown as (
 export type CredentialKind = "procuracao" | "api_key" | "certificado_a1";
 export type CredentialStatus = "pendente" | "ativa" | "expirada" | "revogada" | "erro";
 
+/** Finalidades autorizadas (lista fechada — validada por trigger no banco). */
+export type Finalidade = "ingest_dfe" | "consulta_apuracao" | "emissao_documento";
+
+/** O que o certificado será usado para fazer. O cliente autoriza usos específicos. */
+export const FINALIDADES_PADRAO: Finalidade[] = ["ingest_dfe", "consulta_apuracao"];
+
+export const FINALIDADE_LABEL: Record<string, string> = {
+  ingest_dfe: "Baixar seus documentos fiscais (notas emitidas e recebidas)",
+  consulta_apuracao: "Consultar a sua apuração de CBS/IBS na Receita",
+  emissao_documento: "Assinar e emitir documentos fiscais em seu nome",
+};
+
 export type CredentialRow = {
   id: string;
   provider: string;
@@ -23,6 +35,22 @@ export type CredentialRow = {
   dias_para_expirar: number | null;
   last_used_at: string | null;
   last_error: string | null;
+  finalidades: string[] | null;
+  falhas_consecutivas: number | null;
+  uploaded_on_behalf: boolean | null;
+  uploaded_by_role: string | null;
+  uploaded_by_name: string | null;
+  created_at: string | null;
+};
+
+/** Uma linha do extrato "onde meu certificado foi usado". */
+export type CredentialUsageRow = {
+  usado_em: string;
+  finalidade: string;
+  sucesso: boolean;
+  detalhe: string | null;
+  subject_cn: string | null;
+  fingerprint: string | null;
 };
 
 export const KIND_LABEL: Record<CredentialKind, string> = {
