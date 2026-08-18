@@ -7,7 +7,9 @@ export type NavItem = {
   /** Rota já implementada (relativa ao tenant ativo); ausente = tela futura. */
   to?:
     | "/t/$tenantId/cash"
+    | "/t/$tenantId/apuracao"
     | "/t/$tenantId/chain"
+
     | "/t/$tenantId/regime"
     | "/t/$tenantId/portfolio"
     | "/t/$tenantId/brand"
@@ -61,6 +63,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
+    { label: "Apuração", block: "3.12", to: "/t/$tenantId/apuracao" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },
@@ -72,6 +75,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
+    { label: "Apuração", block: "3.12", to: "/t/$tenantId/apuracao" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },

@@ -20,6 +20,9 @@ export const ALERT_KIND_LABELS: Record<string, string> = {
   credit_lost: "Crédito perdido na cadeia",
   price_below_floor: "Preço abaixo do piso",
   offer_available: "Oferta de crédito disponível",
+  inconsistent_item: "Item de nota com classificação inconsistente",
+  credential_expiring: "Credencial perto de vencer",
+  regime_changed: "Regime da contraparte mudou",
 };
 
 export function alertKindLabel(kind: string) {

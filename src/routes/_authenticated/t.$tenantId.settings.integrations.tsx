@@ -110,7 +110,113 @@ function IntegrationsPage() {
         <ApiKeyCard tenantId={tenantId} />
         <CertificateCard tenantId={tenantId} />
       </div>
+
+      <RtcPlatformCard tenantId={tenantId} />
     </div>
+  );
+}
+
+/* -------------------------------------------------- Plataforma RTC (CBS) */
+
+const RTC_PORTAL_URL = "https://consumo.tributos.gov.br";
+
+function RtcPlatformCard({ tenantId }: { tenantId: string }) {
+  const credentials = useCredentials(tenantId);
+  const upload = useUploadCredential(tenantId);
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+
+  const rtc = (credentials.data ?? []).find((c) => c.provider === "rtc_cbs");
+
+  return (
+    <Card>
+      <div className="flex flex-wrap items-center gap-2">
+        <KeyRound className="size-4 text-primary" aria-hidden />
+        <h2 className="text-base font-medium">Plataforma RTC (CBS)</h2>
+        {rtc ? (
+          <Badge className="bg-flow-in/15 text-flow-in">{STATUS_LABEL[rtc.status]}</Badge>
+        ) : (
+          <Badge variant="outline" className="text-xs text-muted-foreground">
+            não configurada
+          </Badge>
+        )}
+      </div>
+
+      <p className="mt-2 max-w-3xl text-xs text-muted-foreground">
+        A credencial da Plataforma RTC é gerada por você, no portal da Receita, pelo serviço
+        “Gerar Credencial” — ele devolve um <strong>ClientId</strong> e um{" "}
+        <strong>ClientSecret</strong>. Um procurador digital da empresa também pode gerar. O
+        ClientSecret é cifrado no envio, nunca é exibido de novo e não pode ser baixado.
+      </p>
+
+      <p className="mt-2 max-w-3xl text-xs text-muted-foreground">
+        Esta credencial serve à apuração assistida e às consultas de parametrização. O cálculo em si
+        roda na nossa infraestrutura, com o componente oficial offline — sem telemetria e sem envio
+        automático dos seus dados.
+      </p>
+
+      <div className="mt-3">
+        <a
+          href={RTC_PORTAL_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          Abrir consumo.tributos.gov.br <ExternalLink className="size-3" aria-hidden />
+        </a>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="rtc-client-id">ClientId</Label>
+          <Input
+            id="rtc-client-id"
+            autoComplete="off"
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            placeholder="identificador gerado no portal"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="rtc-client-secret">ClientSecret</Label>
+          <Input
+            id="rtc-client-secret"
+            type="password"
+            autoComplete="off"
+            value={clientSecret}
+            onChange={(e) => setClientSecret(e.target.value)}
+            placeholder="cole o segredo gerado no portal"
+          />
+        </div>
+      </div>
+
+      <Button
+        className="mt-4"
+        variant="outline"
+        disabled={clientId.trim().length < 4 || clientSecret.trim().length < 8 || upload.isPending}
+        onClick={async () => {
+          try {
+            await upload.mutateAsync({
+              kind: "api_key",
+              provider: "rtc_cbs",
+              apiKey: `${clientId.trim()}:${clientSecret.trim()}`,
+            });
+            setClientId("");
+            setClientSecret("");
+            toast.success("Credencial da Plataforma RTC registrada e cifrada.");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Falha ao registrar.");
+          }
+        }}
+      >
+        {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+        Registrar credencial RTC
+      </Button>
+
+      {rtc?.last_error && (
+        <p className="mt-3 text-xs text-flow-out">Última tentativa falhou: {rtc.last_error}</p>
+      )}
+    </Card>
   );
 }
 
