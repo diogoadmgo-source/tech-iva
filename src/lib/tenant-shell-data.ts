@@ -43,7 +43,9 @@ export function useShellData(tenantId: string) {
       if (contextError) throw contextError;
       if (tenantsError) throw tenantsError;
 
-      const context = contextData as unknown as TenantContext;
+      const raw = (contextData ?? null) as unknown as TenantContext | null;
+      if (!raw) throw new Error("Contexto da organização indisponível.");
+      const context: TenantContext = { ...raw, ancestrais: raw.ancestrais ?? [] };
       const scope = (scopeRows ?? []) as unknown as ScopeNode[];
       const byId = new Map((tenants ?? []).map((t) => [t.id, t]));
       const active = byId.get(tenantId);
