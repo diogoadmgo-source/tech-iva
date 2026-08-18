@@ -3938,18 +3938,23 @@ export type Database = {
         Args: { p_tenant: string }
         Returns: {
           created_at: string
+          dias_de_validade: number
           dias_para_expirar: number
           falhas_consecutivas: number
           finalidades: string[]
+          fingerprint: string
           id: string
           kind: Database["public"]["Enums"]["credential_kind"]
           last_error: string
           last_used_at: string
+          last_used_finalidade: string
           not_after: string
+          not_before: string
           provider: string
           status: Database["public"]["Enums"]["credential_status"]
           subject_cn: string
           subject_cnpj: string
+          titular_confere: boolean
           uploaded_by_name: string
           uploaded_by_role: string
           uploaded_on_behalf: boolean
