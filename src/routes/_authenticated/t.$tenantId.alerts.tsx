@@ -115,7 +115,7 @@ function AlertsPage() {
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-1 p-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Situação</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v as AlertStatusFilter)}>
+          <Select value={status} onValueChange={(v) => { setPage(0); setStatus(v as AlertStatusFilter); }}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -128,7 +128,7 @@ function AlertsPage() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Severidade</Label>
-          <Select value={severity} onValueChange={(v) => setSeverity(v as AlertSeverity | "all")}>
+          <Select value={severity} onValueChange={(v) => { setPage(0); setSeverity(v as AlertSeverity | "all"); }}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
@@ -142,7 +142,7 @@ function AlertsPage() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Tipo</Label>
-          <Select value={kind} onValueChange={setKind}>
+          <Select value={kind} onValueChange={(v) => { setPage(0); setKind(v); }}>
             <SelectTrigger className="w-64">
               <SelectValue />
             </SelectTrigger>
