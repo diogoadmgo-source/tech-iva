@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import iconAsset from "@/assets/techiva-icon.png.asset.json";
 import { Toaster } from "@/components/ui/sonner";
-import { RouteTransition } from "@/components/visual/route-transition";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -152,10 +151,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <RouteTransition>
-        <Outlet />
-      </RouteTransition>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes.
+          Sem wrapper com key por rota: remontar a árvore a cada navegação apagava o
+          shell (sidebar) e refazia as consultas — era isso que causava a "piscada". */}
+      <Outlet />
       <Toaster />
     </QueryClientProvider>
   );
