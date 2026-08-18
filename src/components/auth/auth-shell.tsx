@@ -25,7 +25,8 @@ export function AuthShell({
   aside?: ReactNode;
 }) {
   return (
-    <main className="ambient flex min-h-screen flex-col items-center justify-center px-4 py-12">
+    <main className="ambient relative flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <AuthBackdrop />
       <div
         className={cn(
           "grid w-full gap-12",
