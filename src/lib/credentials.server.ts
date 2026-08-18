@@ -42,7 +42,12 @@ async function kek(salt: Uint8Array): Promise<CryptoKey> {
     "deriveKey",
   ]);
   return crypto.subtle.deriveKey(
-    { name: "HKDF", hash: "SHA-256", salt, info: enc.encode("techiva:dfe-credential:v1") },
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: salt as unknown as BufferSource,
+      info: enc.encode("techiva:dfe-credential:v1"),
+    },
     material,
     { name: "AES-GCM", length: 256 },
     false,
@@ -105,8 +110,11 @@ export function readPfx(pfx: Uint8Array, password: string): PfxMetadata {
     const binary = String.fromCharCode(...Array.from(pfx));
     const asn1 = forge.asn1.fromDer(binary);
     const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, password);
-    const bags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] ?? [];
-    const certs = bags.map((bag) => bag.cert).filter(Boolean) as forge.pki.Certificate[];
+    const certBagOid = forge.pki.oids["certBag"] as string;
+    const bags = p12.getBags({ bagType: certBagOid })[certBagOid] ?? [];
+    const certs = bags
+      .map((bag: forge.pkcs12.Bag) => bag.cert)
+      .filter(Boolean) as forge.pki.Certificate[];
     // o certificado do titular é o que não é CA
     cert = certs.find((c) => !c.getExtension("basicConstraints")) ?? certs[0];
   } catch {
