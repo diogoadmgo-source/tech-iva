@@ -100,7 +100,7 @@ function ApuracaoPage() {
         <div className="flex items-end gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Competência</Label>
-            <Select value={competencia} onValueChange={setCompetencia}>
+            <Select value={competencia} onValueChange={(v) => { setInvPage(0); setCompetencia(v); }}>
               <SelectTrigger className="w-36">
                 <SelectValue />
               </SelectTrigger>
