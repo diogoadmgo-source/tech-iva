@@ -1,12 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { Eye, Search } from "lucide-react";
 import { toast } from "sonner";
 
-import { BrandIcon, BrandLogo } from "@/components/brand/brand-logo";
 import { Badge } from "@/components/ui/badge";
-
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
@@ -17,20 +14,16 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Eye } from "lucide-react";
-import { KIND_LABELS, authErrorMessage, ROLE_LABELS, signOutAndRedirect, type MemberRole, type TenantKind } from "@/lib/auth";
-import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
+  KIND_LABELS,
+  authErrorMessage,
+  ROLE_LABELS,
+  type MemberRole,
+  type TenantKind,
+} from "@/lib/auth";
 import { JobCenter } from "@/components/app/job-center";
 import { ShellAlertBell } from "@/components/app/shell-alert-bell";
+import { TenantSidebar } from "@/components/app/tenant-sidebar";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
-import { useFeature } from "@/lib/features";
 import {
   filterScopeTree,
   flattenScopeTree,
@@ -38,6 +31,7 @@ import {
   type ScopeTreeNode,
   type TenantContext,
 } from "@/lib/tenant-scope";
+
 
 export type ShellTenant = {
   id: string;
