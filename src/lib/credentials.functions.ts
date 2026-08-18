@@ -52,12 +52,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // O papel é validado com o client do usuário (RLS/hierarquia), não com service role.
-    const { data: allowed, error: roleErr } = await context.supabase.rpc("has_role", {
+    // role_in() é a função exposta a authenticated; has_role() é interna (service_role).
+    const { data: role, error: roleErr } = await context.supabase.rpc("role_in", {
       p_tenant: data.tenantId,
-      p_roles: ["platform_admin", "channel_admin", "owner", "finance"],
     } as never);
     if (roleErr) throw new Error(roleErr.message);
-    if (allowed !== true) throw new Error("forbidden");
+    const ALLOWED = ["platform_admin", "channel_admin", "owner", "finance"];
+    if (typeof role !== "string" || !ALLOWED.includes(role)) throw new Error("forbidden");
 
     const { data: tenant } = await supabaseAdmin
       .from("tenants")
