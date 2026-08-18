@@ -162,3 +162,67 @@ export function secretPath(tenantId: string, provider: string): string {
 }
 
 export const onlyDigits = (value: string | null | undefined) => (value ?? "").replace(/\D/g, "");
+
+/**
+ * Limpeza de órfãos no bucket privado.
+ *
+ * Um objeto órfão é material cifrado que subiu para o bucket sem registro
+ * correspondente em integration_credentials (ex.: o upload gravou o envelope e o
+ * register_credential falhou depois). Material sensível sem dono é risco puro:
+ * ninguém consegue usar, ninguém consegue revogar, e ele fica lá.
+ *
+ * A rotina lista recursivamente `secrets/` e remove tudo que não estiver
+ * referenciado em secret_ref. Nunca remove objeto referenciado.
+ */
+type StorageLike = {
+  storage: {
+    from: (bucket: string) => {
+      list: (
+        path: string,
+        opts?: { limit?: number; offset?: number },
+      ) => Promise<{ data: { name: string; id: string | null }[] | null; error: { message: string } | null }>;
+      remove: (paths: string[]) => Promise<{ error: { message: string } | null }>;
+    };
+  };
+  from: (table: string) => {
+    select: (columns: string) => Promise<{ data: { secret_ref: string | null }[] | null; error: { message: string } | null }>;
+  };
+};
+
+async function listAll(client: StorageLike, prefix: string): Promise<string[]> {
+  const found: string[] = [];
+  const bucket = client.storage.from(SECRETS_BUCKET);
+  const pageSize = 100;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await bucket.list(prefix, { limit: pageSize, offset });
+    if (error) throw new Error(error.message);
+    const entries = data ?? [];
+    for (const entry of entries) {
+      const full = prefix ? `${prefix}/${entry.name}` : entry.name;
+      // id null = "pasta" (prefixo virtual do Storage)
+      if (entry.id === null) found.push(...(await listAll(client, full)));
+      else found.push(full);
+    }
+    if (entries.length < pageSize) break;
+  }
+  return found;
+}
+
+export async function cleanupOrphanSecrets(
+  client: StorageLike,
+  options: { dryRun?: boolean } = {},
+): Promise<{ scanned: number; referenced: number; orphans: string[]; removed: string[] }> {
+  const objects = await listAll(client, "secrets");
+  const { data, error } = await client.from("integration_credentials").select("secret_ref");
+  if (error) throw new Error(error.message);
+  const referenced = new Set((data ?? []).map((r) => r.secret_ref).filter(Boolean) as string[]);
+  const orphans = objects.filter((path) => !referenced.has(path));
+
+  let removed: string[] = [];
+  if (orphans.length > 0 && !options.dryRun) {
+    const { error: rmError } = await client.storage.from(SECRETS_BUCKET).remove(orphans);
+    if (rmError) throw new Error(rmError.message);
+    removed = orphans;
+  }
+  return { scanned: objects.length, referenced: referenced.size, orphans, removed };
+}

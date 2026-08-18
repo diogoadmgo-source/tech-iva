@@ -31,16 +31,23 @@ export type CredentialRow = {
   status: CredentialStatus;
   subject_cn: string | null;
   subject_cnpj: string | null;
+  not_before: string | null;
   not_after: string | null;
   dias_para_expirar: number | null;
+  /** dias entre not_before e not_after — base da barra de validade */
+  dias_de_validade: number | null;
   last_used_at: string | null;
+  last_used_finalidade: string | null;
   last_error: string | null;
+  fingerprint: string | null;
   finalidades: string[] | null;
   falhas_consecutivas: number | null;
   uploaded_on_behalf: boolean | null;
   uploaded_by_role: string | null;
   uploaded_by_name: string | null;
   created_at: string | null;
+  /** o banco confirmou no upload que o titular é o CNPJ desta empresa */
+  titular_confere: boolean | null;
 };
 
 /** Uma linha do extrato "onde meu certificado foi usado". */
@@ -51,6 +58,22 @@ export type CredentialUsageRow = {
   detalhe: string | null;
   subject_cn: string | null;
   fingerprint: string | null;
+};
+
+/** Rótulo curto para chip — o longo explica, o curto cabe. */
+export const FINALIDADE_CHIP: Record<string, string> = {
+  ingest_dfe: "Baixar documentos fiscais",
+  consulta_apuracao: "Consultar apuração",
+  emissao_documento: "Emitir documentos",
+};
+
+export const ROLE_LABEL: Record<string, string> = {
+  platform_admin: "administrador da plataforma",
+  platform_ops: "operação da plataforma",
+  channel_admin: "administrador do canal",
+  channel_analyst: "analista do canal",
+  owner: "responsável da empresa",
+  finance: "financeiro",
 };
 
 export const KIND_LABEL: Record<CredentialKind, string> = {
@@ -196,3 +219,84 @@ export const ECAC_URL = "https://cav.receita.fazenda.gov.br/autenticacao/login";
 
 export const WHY_PROCURACAO =
   "Recomendamos a procuração eletrônica porque, nesse caminho, usamos o nosso próprio certificado: nós não guardamos chave privada de cliente nenhum. É a opção mais segura para você e para nós.";
+
+
+/* --------------------------------------------------- apresentação do dado */
+
+/** CNPJ só de dígitos -> 00.000.000/0000-00. Devolve o original se não bater. */
+export function formatCnpj(value: string | null | undefined): string {
+  const digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length !== 14) return value ?? "";
+  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+}
+
+/**
+ * O CN de e-CNPJ vem como "RAZÃO SOCIAL:CNPJ". A string crua com dois-pontos não
+ * é para o cliente ver: separamos razão social e CNPJ.
+ */
+export function splitSubjectCn(
+  cn: string | null | undefined,
+  fallbackCnpj?: string | null,
+): { razaoSocial: string | null; cnpj: string | null } {
+  const raw = (cn ?? "").trim();
+  const match = raw.match(/^(.*?):(\d{11,14})$/);
+  if (match) return { razaoSocial: match[1]!.trim(), cnpj: match[2]! };
+  return { razaoSocial: raw || null, cnpj: fallbackCnpj ?? null };
+}
+
+/** Impressão digital truncada no meio: 8 primeiros e 8 últimos caracteres. */
+export function truncateFingerprint(fp: string | null | undefined): string {
+  const clean = (fp ?? "").replace(/\s+/g, "");
+  if (clean.length <= 20) return clean;
+  return `${clean.slice(0, 8)}…${clean.slice(-8)}`;
+}
+
+export function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const iso = value.length === 10 ? `${value}T12:00:00` : value;
+  return new Date(iso).toLocaleDateString("pt-BR");
+}
+
+/** Tempo restante em linguagem natural. */
+export function diasEmPalavras(dias: number | null | undefined): string {
+  if (dias === null || dias === undefined) return "sem prazo definido";
+  if (dias < 0) return `venceu há ${Math.abs(dias)} dia${Math.abs(dias) === 1 ? "" : "s"}`;
+  if (dias === 0) return "vence hoje";
+  if (dias === 1) return "falta 1 dia";
+  return `faltam ${dias} dias`;
+}
+
+export type CertificateState = "ativo" | "expirando" | "expirado" | "erro" | "revogado" | "pendente";
+
+/**
+ * Estado do certificado para a UI. A ordem importa: revogado e erro mandam mais
+ * que validade, e "expirando" é < 30 dias (janela de renovação).
+ */
+export function certificateState(row: CredentialRow): CertificateState {
+  if (row.status === "revogada") return "revogado";
+  if (row.status === "erro" || (row.falhas_consecutivas ?? 0) >= 3) return "erro";
+  if (row.status === "expirada") return "expirado";
+  if (row.status === "pendente") return "pendente";
+  const dias = row.dias_para_expirar;
+  if (dias !== null && dias < 0) return "expirado";
+  if (dias !== null && dias <= 30) return "expirando";
+  return "ativo";
+}
+
+export const CERT_STATE_LABEL: Record<CertificateState, string> = {
+  ativo: "Ativo",
+  expirando: "Expirando",
+  expirado: "Expirado",
+  erro: "Com erro",
+  revogado: "Revogado",
+  pendente: "Pendente",
+};
+
+/** Percentual do período de validade já consumido (0-100). */
+export function validityProgress(row: CredentialRow): number {
+  const total = row.dias_de_validade;
+  const restantes = row.dias_para_expirar;
+  if (!total || total <= 0 || restantes === null) return 0;
+  const usado = ((total - restantes) / total) * 100;
+  return Math.min(100, Math.max(0, Math.round(usado)));
+}

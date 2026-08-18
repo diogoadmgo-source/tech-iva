@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
 import { Badge } from "@/components/ui/badge";
@@ -79,13 +80,22 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/settings/integ
 const PROCURADOR_CNPJ = import.meta.env["VITE_TECHIVA_PROCURADOR_CNPJ"] as string | undefined;
 const ECAC_URL = "https://cav.receita.fazenda.gov.br/autenticacao/login";
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+}) {
   return (
-    <section className={`rounded-xl border border-border bg-surface-1 p-5 ${className}`}>
+    <section id={id} className={`rounded-xl border border-border bg-surface-1 p-5 ${className}`}>
       {children}
     </section>
   );
 }
+
 
 function IntegrationsPage() {
   const { tenantId } = Route.useParams();
@@ -95,6 +105,8 @@ function IntegrationsPage() {
     role === "platform_admin" || role === "channel_admin" || role === "owner" || role === "finance";
 
   const credentials = useCredentials(tenantId);
+  const [tab, setTab] = useState("credenciais");
+
 
   if (shell.isLoading) return <Skeleton className="h-64 w-full" />;
   if (!canManage) {
@@ -115,14 +127,15 @@ function IntegrationsPage() {
         </p>
       </header>
 
-      <Tabs defaultValue="credenciais">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="credenciais">Credenciais desta empresa</TabsTrigger>
           <TabsTrigger value="uso">Onde meu certificado foi usado</TabsTrigger>
         </TabsList>
         <TabsContent value="credenciais" className="mt-4">
-          <CredentialsList tenantId={tenantId} query={credentials} />
+          <CredentialsList tenantId={tenantId} query={credentials} onOpenUsage={() => setTab("uso")} />
         </TabsContent>
+
         <TabsContent value="uso" className="mt-4">
           <Card>
             <h2 className="text-base font-medium">Onde meu certificado foi usado</h2>
@@ -422,10 +435,13 @@ const DOT: Record<string, string> = {
 function CredentialsList({
   tenantId,
   query,
+  onOpenUsage,
 }: {
   tenantId: string;
   query: ReturnType<typeof useCredentials>;
+  onOpenUsage?: () => void;
 }) {
+
   const revoke = useRevokeCredential(tenantId);
   const [pending, setPending] = useState<CredentialRow | null>(null);
   const [reason, setReason] = useState("");
@@ -457,10 +473,33 @@ function CredentialsList({
         <ul className="mt-4 space-y-3">
           {rows.map((row) => {
             const semaphore = credentialSemaphore(row);
+            // O certificado é o caminho principal: ganha cartão próprio, com
+            // validade em destaque, titular tratado e prova de verificação.
+            if (row.kind === "certificado_a1") {
+              return (
+                <li key={row.id}>
+                  <CertificateStatusCard
+                    row={row}
+                    onOpenUsage={onOpenUsage}
+                    onReplace={() =>
+                      document
+                        .getElementById("cert-upload")
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
+                    onRevoke={() => {
+                      setReason("");
+                      setPending(row);
+                    }}
+                    onRetry={() => void query.refetch()}
+                  />
+                </li>
+              );
+            }
             return (
               <li key={row.id} className="rounded-lg border border-border bg-surface-2 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
+
                     <div className="flex items-center gap-2">
                       <span
                         className={`size-2 rounded-full ${DOT[semaphore]}`}
@@ -567,8 +606,9 @@ function CredentialsList({
           <DialogHeader>
             <DialogTitle>Revogar credencial</DialogTitle>
             <DialogDescription>
-              A credencial deixa de valer imediatamente e o material cifrado é descartado. A
-              ingestão de notas por esse caminho para até você registrar outra credencial.
+              A credencial deixa de valer imediatamente e o material cifrado é descartado — não há
+              como desfazer. A ingestão dos seus documentos fiscais por esse caminho <strong>para</strong>{" "}
+              até você registrar outra credencial.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -746,7 +786,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
   const [ack, setAck] = useState(false);
 
   return (
-    <Card>
+    <Card className="scroll-mt-24" id="cert-upload">
       <div className="flex items-center gap-2">
         <ShieldCheck className="size-4 text-primary" aria-hidden />
         <h3 className="text-sm font-medium">Certificado A1 (.pfx)</h3>
