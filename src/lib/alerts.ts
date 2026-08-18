@@ -54,46 +54,63 @@ export const ALERT_KINDS_FOR_EMAIL = [
   "offer_available",
 ] as const;
 
-/** Lista completa da central, com filtros de severidade/tipo/status. */
+type AlertFilters = {
+  status: AlertStatusFilter;
+  severity?: AlertSeverity | "all";
+  kind?: string | "all";
+};
+
+/** Os mesmos filtros para a página e para a contagem. */
+function applyAlertFilters<Q>(query: Q, filters: AlertFilters, tenantId: string): Q {
+  let q = query as unknown as {
+    eq: (c: string, v: string) => typeof q;
+    is: (c: string, v: null) => typeof q;
+    not: (c: string, op: string, v: string) => typeof q;
+  };
+  q = q.eq("tenant_id", tenantId);
+  if (filters.status === "open") q = q.is("resolved_at", null);
+  if (filters.status === "resolved") q = q.not("resolved_at", "is", "null");
+  if (filters.severity && filters.severity !== "all") q = q.eq("severity", filters.severity);
+  if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
+  return q as unknown as Q;
+}
+
+/**
+ * Lista completa da central, com filtros de severidade/tipo/status.
+ *
+ * Ordenação `created_at desc, id`: coberta pelo índice alerts_tenant_created_id.
+ * O índice parcial antigo só valia para alertas abertos, e esta tela lista todos.
+ * A contagem é consulta separada, cacheada pelos filtros (não por página).
+ */
 export function useAlertCenter(
   tenantId: string,
-  filters: { status: AlertStatusFilter; severity?: AlertSeverity | "all"; kind?: string | "all" },
+  filters: AlertFilters,
   page = 0,
   pageSize = DEFAULT_PAGE_SIZE,
 ) {
   const queryClient = useQueryClient();
-  const key = [
+  const filterKey = [
     "alert-center",
     tenantId,
     filters.status,
     filters.severity ?? "all",
     filters.kind ?? "all",
-    page,
-    pageSize,
   ] as const;
 
-  const query = useQuery({
-    queryKey: key,
-    queryFn: async (): Promise<Paged<AlertRow>> => {
+  const rowsQuery = useQuery({
+    queryKey: [...filterKey, page, pageSize],
+    queryFn: async (): Promise<AlertRow[]> => {
       const [from, to] = rangeOf(page, pageSize);
-      let q = supabase
+      const q = supabase
         .from("alerts")
-        .select("id, kind, severity, title, payload, created_at, read_at, resolved_at, resolved_by", {
-          count: "exact",
-        })
-        .eq("tenant_id", tenantId)
+        .select("id, kind, severity, title, payload, created_at, read_at, resolved_at, resolved_by")
         .order("created_at", { ascending: false })
-        .order("id", { ascending: true })
+        .order("id", { ascending: true }) // desempate estável entre páginas
         .range(from, to);
 
-      if (filters.status === "open") q = q.is("resolved_at", null);
-      if (filters.status === "resolved") q = q.not("resolved_at", "is", null);
-      if (filters.severity && filters.severity !== "all") q = q.eq("severity", filters.severity);
-      if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
-
-      const { data, error, count } = await q;
+      const { data, error } = await applyAlertFilters(q, filters, tenantId);
       if (error) throw error;
-      const rows: AlertRow[] = (data ?? []).map((a) => ({
+      return (data ?? []).map((a) => ({
         id: a.id,
         kind: a.kind,
         severity: a.severity as AlertSeverity,
@@ -104,8 +121,14 @@ export function useAlertCenter(
         resolved_at: a.resolved_at,
         resolved_by: a.resolved_by ?? null,
       }));
-      return paged(rows, count ?? 0, page, pageSize);
     },
+  });
+
+  const count = useRowCount([...filterKey], async () => {
+    const q = supabase.from("alerts").select("id", { count: "exact", head: true });
+    const { count: n, error } = await applyAlertFilters(q, filters, tenantId);
+    if (error) throw error;
+    return n ?? 0;
   });
 
   useEffect(() => {
@@ -116,6 +139,9 @@ export function useAlertCenter(
         { event: "*", schema: "public", table: "alerts", filter: `tenant_id=eq.${tenantId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["alert-center", tenantId] });
+          // a contagem vive em outra chave: sem isto o total congela após resolver
+          // ou receber alerta em tempo real.
+          void queryClient.invalidateQueries({ queryKey: ["row-count", "alert-center", tenantId] });
           void queryClient.invalidateQueries({ queryKey: ["alerts", tenantId] });
         },
       )
@@ -125,8 +151,14 @@ export function useAlertCenter(
     };
   }, [tenantId, queryClient]);
 
-  return query;
+  return {
+    ...rowsQuery,
+    data: rowsQuery.data
+      ? paged(rowsQuery.data, count.data ?? 0, page, pageSize)
+      : (undefined as Paged<AlertRow> | undefined),
+  };
 }
+
 
 export function useAlertPrefs(tenantId: string) {
   return useQuery({
