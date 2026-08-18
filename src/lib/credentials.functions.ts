@@ -155,7 +155,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
         );
       }
       // fonte autoritativa da regra: normaliza os dois lados com so_digitos no banco
-      const { data: confere, error: confereErr } = await supabaseAdmin.rpc(
+      const { data: confere, error: confereErr } = await context.supabase.rpc(
         "certificado_confere_titular",
         { p_tenant: data.tenantId, p_subject_cnpj: meta.subjectCnpj } as never,
       );
