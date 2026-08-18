@@ -109,3 +109,58 @@ revoke all on function public.credential_usage_report(uuid, integer) from public
 grant execute on function public.credential_allows(uuid, text) to service_role;
 grant execute on function public.check_credential_anomalies() to service_role;
 grant execute on function public.credential_usage_report(uuid, integer) to authenticated, service_role;
+
+-- ───────── CNPJ normalizado: comparação de titular sem falso negativo ──────
+-- O CNPJ chegava em formatos mistos (pontuado e só dígitos). Comparar texto
+-- cru fazia o mesmo CNPJ parecer diferente — e a recusa por titular divergente
+-- é justamente a trava que não pode errar. Normaliza na entrada, por trigger.
+create or replace function public.so_digitos(p text)
+returns text language sql immutable set search_path to 'public', 'extensions'
+as $function$
+  select nullif(regexp_replace(coalesce(p,''), '\D', '', 'g'), '');
+$function$;
+
+create or replace function public.normalizar_cnpj()
+returns trigger language plpgsql set search_path to 'public', 'extensions'
+as $function$
+begin
+  new.cnpj := so_digitos(new.cnpj);
+  if new.cnpj is not null and length(new.cnpj) <> 14 then
+    raise exception 'CNPJ inválido (esperados 14 dígitos): %', new.cnpj;
+  end if;
+  return new;
+end $function$;
+
+create or replace function public.normalizar_subject_cnpj()
+returns trigger language plpgsql set search_path to 'public', 'extensions'
+as $function$
+begin
+  new.subject_cnpj := so_digitos(new.subject_cnpj);
+  if new.subject_cnpj is not null and length(new.subject_cnpj) <> 14 then
+    raise exception 'CNPJ do titular inválido (esperados 14 dígitos): %', new.subject_cnpj;
+  end if;
+  return new;
+end $function$;
+
+drop trigger if exists trg_cnpj_tenants on public.tenants;
+create trigger trg_cnpj_tenants before insert or update of cnpj on public.tenants
+  for each row execute function public.normalizar_cnpj();
+
+drop trigger if exists trg_cnpj_credencial on public.integration_credentials;
+create trigger trg_cnpj_credencial before insert or update of subject_cnpj on public.integration_credentials
+  for each row execute function public.normalizar_subject_cnpj();
+
+-- O titular do certificado tem de ser a própria empresa. Trava de banco, para
+-- não depender só da checagem feita na aplicação.
+create or replace function public.certificado_confere_titular(p_tenant uuid, p_subject_cnpj text)
+returns boolean language sql stable security definer
+set search_path to 'public', 'extensions'
+as $function$
+  select so_digitos(p_subject_cnpj) is not null
+     and so_digitos(p_subject_cnpj) = (select so_digitos(cnpj) from tenants where id = p_tenant);
+$function$;
+
+revoke all on function public.certificado_confere_titular(uuid, text) from public, anon;
+grant execute on function public.certificado_confere_titular(uuid, text) to authenticated, service_role;
+revoke all on function public.so_digitos(text) from public, anon;
+grant execute on function public.so_digitos(text) to authenticated, service_role;
