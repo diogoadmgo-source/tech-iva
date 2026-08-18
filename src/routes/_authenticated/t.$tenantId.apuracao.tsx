@@ -16,7 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import {
+
   CALCULADORA_OFFLINE,
   formatCompetencia,
   lastCompetencias,
