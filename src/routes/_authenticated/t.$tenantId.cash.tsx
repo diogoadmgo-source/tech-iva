@@ -227,11 +227,20 @@ function CashScreen() {
                 Semana de {weekLabel(nextGap.week)}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button type="button" size="sm" disabled={!nextGap.offer_available}>
-                  <Banknote className="size-4" aria-hidden /> Cobrir este buraco
-                </Button>
+                {credit.enabled ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!nextGap.offer_available}
+                    onClick={() =>
+                      void navigate({ to: "/t/$tenantId/finance", params: { tenantId } })
+                    }
+                  >
+                    <Banknote className="size-4" aria-hidden /> Cobrir este buraco
+                  </Button>
+                ) : null}
                 <Button type="button" size="sm" variant="outline" onClick={() => setWeek(nextGap.week)}>
-                  Ver provisão
+                  Ver provisão sugerida
                 </Button>
               </div>
             </>

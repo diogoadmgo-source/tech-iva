@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -49,6 +49,8 @@ import {
   type OfferKind,
 } from "@/lib/finance";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { useFeature } from "@/lib/features";
+import { EmptyState as FeatureEmptyState } from "@/components/techiva/empty-state";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/finance")({
   head: () => ({
@@ -79,6 +81,35 @@ const OFFER_ICON: Record<OfferKind, typeof Banknote> = {
 
 function FinancePage() {
   const { tenantId } = Route.useParams();
+  const navigate = useNavigate();
+  const creditFeature = useFeature(tenantId, "credit");
+
+  // Módulo desligado: nada de erro cru — mensagem clara e volta para o Caixa.
+  useEffect(() => {
+    if (creditFeature.data === false) {
+      const timer = setTimeout(() => {
+        void navigate({ to: "/t/$tenantId/cash", params: { tenantId }, replace: true });
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [creditFeature.data, navigate, tenantId]);
+
+  if (creditFeature.data === false) {
+    return (
+      <div className="mx-auto w-full max-w-2xl py-10">
+        <FeatureEmptyState
+          title="Módulo não habilitado"
+          hint="O módulo de crédito não está habilitado para esta empresa — fale com o administrador da plataforma. Levando você de volta ao Caixa do imposto."
+        />
+      </div>
+    );
+  }
+
+  return <FinanceModule tenantId={tenantId} />;
+}
+
+function FinanceModule({ tenantId }: { tenantId: string }) {
   const navigate = useNavigate();
   const shell = useShellData(tenantId);
   const cash = useDashboardCash(tenantId, 90);
