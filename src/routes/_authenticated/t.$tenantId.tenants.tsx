@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { CnpjAutofillField } from "@/components/techiva/cnpj-autofill";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -454,17 +455,14 @@ function CreateTenantDialog({
           ) : null}
 
           {effectiveKind === "company" || effectiveKind === "unit" ? (
-            <div className="space-y-2">
-              <Label htmlFor="tenant-cnpj">CNPJ</Label>
-              <Input
-                id="tenant-cnpj"
-                value={cnpj}
-                onChange={(event) => setCnpj(event.target.value)}
-                placeholder="00.000.000/0000-00"
-                className="font-mono"
-                inputMode="numeric"
-              />
-            </div>
+            <CnpjAutofillField
+              id="tenant-cnpj"
+              value={cnpj}
+              onChange={setCnpj}
+              onResolved={(record) => {
+                if (record.razao_social) setName(record.razao_social);
+              }}
+            />
           ) : null}
 
           {error ? <FormError message={error} /> : null}

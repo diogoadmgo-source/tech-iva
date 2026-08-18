@@ -258,6 +258,105 @@ export type Database = {
           },
         ]
       }
+      cnpj_registry: {
+        Row: {
+          abertura: string | null
+          bairro: string | null
+          capital_social_cents: number | null
+          cep: string | null
+          cnae_principal: string | null
+          cnae_principal_desc: string | null
+          cnae_secundarios: Json
+          cnpj: string
+          complemento: string | null
+          email: string | null
+          fetched_at: string
+          logradouro: string | null
+          matriz: boolean | null
+          mei_desde: string | null
+          mei_optante: boolean | null
+          municipio: string | null
+          natureza_juridica: string | null
+          nome_fantasia: string | null
+          numero: string | null
+          porte: string | null
+          raw: Json | null
+          razao_social: string | null
+          simples_ate: string | null
+          simples_desde: string | null
+          simples_optante: boolean | null
+          situacao: string | null
+          situacao_data: string | null
+          source: string
+          telefone: string | null
+          uf: string | null
+        }
+        Insert: {
+          abertura?: string | null
+          bairro?: string | null
+          capital_social_cents?: number | null
+          cep?: string | null
+          cnae_principal?: string | null
+          cnae_principal_desc?: string | null
+          cnae_secundarios?: Json
+          cnpj: string
+          complemento?: string | null
+          email?: string | null
+          fetched_at?: string
+          logradouro?: string | null
+          matriz?: boolean | null
+          mei_desde?: string | null
+          mei_optante?: boolean | null
+          municipio?: string | null
+          natureza_juridica?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          porte?: string | null
+          raw?: Json | null
+          razao_social?: string | null
+          simples_ate?: string | null
+          simples_desde?: string | null
+          simples_optante?: boolean | null
+          situacao?: string | null
+          situacao_data?: string | null
+          source?: string
+          telefone?: string | null
+          uf?: string | null
+        }
+        Update: {
+          abertura?: string | null
+          bairro?: string | null
+          capital_social_cents?: number | null
+          cep?: string | null
+          cnae_principal?: string | null
+          cnae_principal_desc?: string | null
+          cnae_secundarios?: Json
+          cnpj?: string
+          complemento?: string | null
+          email?: string | null
+          fetched_at?: string
+          logradouro?: string | null
+          matriz?: boolean | null
+          mei_desde?: string | null
+          mei_optante?: boolean | null
+          municipio?: string | null
+          natureza_juridica?: string | null
+          nome_fantasia?: string | null
+          numero?: string | null
+          porte?: string | null
+          raw?: Json | null
+          razao_social?: string | null
+          simples_ate?: string | null
+          simples_desde?: string | null
+          simples_optante?: boolean | null
+          situacao?: string | null
+          situacao_data?: string | null
+          source?: string
+          telefone?: string | null
+          uf?: string | null
+        }
+        Relationships: []
+      }
       commission_rules: {
         Row: {
           created_at: string
@@ -3230,6 +3329,10 @@ export type Database = {
       accept_invitation: { Args: { p_token: string }; Returns: string }
       ack_alert: { Args: { p_alert: string }; Returns: undefined }
       alert_prefs_default: { Args: never; Returns: Json }
+      apply_registry_to_counterparties: {
+        Args: { p_tenant: string }
+        Returns: Json
+      }
       approve_price_scenario: {
         Args: { p_scenario: string }
         Returns: undefined
@@ -3304,6 +3407,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      cnpj_lookup: { Args: { p_cnpj: string }; Returns: Json }
+      cnpj_registry_upsert: { Args: { p: Json }; Returns: undefined }
+      counterparties_missing_registry: {
+        Args: { p_tenant: string; p_ttl_days?: number }
+        Returns: {
+          cnpj: string
+        }[]
+      }
       counterparty_detail: {
         Args: { p_id: string; p_tenant: string }
         Returns: Json
@@ -3332,6 +3443,10 @@ export type Database = {
       credit_generate_offers: { Args: { p_tenant: string }; Returns: number }
       credit_offer_detail: { Args: { p_offer: string }; Returns: Json }
       credit_offers: { Args: { p_tenant: string }; Returns: Json[] }
+      credit_pct_from_regime: {
+        Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
+        Returns: number
+      }
       current_aal: { Args: never; Returns: string }
       dashboard_cash: {
         Args: { p_horizon_days?: number; p_tenant: string }
@@ -3431,6 +3546,10 @@ export type Database = {
         Returns: Json
       }
       refresh_cash_timeline: { Args: never; Returns: undefined }
+      regime_from_registry: {
+        Args: { p_mei: boolean; p_natureza: string; p_simples: boolean }
+        Returns: Database["public"]["Enums"]["regime_kind"]
+      }
       regime_iva_rate: { Args: { p_year: number }; Returns: number }
       regime_next_window: { Args: { p_from?: string }; Returns: string }
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }

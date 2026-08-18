@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CnpjText } from "@/components/techiva/money";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { Semaphore } from "@/components/techiva/badges";
+import { CnpjAutofillField } from "@/components/techiva/cnpj-autofill";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -235,23 +236,17 @@ function NewCompanyDialog({ parentId }: { parentId: string }) {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <CnpjAutofillField
+            id="new-company-cnpj"
+            value={cnpj}
+            onChange={setCnpj}
+            onResolved={(record) => {
+              if (record.razao_social) setName(record.razao_social);
+            }}
+          />
           <div className="space-y-1.5">
             <Label htmlFor="new-company-name">Razão social</Label>
             <Input id="new-company-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="new-company-cnpj">CNPJ</Label>
-            <Input
-              id="new-company-cnpj"
-              value={cnpj}
-              onChange={(e) => setCnpj(e.target.value)}
-              placeholder="00.000.000/0000-00"
-              className="font-mono tabular"
-              aria-invalid={digits.length > 0 && !cnpjOk}
-            />
-            {digits.length > 0 && !cnpjOk && (
-              <p className="text-xs text-destructive">CNPJ inválido.</p>
-            )}
           </div>
         </div>
         <DialogFooter>

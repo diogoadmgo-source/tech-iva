@@ -25,12 +25,29 @@ export const REGIME_OPTIONS: Array<{ value: RegimeDeclarado; label: string }> = 
   { value: "mei", label: "MEI" },
 ];
 
+/** Dados cadastrais da empresa; nascem da Receita e podem ser editados pelo usuário. */
+export type OnboardingCompanyData = {
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  municipio?: string | null;
+  uf?: string | null;
+  cep?: string | null;
+  cnae?: string | null;
+  porte?: string | null;
+  situacao?: string | null;
+  registry_fetched_at?: string | null;
+};
+
 export type OnboardingSettings = {
   regime_declared?: RegimeDeclarado;
   accountant_email?: string | null;
   bank_skipped?: boolean;
   step?: number;
   completed_at?: string | null;
+  company?: OnboardingCompanyData;
 };
 
 export type OnboardingState = {
