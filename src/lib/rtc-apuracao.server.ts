@@ -1,0 +1,335 @@
+/**
+ * APURAÇÃO DA CBS — passos 1 e 3 do fluxo, agora DENTRO do aplicativo.
+ *
+ * O fluxo da Receita tem três passos:
+ *   1. POST solicitação (leva `urlRetorno`)  -> este arquivo
+ *   2. a Receita chama nosso webhook com {tiqueteSolicitacao, tiqueteDownload}
+ *      -> src/routes/api/public/rtc.apuracao.$ref.tsx
+ *   3. GET/POST download do JSON usando o tíquete e ingestão -> este arquivo
+ *
+ * Por que o app e não um worker externo: os passos 1 e 3 são HTTP + JSON e não
+ * precisam guardar estado. O único motivo para existir máquina fora era o TLS
+ * mútuo com certificado — que continua no componente oficial hospedado na nossa
+ * infra (RTC_APURACAO_URL / RTC_CALC_URL), usado aqui como PROXY de transporte.
+ * O aplicativo passou a ser o orquestrador: nada fica pendurado esperando um
+ * processo externo rodar.
+ *
+ * REGRA DO PROJETO PRESERVADA: nenhum valor fiscal é produzido aqui. Este módulo
+ * só transporta e grava o que a Receita devolveu. Motor fora do ar => erro
+ * explícito, nunca número estimado.
+ */
+
+import { unsealSecret } from "@/lib/credentials.server";
+
+const TIMEOUT_MS = 45_000;
+
+export type GatewayUnavailableReason = "not_configured" | "no_credential" | "unreachable" | "error";
+
+export class ApuracaoGatewayError extends Error {
+  constructor(
+    public readonly reason: GatewayUnavailableReason,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApuracaoGatewayError";
+  }
+}
+
+function baseUrl(): string | null {
+  const raw = process.env["RTC_APURACAO_URL"] ?? process.env["RTC_CALC_URL"];
+  if (!raw || !raw.trim()) return null;
+  return raw.trim().replace(/\/+$/, "");
+}
+
+function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  return fn(controller.signal).finally(() => clearTimeout(timer));
+}
+
+type AdminClient = Awaited<
+  typeof import("@/integrations/supabase/client.server")
+>["supabaseAdmin"];
+
+type Credential = { id: string; apiKey: string };
+
+/**
+ * Credencial de acesso à API (provider `rtc`, kind `api_key`). O material é
+ * `<CLIENT_ID>:<CLIENT_SECRET>` selado em envelope no bucket privado — nunca
+ * volta ao navegador e nunca vai para log.
+ */
+async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credential> {
+  const { data, error } = await admin
+    .from("integration_credentials")
+    .select("id, secret_ref, status")
+    .eq("tenant_id", tenantId)
+    .eq("provider", "rtc")
+    .eq("kind", "api_key")
+    .neq("status", "revogada")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.secret_ref) {
+    throw new ApuracaoGatewayError(
+      "no_credential",
+      "Nenhuma chave de API do RTC cadastrada para esta empresa. Cadastre em Integrações.",
+    );
+  }
+
+  const { SECRETS_BUCKET } = await import("@/lib/credentials.server");
+  const file = await admin.storage.from(SECRETS_BUCKET).download(data.secret_ref);
+  if (file.error || !file.data) {
+    throw new ApuracaoGatewayError("no_credential", "Não foi possível ler a chave de API cadastrada.");
+  }
+  const raw = new Uint8Array(await file.data.arrayBuffer());
+  const plain = new TextDecoder().decode(await unsealSecret(raw));
+  return { id: data.id as string, apiKey: plain.trim() };
+}
+
+async function callGateway(
+  path: string,
+  body: Record<string, unknown>,
+  apiKey: string,
+): Promise<Record<string, unknown>> {
+  const url = baseUrl();
+  if (!url) {
+    throw new ApuracaoGatewayError(
+      "not_configured",
+      "Integração de apuração não configurada neste ambiente (RTC_APURACAO_URL).",
+    );
+  }
+  let res: Response;
+  try {
+    res = await withTimeout((signal) =>
+      fetch(`${url}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // A chave nunca é logada; segue apenas no cabeçalho da chamada.
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify(body),
+        signal,
+      }),
+    );
+  } catch {
+    throw new ApuracaoGatewayError(
+      "unreachable",
+      "Não foi possível falar com o serviço de apuração da Receita.",
+    );
+  }
+  const text = await res.text();
+  let parsed: unknown = null;
+  try {
+    parsed = text ? JSON.parse(text) : null;
+  } catch {
+    parsed = null;
+  }
+  if (!res.ok) {
+    const detail =
+      (parsed as { mensagem?: string; message?: string } | null)?.mensagem ??
+      (parsed as { message?: string } | null)?.message ??
+      `HTTP ${res.status}`;
+    throw new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detail}`);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
+  }
+  return parsed as Record<string, unknown>;
+}
+
+async function logUse(
+  admin: AdminClient,
+  credentialId: string,
+  finalidade: string,
+  sucesso: boolean,
+  detalhe?: string,
+) {
+  await (
+    admin.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>
+  )("log_credential_use", {
+    p_credential: credentialId,
+    p_finalidade: finalidade,
+    p_sucesso: sucesso,
+    p_worker: "app",
+    p_detalhe: detalhe ?? null,
+  });
+}
+
+const rpc = (admin: AdminClient) =>
+  admin.rpc as unknown as (
+    fn: string,
+    args: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+async function marcarErro(admin: AdminClient, id: string, motivo: string) {
+  await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+    .update({ status: "erro", erro: motivo.slice(0, 400) })
+    .eq("id", id);
+}
+
+/* ------------------------------------------------------------ passo 1 */
+
+export type SolicitarResult =
+  | { ok: true; id: string; competencia: string }
+  | { ok: false; motivo: string; reason?: GatewayUnavailableReason };
+
+/**
+ * Registra a solicitação (debita cota, gera o segredo do webhook) e chama a
+ * Receita já com a URL de retorno deste ambiente. Se a chamada externa falhar,
+ * a linha vira `erro` na hora — nada fica em "solicitada" para sempre.
+ */
+export async function solicitarApuracao(
+  tenantId: string,
+  competencia: string,
+  origin: string,
+  origem = "manual",
+): Promise<SolicitarResult> {
+  const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+
+  const { data, error } = await rpc(admin)("rtc_apuracao_solicitar", {
+    p_tenant: tenantId,
+    p_competencia: competencia,
+    p_origem: origem,
+  });
+  if (error) return { ok: false, motivo: error.message };
+
+  const row = (data ?? {}) as {
+    ok?: boolean;
+    motivo?: string;
+    id?: string;
+    webhook_ref?: string;
+    cnpj8?: string;
+  };
+  if (!row.ok || !row.id || !row.webhook_ref) {
+    return { ok: false, motivo: row.motivo ?? "Não foi possível registrar a solicitação." };
+  }
+
+  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+    .select("cnpj")
+    .eq("id", tenantId)
+    .maybeSingle();
+  const cnpj = String(tenant?.cnpj ?? "").replace(/\D/g, "");
+
+  let credential: Credential;
+  try {
+    credential = await loadApiKey(admin, tenantId);
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    await marcarErro(admin, row.id, err.message);
+    return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
+  }
+
+  const urlRetorno = `${origin.replace(/\/+$/, "")}/api/public/rtc/apuracao/${row.webhook_ref}`;
+
+  try {
+    const resposta = await callGateway(
+      "/api/apuracao/solicitar",
+      {
+        cnpj,
+        competencia: competencia.slice(0, 7).replace("-", ""),
+        urlRetorno,
+      },
+      credential.apiKey,
+    );
+    await logUse(admin, credential.id, "apuracao.solicitar", true);
+
+    // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
+    const tiquete =
+      (resposta["tiqueteDownload"] as string | undefined) ??
+      (resposta["tiquete"] as string | undefined);
+    if (tiquete) {
+      await rpc(admin)("rtc_apuracao_receber_tiquete", {
+        p_ref: row.webhook_ref,
+        p_payload: resposta,
+      });
+      void processarApuracao(row.id).catch(() => undefined);
+    }
+    return { ok: true, id: row.id, competencia };
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
+    await marcarErro(admin, row.id, err.message);
+    return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
+  }
+}
+
+/* ------------------------------------------------------------ passo 3 */
+
+export type ProcessarResult =
+  | { ok: true; id: string; debitos: number }
+  | { ok: false; id: string; motivo: string };
+
+/** Baixa o JSON com o tíquete e chama a ingestão. Idempotente por apuração. */
+export async function processarApuracao(apuracaoId: string): Promise<ProcessarResult> {
+  const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+
+  const { data: row, error } = await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+    .select("id, tenant_id, competencia, status, tiquete_download")
+    .eq("id", apuracaoId)
+    .maybeSingle();
+  if (error) return { ok: false, id: apuracaoId, motivo: error.message };
+  if (!row) return { ok: false, id: apuracaoId, motivo: "Apuração inexistente." };
+  if (row.status === "disponivel") return { ok: true, id: apuracaoId, debitos: 0 };
+  if (!row.tiquete_download) {
+    return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
+  }
+
+  const { data: tenant } = await (admin.from as unknown as (t: string) => any)("tenants")
+    .select("cnpj")
+    .eq("id", row.tenant_id)
+    .maybeSingle();
+  const cnpj = String(tenant?.cnpj ?? "").replace(/\D/g, "");
+
+  let credential: Credential;
+  try {
+    credential = await loadApiKey(admin, row.tenant_id as string);
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    await marcarErro(admin, apuracaoId, err.message);
+    return { ok: false, id: apuracaoId, motivo: err.message };
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    payload = await callGateway(
+      "/api/apuracao/download",
+      { cnpj, tiquete: row.tiquete_download, competencia: String(row.competencia).slice(0, 7).replace("-", "") },
+      credential.apiKey,
+    );
+    await logUse(admin, credential.id, "apuracao.download", true);
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    await logUse(admin, credential.id, "apuracao.download", false, err.message);
+    await marcarErro(admin, apuracaoId, err.message);
+    return { ok: false, id: apuracaoId, motivo: err.message };
+  }
+
+  const { data: ingested, error: ingestError } = await rpc(admin)("rtc_apuracao_ingest_json", {
+    p_apuracao: apuracaoId,
+    p_json: payload,
+  });
+  if (ingestError) {
+    await marcarErro(admin, apuracaoId, `Falha ao gravar a apuração: ${ingestError.message}`);
+    return { ok: false, id: apuracaoId, motivo: ingestError.message };
+  }
+
+  const debitos = Number((ingested as { debitos?: number } | null)?.debitos ?? 0);
+  return { ok: true, id: apuracaoId, debitos };
+}
+
+/** Fila de recuperação: tíquetes recebidos que ainda não foram baixados. */
+export async function processarPendentes(): Promise<ProcessarResult[]> {
+  const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await rpc(admin)("rtc_apuracao_pendentes_download", {});
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as Array<{ id: string }>;
+  const out: ProcessarResult[] = [];
+  for (const r of rows) out.push(await processarApuracao(r.id));
+  return out;
+}
+
+export function gatewayConfigured(): boolean {
+  return baseUrl() !== null;
+}
