@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import type { AlertItem, AlertSeverity } from "@/components/techiva/alerts";
 import { supabase } from "@/integrations/supabase/client";
-import { DEFAULT_PAGE_SIZE, paged, rangeOf, type Paged } from "@/lib/paginate";
+import { DEFAULT_PAGE_SIZE, paged, rangeOf, useRowCount, type Paged } from "@/lib/paginate";
 
 /** Bloco 3.10 — central de alertas e preferências de notificação. */
 

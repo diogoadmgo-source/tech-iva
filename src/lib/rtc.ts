@@ -137,26 +137,32 @@ export type InvoiceRow = {
   counterparty_id: string | null;
 };
 
+/**
+ * Notas da competência. Ordenação `issued_at desc, id` — coberta pelo índice
+ * invoices_tenant_issued_id. A contagem é consulta separada e cacheada pela
+ * competência: repetir count(*) a cada página custava a tabela inteira, e o
+ * total não muda enquanto a competência é a mesma. Acima de EXACT_COUNT_LIMIT
+ * o total vem estimado (a tela mostra "aprox.").
+ */
 export function useCompetenciaInvoices(
   tenantId: string,
   competencia: string,
   page = 0,
   pageSize = DEFAULT_PAGE_SIZE,
 ) {
-  return useQuery({
+  const enabled = Boolean(tenantId && competencia);
+  const start = competencia;
+  const end = competencia ? nextMonth(competencia) : competencia;
+
+  const rowsQuery = useQuery({
     queryKey: ["competencia-invoices", tenantId, competencia, page, pageSize],
-    enabled: Boolean(tenantId && competencia),
-    queryFn: async (): Promise<Paged<InvoiceRow>> => {
-      const start = competencia;
-      const end = nextMonth(competencia);
+    enabled,
+    queryFn: async (): Promise<InvoiceRow[]> => {
       const [from, to] = rangeOf(page, pageSize);
-      // paginação de servidor + contagem exata: o total exibido é o do banco,
-      // não o tamanho da página (PostgREST cortaria em 1000 sem avisar).
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from("invoices")
         .select(
           "id, number, series, issued_at, total_cents, ibs_cents, cbs_cents, access_key, counterparty_id",
-          { count: "exact" },
         )
         .eq("tenant_id", tenantId)
         .eq("direction", "out")
@@ -166,9 +172,33 @@ export function useCompetenciaInvoices(
         .order("id", { ascending: true }) // desempate: ordenação estável entre páginas
         .range(from, to);
       if (error) throw new Error(error.message);
-      return paged((data ?? []) as unknown as InvoiceRow[], count ?? 0, page, pageSize);
+      return (data ?? []) as unknown as InvoiceRow[];
     },
   });
+
+  const count = useRowCount(
+    ["competencia-invoices", tenantId, competencia],
+    async () => {
+      const { count: n, error } = await supabase
+        .from("invoices")
+        .select("id", { count: "estimated", head: true })
+        .eq("tenant_id", tenantId)
+        .eq("direction", "out")
+        .gte("issued_at", start)
+        .lt("issued_at", end);
+      if (error) throw new Error(error.message);
+      return n ?? 0;
+    },
+    enabled,
+  );
+
+  const total = count.data ?? 0;
+  return {
+    ...rowsQuery,
+    data: rowsQuery.data
+      ? { ...paged(rowsQuery.data, total, page, pageSize), approx: total > EXACT_COUNT_LIMIT }
+      : (undefined as Paged<InvoiceRow> | undefined),
+  };
 }
 
 export type CalcStep = {
