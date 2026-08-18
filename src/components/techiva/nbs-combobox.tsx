@@ -124,7 +124,12 @@ export function NbsCombobox({
   const [erro, setErro] = useState(false);
   const mounted = useRef(true);
 
-  useEffect(() => () => void (mounted.current = false), []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   // Pré-carrega assim que o campo entra na tela: quando o usuário abrir a
   // lista, os dados já estão em memória.

@@ -66,7 +66,12 @@ function useTabela() {
   const [erro, setErro] = useState(false);
   const mounted = useRef(true);
 
-  useEffect(() => () => void (mounted.current = false), []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (tabela) return;
