@@ -1355,9 +1355,48 @@ export type Database = {
           },
         ]
       }
+      prontidao_item: {
+        Row: {
+          chave: string
+          concluido: boolean
+          concluido_em: string | null
+          concluido_por: string | null
+          id: string
+          observacao: string | null
+          tenant_id: string
+        }
+        Insert: {
+          chave: string
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          id?: string
+          observacao?: string | null
+          tenant_id: string
+        }
+        Update: {
+          chave?: string
+          concluido?: boolean
+          concluido_em?: string | null
+          concluido_por?: string | null
+          id?: string
+          observacao?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prontidao_item_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receivables: {
         Row: {
           amount_cents: number
+          arranjo: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence: number
           due_date: string
           expected_date: string | null
@@ -1367,9 +1406,11 @@ export type Database = {
           paid_at: string | null
           source: string
           tenant_id: string
+          valor_pago_cents: number | null
         }
         Insert: {
           amount_cents: number
+          arranjo?: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence?: number
           due_date: string
           expected_date?: string | null
@@ -1379,9 +1420,11 @@ export type Database = {
           paid_at?: string | null
           source?: string
           tenant_id: string
+          valor_pago_cents?: number | null
         }
         Update: {
           amount_cents?: number
+          arranjo?: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence?: number
           due_date?: string
           expected_date?: string | null
@@ -1391,6 +1434,7 @@ export type Database = {
           paid_at?: string | null
           source?: string
           tenant_id?: string
+          valor_pago_cents?: number | null
         }
         Relationships: [
           {
@@ -1482,6 +1526,7 @@ export type Database = {
           competencia: string
           creditos_cents: number | null
           debitos_cents: number | null
+          download_em: string | null
           erro: string | null
           id: string
           intencao_ressarcimento: boolean
@@ -1502,12 +1547,16 @@ export type Database = {
           status: string
           tenant_id: string
           tiquete: string | null
+          tiquete_download: string | null
+          tiquete_solicitacao: string | null
+          webhook_recebido_em: string | null
           webhook_ref: string | null
         }
         Insert: {
           competencia: string
           creditos_cents?: number | null
           debitos_cents?: number | null
+          download_em?: string | null
           erro?: string | null
           id?: string
           intencao_ressarcimento?: boolean
@@ -1528,12 +1577,16 @@ export type Database = {
           status?: string
           tenant_id: string
           tiquete?: string | null
+          tiquete_download?: string | null
+          tiquete_solicitacao?: string | null
+          webhook_recebido_em?: string | null
           webhook_ref?: string | null
         }
         Update: {
           competencia?: string
           creditos_cents?: number | null
           debitos_cents?: number | null
+          download_em?: string | null
           erro?: string | null
           id?: string
           intencao_ressarcimento?: boolean
@@ -1554,6 +1607,9 @@ export type Database = {
           status?: string
           tenant_id?: string
           tiquete?: string | null
+          tiquete_download?: string | null
+          tiquete_solicitacao?: string | null
+          webhook_recebido_em?: string | null
           webhook_ref?: string | null
         }
         Relationships: [
@@ -1667,6 +1723,99 @@ export type Database = {
           vigencia_inicio?: string | null
         }
         Relationships: []
+      }
+      rtc_debito: {
+        Row: {
+          apuracao_id: string
+          autorizado_em: string | null
+          cbs_extinto_cents: number
+          cbs_nao_extinto_cents: number
+          cbs_total_cents: number
+          chave_dfe: string | null
+          competencia: string
+          emitido_em: string | null
+          ext_credito_cbs_cents: number
+          ext_credito_piscofins_cents: number
+          ext_pagamento_cents: number
+          ext_prescricao_cents: number
+          grupo: Database["public"]["Enums"]["apuracao_grupo"]
+          id: number
+          modelo_dfe: string | null
+          ni_adquirente: string | null
+          ni_emitente: string | null
+          numero_dfe: string | null
+          payload: Json | null
+          registrado_em: string | null
+          situacao: Database["public"]["Enums"]["debito_situacao"] | null
+          tenant_id: string
+          tipos_pagamento: string[]
+        }
+        Insert: {
+          apuracao_id: string
+          autorizado_em?: string | null
+          cbs_extinto_cents?: number
+          cbs_nao_extinto_cents?: number
+          cbs_total_cents?: number
+          chave_dfe?: string | null
+          competencia: string
+          emitido_em?: string | null
+          ext_credito_cbs_cents?: number
+          ext_credito_piscofins_cents?: number
+          ext_pagamento_cents?: number
+          ext_prescricao_cents?: number
+          grupo: Database["public"]["Enums"]["apuracao_grupo"]
+          id?: number
+          modelo_dfe?: string | null
+          ni_adquirente?: string | null
+          ni_emitente?: string | null
+          numero_dfe?: string | null
+          payload?: Json | null
+          registrado_em?: string | null
+          situacao?: Database["public"]["Enums"]["debito_situacao"] | null
+          tenant_id: string
+          tipos_pagamento?: string[]
+        }
+        Update: {
+          apuracao_id?: string
+          autorizado_em?: string | null
+          cbs_extinto_cents?: number
+          cbs_nao_extinto_cents?: number
+          cbs_total_cents?: number
+          chave_dfe?: string | null
+          competencia?: string
+          emitido_em?: string | null
+          ext_credito_cbs_cents?: number
+          ext_credito_piscofins_cents?: number
+          ext_pagamento_cents?: number
+          ext_prescricao_cents?: number
+          grupo?: Database["public"]["Enums"]["apuracao_grupo"]
+          id?: number
+          modelo_dfe?: string | null
+          ni_adquirente?: string | null
+          ni_emitente?: string | null
+          numero_dfe?: string | null
+          payload?: Json | null
+          registrado_em?: string | null
+          situacao?: Database["public"]["Enums"]["debito_situacao"] | null
+          tenant_id?: string
+          tipos_pagamento?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_debito_apuracao_id_fkey"
+            columns: ["apuracao_id"]
+            isOneToOne: false
+            referencedRelation: "rtc_apuracao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rtc_debito_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rule_versions: {
         Row: {
@@ -3901,6 +4050,10 @@ export type Database = {
         Args: { p_competencia: string; p_tenant: string }
         Returns: Json
       }
+      apuracao_situacao_em: {
+        Args: { p_competencia: string; p_ref?: string }
+        Returns: Database["public"]["Enums"]["apuracao_situacao"]
+      }
       apuracoes_lista: {
         Args: { p_limite?: number; p_tenant: string }
         Returns: {
@@ -3911,6 +4064,14 @@ export type Database = {
           saldo_atualizado_cents: number
           situacao: Database["public"]["Enums"]["apuracao_situacao"]
         }[]
+      }
+      arranjo_tem_proporcionalidade: {
+        Args: { p: Database["public"]["Enums"]["arranjo_pagamento"] }
+        Returns: boolean
+      }
+      arranjo_tem_split: {
+        Args: { p: Database["public"]["Enums"]["arranjo_pagamento"] }
+        Returns: boolean
       }
       auth_scopes: { Args: never; Returns: unknown[] }
       calc_rule_cache_upsert: { Args: { p: Json }; Returns: number }
@@ -3961,6 +4122,7 @@ export type Database = {
       }
       check_credential_anomalies: { Args: never; Returns: number }
       check_expiring_credentials: { Args: never; Returns: number }
+      checklist_prontidao: { Args: { p_tenant: string }; Returns: Json }
       claim_job: {
         Args: { p_kinds: string[]; p_lease_seconds?: number; p_worker: string }
         Returns: {
@@ -3994,6 +4156,24 @@ export type Database = {
       comparar_modalidades: {
         Args: { p_horizon_days?: number; p_tenant: string }
         Returns: Json
+      }
+      conciliacao_documentos: {
+        Args: {
+          p_competencia: string
+          p_so_divergentes?: boolean
+          p_tenant: string
+        }
+        Returns: {
+          chave_dfe: string
+          contraparte: string
+          diferenca_cents: number
+          grupo: Database["public"]["Enums"]["apuracao_grupo"]
+          nao_extinto_cents: number
+          nosso_cents: number
+          numero_dfe: string
+          receita_cents: number
+          situacao: Database["public"]["Enums"]["debito_situacao"]
+        }[]
       }
       counterparties_missing_registry: {
         Args: { p_tenant: string; p_ttl_days?: number }
@@ -4094,6 +4274,10 @@ export type Database = {
         Returns: string
       }
       ensure_tce_partition: { Args: { p_date: string }; Returns: undefined }
+      extincao_resumo: {
+        Args: { p_competencia: string; p_tenant: string }
+        Returns: Json
+      }
       feature_enabled: {
         Args: { p_feature: string; p_tenant: string }
         Returns: boolean
@@ -4101,6 +4285,10 @@ export type Database = {
       finalidades_validas: {
         Args: { p_finalidades: string[] }
         Returns: boolean
+      }
+      ganho_antecipacao: {
+        Args: { p_dias?: number; p_tenant: string }
+        Returns: Json
       }
       get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
       has_role: {
@@ -4158,6 +4346,15 @@ export type Database = {
         Returns: undefined
       }
       ltree_label: { Args: { p: string }; Returns: string }
+      marcar_prontidao: {
+        Args: {
+          p_chave: string
+          p_concluido: boolean
+          p_observacao?: string
+          p_tenant: string
+        }
+        Returns: undefined
+      }
       mark_renegotiate: {
         Args: { p_note?: string; p_parties: string[]; p_tenant: string }
         Returns: number
@@ -4219,6 +4416,7 @@ export type Database = {
       }
       platform_identity: { Args: never; Returns: Json }
       platform_ops_overview: { Args: never; Returns: Json }
+      premissa_dia_vencimento: { Args: never; Returns: number }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
         Returns: number
@@ -4312,6 +4510,29 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["member_role"] }
         Returns: boolean
       }
+      rtc_apuracao_expirar_pendentes: { Args: never; Returns: number }
+      rtc_apuracao_ingest_json: {
+        Args: { p_apuracao: string; p_json: Json }
+        Returns: Json
+      }
+      rtc_apuracao_pendentes_download: {
+        Args: never
+        Returns: {
+          cnpj: string
+          competencia: string
+          id: string
+          tenant_id: string
+          tiquete: string
+        }[]
+      }
+      rtc_apuracao_receber_tiquete: {
+        Args: { p_payload: Json; p_ref: string }
+        Returns: Json
+      }
+      rtc_apuracao_solicitar: {
+        Args: { p_competencia: string; p_origem?: string; p_tenant: string }
+        Returns: Json
+      }
       rtc_apuracao_upsert: {
         Args: { p_payload: Json; p_tenant: string }
         Returns: string
@@ -4378,6 +4599,10 @@ export type Database = {
         Args: { p_cnpj: string; p_nome: string; p_razao: string }
         Returns: undefined
       }
+      set_premissa_dia_vencimento: {
+        Args: { p_dia: number }
+        Returns: undefined
+      }
       set_regime_manual: {
         Args: {
           p_party: string
@@ -4409,6 +4634,16 @@ export type Database = {
       }
       share_simulation: { Args: { p_id: string }; Returns: Json }
       so_digitos: { Args: { p: string }; Returns: string }
+      split_segregado_cents: {
+        Args: {
+          p_arranjo: Database["public"]["Enums"]["arranjo_pagamento"]
+          p_tributo_em_aberto_cents?: number
+          p_tributo_referencia_cents: number
+          p_valor_original_cents: number
+          p_valor_pago_cents: number
+        }
+        Returns: number
+      }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
       tenant_members: {
         Args: { p_tenant: string }
@@ -4457,8 +4692,20 @@ export type Database = {
     }
     Enums: {
       alert_severity: "info" | "warning" | "critical"
+      apuracao_grupo: "corrente" | "ajuste" | "extemporaneo"
       apuracao_natureza: "credor" | "devedor" | "neutro"
       apuracao_situacao: "em_andamento" | "periodo_ajuste" | "concluida"
+      arranjo_pagamento:
+        | "boleto"
+        | "pix_dinamico"
+        | "pix_automatico"
+        | "pix_estatico"
+        | "ted"
+        | "tef"
+        | "cartao"
+        | "dinheiro"
+        | "outro"
+        | "desconhecido"
       cash_event_kind:
         | "tax_out"
         | "credit_in"
@@ -4468,6 +4715,12 @@ export type Database = {
         | "loan_out"
       credential_kind: "procuracao" | "api_key" | "certificado_a1"
       credential_status: "pendente" | "ativa" | "expirada" | "revogada" | "erro"
+      debito_situacao:
+        | "aguardando_processamento"
+        | "nao_extinto"
+        | "extinto_parcial"
+        | "extinto_total"
+        | "cancelado"
       invite_status: "pending" | "accepted" | "expired" | "revoked"
       invoice_direction: "out" | "in"
       job_status: "queued" | "running" | "done" | "failed" | "canceled"
@@ -4622,8 +4875,21 @@ export const Constants = {
   public: {
     Enums: {
       alert_severity: ["info", "warning", "critical"],
+      apuracao_grupo: ["corrente", "ajuste", "extemporaneo"],
       apuracao_natureza: ["credor", "devedor", "neutro"],
       apuracao_situacao: ["em_andamento", "periodo_ajuste", "concluida"],
+      arranjo_pagamento: [
+        "boleto",
+        "pix_dinamico",
+        "pix_automatico",
+        "pix_estatico",
+        "ted",
+        "tef",
+        "cartao",
+        "dinheiro",
+        "outro",
+        "desconhecido",
+      ],
       cash_event_kind: [
         "tax_out",
         "credit_in",
@@ -4634,6 +4900,13 @@ export const Constants = {
       ],
       credential_kind: ["procuracao", "api_key", "certificado_a1"],
       credential_status: ["pendente", "ativa", "expirada", "revogada", "erro"],
+      debito_situacao: [
+        "aguardando_processamento",
+        "nao_extinto",
+        "extinto_parcial",
+        "extinto_total",
+        "cancelado",
+      ],
       invite_status: ["pending", "accepted", "expired", "revoked"],
       invoice_direction: ["out", "in"],
       job_status: ["queued", "running", "done", "failed", "canceled"],
