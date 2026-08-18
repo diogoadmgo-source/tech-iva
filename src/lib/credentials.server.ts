@@ -107,7 +107,10 @@ export async function sealSecret(plain: Uint8Array | string): Promise<Uint8Array
 export function readPfx(pfx: Uint8Array, password: string): PfxMetadata {
   let cert: forge.pki.Certificate | undefined;
   try {
-    const binary = String.fromCharCode(...Array.from(pfx));
+    let binary = "";
+    for (let i = 0; i < pfx.length; i += 8192) {
+      binary += String.fromCharCode(...Array.from(pfx.subarray(i, i + 8192)));
+    }
     const asn1 = forge.asn1.fromDer(binary);
     const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, password);
     const certBagOid = forge.pki.oids["certBag"] as string;
