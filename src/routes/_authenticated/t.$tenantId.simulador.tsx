@@ -262,12 +262,21 @@ function SimuladorPage() {
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="municipio">Município de destino</Label>
-                <Input
+                <MunicipioCombobox
                   id="municipio"
                   value={municipio}
-                  placeholder="Nome ou código IBGE"
-                  onChange={(e) => setMunicipio(e.target.value)}
+                  uf={ufDestino}
+                  onChange={(m) => {
+                    setMunicipio(m?.nome ?? "");
+                    setMunicipioCodigo(m?.codigo ?? "");
+                    if (m?.uf) setUfDestino(m.uf);
+                  }}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {municipioCodigo
+                    ? `Código IBGE ${municipioCodigo} — tabela DTB/IBGE 2024.`
+                    : "Busque por nome (sem acento serve) ou pelo código IBGE. Lista oficial DTB/IBGE 2024."}
+                </p>
               </div>
             </div>
 
