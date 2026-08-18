@@ -27,6 +27,8 @@ import {
   type AlertStatusFilter,
 } from "@/lib/alerts";
 import { InconsistentItemValidation } from "@/components/techiva/alert-inconsistency";
+import { Pager } from "@/components/techiva/pager";
+import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { useFeature } from "@/lib/features";
 
@@ -64,7 +66,9 @@ function AlertsPage() {
   const [detail, setDetail] = useState<AlertRow | null>(null);
   const [prefsOpen, setPrefsOpen] = useState(false);
 
-  const alerts = useAlertCenter(tenantId, { status, severity, kind });
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const alerts = useAlertCenter(tenantId, { status, severity, kind }, page, pageSize);
   // Módulo de crédito desligado: nada de "oferta de crédito disponível".
   const credit = useFeature(tenantId, "credit");
   const alertKinds = ALERT_KINDS_FOR_EMAIL.filter(
@@ -75,9 +79,11 @@ function AlertsPage() {
   const prefs = useAlertPrefs(tenantId);
   const savePrefs = useSetAlertPrefs(tenantId);
 
-  const rows = (alerts.data ?? []).filter(
+  const rows: AlertRow[] = (alerts.data?.rows ?? []).filter(
     (a) => a.kind !== "offer_available" || credit.enabled,
   );
+  // contagem exibida = contagem exata do servidor (não o tamanho da página)
+  const total = alerts.data?.total ?? 0;
   const critical = rows.filter((a) => a.severity === "critical" && !a.resolved_at).length;
   const unread = rows.filter((a) => !a.read_at && !a.resolved_at).length;
 
@@ -168,6 +174,20 @@ function AlertsPage() {
             },
           )
         }
+      />
+
+      <Pager
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        loading={alerts.isFetching}
+        unit="alerta(s) no filtro"
+        onPageChange={setPage}
+        onPageSizeChange={(n) => {
+          setPageSize(n);
+          setPage(0);
+        }}
+        className="rounded-xl border border-border bg-surface-1"
       />
 
       <SideSheet
