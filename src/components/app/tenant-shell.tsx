@@ -29,6 +29,7 @@ import { NAV_BY_KIND, resolveBrand } from "@/lib/tenant-nav";
 import { JobCenter } from "@/components/app/job-center";
 import { ShellAlertBell } from "@/components/app/shell-alert-bell";
 import { useImpersonation, useImpersonationMutations } from "@/lib/tenants";
+import { useFeature } from "@/lib/features";
 
 export type ShellTenant = {
   id: string;
@@ -86,7 +87,11 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
   const impersonation = useImpersonation();
   const { stop: stopImpersonating } = useImpersonationMutations();
   const brand = resolveBrand(data.chain);
-  const items = NAV_BY_KIND[data.tenant.kind];
+  const credit = useFeature(data.tenant.id, "credit");
+  // Item de módulo desligado (ou ainda desconhecido) não aparece: nunca visível-e-quebrado.
+  const items = NAV_BY_KIND[data.tenant.kind].filter(
+    (item) => item.feature !== "credit" || credit.enabled,
+  );
   const initials = (data.fullName ?? data.email ?? "?")
     .split(/[\s@.]+/)
     .filter(Boolean)
