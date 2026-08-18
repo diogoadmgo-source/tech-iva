@@ -121,16 +121,18 @@ export async function sealSecret(plain: Uint8Array | string): Promise<Uint8Array
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, dek, material as never);
 
+  const active = activeMasterKey();
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const wrapIv = crypto.getRandomValues(new Uint8Array(12));
   const wrapped = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv: wrapIv },
-    await kek(salt),
+    await kek(salt, active.value),
     dekRaw as never,
   );
 
   const envelope = {
-    v: 1,
+    v: 2,
+    kid: active.kid,
     alg: "AES-256-GCM",
     kdf: "HKDF-SHA-256",
     salt: b64(salt),
@@ -141,6 +143,69 @@ export async function sealSecret(plain: Uint8Array | string): Promise<Uint8Array
   };
   return enc.encode(JSON.stringify(envelope));
 }
+
+type Envelope = {
+  v: number;
+  kid?: string;
+  salt: string;
+  wrap_iv: string;
+  dek: string;
+  iv: string;
+  ct: string;
+};
+
+/**
+ * Abre um envelope. Resolve a chave mestra pelo `kid`; envelopes v1 (sem kid)
+ * são tentados com todas as chaves configuradas. Devolve os bytes do conteúdo.
+ */
+export async function unsealSecret(blob: Uint8Array | string): Promise<Uint8Array> {
+  let envelope: Envelope;
+  try {
+    envelope = JSON.parse(typeof blob === "string" ? blob : dec.decode(blob)) as Envelope;
+  } catch {
+    throw new CredentialError("Envelope de credencial inválido.");
+  }
+
+  const ring = masterKeyRing();
+  const candidates = envelope.kid ? ring.filter((k) => k.kid === envelope.kid) : ring;
+  if (candidates.length === 0) {
+    throw new CredentialError(
+      "Não foi possível abrir a credencial: a chave mestra usada no cadastro não está mais configurada.",
+    );
+  }
+
+  const salt = fromBase64(envelope.salt);
+  const wrapIv = fromBase64(envelope.wrap_iv);
+  const wrappedDek = fromBase64(envelope.dek);
+  const iv = fromBase64(envelope.iv);
+  const ct = fromBase64(envelope.ct);
+
+  for (const candidate of candidates) {
+    try {
+      const dekRaw = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: wrapIv },
+        await kek(salt, candidate.value),
+        wrappedDek as never,
+      );
+      const dek = await crypto.subtle.importKey("raw", dekRaw, { name: "AES-GCM" }, false, [
+        "decrypt",
+      ]);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, dek, ct as never);
+      return new Uint8Array(plain);
+    } catch {
+      // tenta a próxima chave do anel
+    }
+  }
+  throw new CredentialError(
+    "Não foi possível abrir a credencial: a chave mestra não corresponde à usada no cadastro.",
+  );
+}
+
+/** Re-sela um envelope com a chave ATIVA (rotação sem recadastro do cliente). */
+export async function resealSecret(blob: Uint8Array | string): Promise<Uint8Array> {
+  return sealSecret(await unsealSecret(blob));
+}
+
 
 /**
  * Abre o .pfx com a senha e extrai os metadados. Senha errada -> erro claro,
