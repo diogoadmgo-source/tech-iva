@@ -463,10 +463,33 @@ function CredentialsList({
         <ul className="mt-4 space-y-3">
           {rows.map((row) => {
             const semaphore = credentialSemaphore(row);
+            // O certificado é o caminho principal: ganha cartão próprio, com
+            // validade em destaque, titular tratado e prova de verificação.
+            if (row.kind === "certificado_a1") {
+              return (
+                <li key={row.id}>
+                  <CertificateStatusCard
+                    row={row}
+                    onOpenUsage={onOpenUsage}
+                    onReplace={() =>
+                      document
+                        .getElementById("cert-upload")
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
+                    onRevoke={() => {
+                      setReason("");
+                      setPending(row);
+                    }}
+                    onRetry={() => void query.refetch()}
+                  />
+                </li>
+              );
+            }
             return (
               <li key={row.id} className="rounded-lg border border-border bg-surface-2 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
+
                     <div className="flex items-center gap-2">
                       <span
                         className={`size-2 rounded-full ${DOT[semaphore]}`}
