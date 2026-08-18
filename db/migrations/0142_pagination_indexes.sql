@@ -24,7 +24,7 @@ create index if not exists jobs_tenant_queued_id
 create index if not exists invoices_tenant_issued_id
   on public.invoices (tenant_id, issued_at desc, id);
 
-create index if not exists xml_validations_tenant_created_id
+create index if not exists xmlval_tenant_created_id
   on public.xml_validations (tenant_id, created_at desc, id);
 
 create index if not exists calc_sim_tenant_created_id
