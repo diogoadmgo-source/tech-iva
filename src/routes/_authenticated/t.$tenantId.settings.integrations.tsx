@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
+import { NoticeBody } from "@/components/techiva/notices";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +40,13 @@ import {
   useUploadCredential,
   type CredentialRow,
 } from "@/lib/credentials";
+import {
+  useNotices,
+  usePlatformIdentity,
+  useRtcCredentialState,
+  type Notice,
+  type RtcCredentialState,
+} from "@/lib/notices";
 import { useShellData } from "@/lib/tenant-shell-data";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/settings/integrations")({
@@ -111,7 +119,7 @@ function IntegrationsPage() {
         <CertificateCard tenantId={tenantId} />
       </div>
 
-      <RtcPlatformCard tenantId={tenantId} />
+      <RtcCredentialPaths tenantId={tenantId} />
     </div>
   );
 }
