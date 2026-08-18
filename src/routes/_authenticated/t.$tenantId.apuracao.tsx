@@ -110,19 +110,29 @@ function ApuracaoPage() {
         </div>
       </header>
 
+      {/* avisos mantidos pela plataforma (notices_for) */}
+      <NoticeBoard scope="apuracao" />
+
       {/* cota da Receita — visível ANTES do clique */}
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface-1 p-4">
         <div className="min-w-0">
           <p className="text-sm font-medium">
             {quota.isLoading
               ? "Verificando cota do dia…"
-              : `${quota.data?.restantes ?? 0} de ${quota.data?.limite ?? 2} consultas disponíveis hoje`}
+              : (quota.data?.restantes ?? 0) > 0
+                ? `Consulta ${Math.min((quota.data?.usadas ?? 0) + 1, quota.data?.limite ?? 2)} de ${quota.data?.limite ?? 2} disponíveis hoje`
+                : `0 de ${quota.data?.limite ?? 2} consultas disponíveis hoje`}
           </p>
+          {/* mensagem exata da RPC — o limite é da Receita, não nosso */}
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {quota.data?.mensagem ??
-              "A Receita Federal limita as consultas de apuração por CNPJ. O limite é dela, não nosso."}
+            {quota.data?.mensagem ?? "Verificando a cota diária definida pela Receita Federal."}
+          </p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            Este limite é da Receita Federal, não do TECH-IVA. Usamos 1 consulta automática por dia e
+            deixamos a outra reservada para você.
           </p>
         </div>
+
         <Button
           type="button"
           className="gap-2"
