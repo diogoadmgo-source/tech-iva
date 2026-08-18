@@ -69,8 +69,12 @@ export function useJobs(tenantId: string, limit = 20) {
 
   useEffect(() => {
     if (!tenantId) return;
-    const channel = supabase
-      .channel(`jobs:${tenantId}`)
+    // Nome único por instância: dois componentes usando useJobs no mesmo tenant
+    // reaproveitariam o mesmo tópico e o .on() cairia depois do subscribe().
+    const channel = supabase.channel(
+      `jobs:${tenantId}:${Math.random().toString(36).slice(2)}`,
+    );
+    channel
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "jobs", filter: `tenant_id=eq.${tenantId}` },
@@ -84,6 +88,7 @@ export function useJobs(tenantId: string, limit = 20) {
       void supabase.removeChannel(channel);
     };
   }, [tenantId, queryClient]);
+
 
   return query;
 }

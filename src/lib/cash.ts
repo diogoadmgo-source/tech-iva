@@ -176,7 +176,7 @@ export function useCashAutoRefresh(tenantId: string) {
   const queryClient = useQueryClient();
   useEffect(() => {
     const channel = supabase
-      .channel(`cash-jobs-${tenantId}`)
+      .channel(`cash-jobs-${tenantId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "jobs", filter: `tenant_id=eq.${tenantId}` },

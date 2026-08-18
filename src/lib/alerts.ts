@@ -133,7 +133,7 @@ export function useAlertCenter(
 
   useEffect(() => {
     const channel = supabase
-      .channel(`alert-center-${tenantId}`)
+      .channel(`alert-center-${tenantId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "alerts", filter: `tenant_id=eq.${tenantId}` },
