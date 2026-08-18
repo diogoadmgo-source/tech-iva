@@ -3905,6 +3905,11 @@ export type Database = {
         Returns: boolean
       }
       in_scope: { Args: { p_tenant: string }; Returns: boolean }
+      ingest_checkpoint: { Args: { p_tenant: string }; Returns: Json }
+      ingest_invoices_batch: {
+        Args: { p_batch: Json; p_tenant: string }
+        Returns: Json
+      }
       invite_user: {
         Args: {
           p_email: string
