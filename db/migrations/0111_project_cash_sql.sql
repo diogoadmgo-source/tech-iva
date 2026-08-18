@@ -86,3 +86,12 @@ begin
                             'credit_events', v_credit, 'provision_events', v_prov,
                             'weekly_run_rate_cents', v_weekly, 'gap_30_cents', v_gap30);
 end $$;
+
+-- Índices de leitura que a projeção em SQL exige (extraídos de pg_indexes).
+-- Sem eles a mesma consulta que roda em 460 ms passa a varrer a tabela inteira.
+create index if not exists invoices_tenant_dir_issued
+  on public.invoices (tenant_id, direction, issued_at);
+create index if not exists receivables_open
+  on public.receivables (tenant_id, expected_date, due_date) where paid_at is null;
+create index if not exists items_tenant_pending
+  on public.invoice_items (tenant_id) where calc_memory is null;
