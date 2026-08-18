@@ -4,6 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { Button } from "@/components/ui/button";
+import { CashPreview } from "@/components/marketing/cash-preview";
 import { Reveal } from "@/components/marketing/reveal";
 import { cn } from "@/lib/utils";
 
