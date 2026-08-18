@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { CnpjAutofillField } from "@/components/techiva/cnpj-autofill";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
