@@ -69,7 +69,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const { data: ctx, error: ctxErr } = await context.supabase.rpc("tenant_context", {
       p_tenant: data.tenantId,
     } as never);
-    if (ctxErr) throw new Error(ctxErr.message);
+    if (ctxErr) {
+      const m = ctxErr.message.toLowerCase();
+      if (m.includes("jwt") || m.includes("expired")) {
+        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+      }
+      throw new Error(ctxErr.message);
+    }
     const ctxRow = (Array.isArray(ctx) ? ctx[0] : ctx) as
       | { papel?: string | null; membership_direta?: boolean | null }
       | null
@@ -77,8 +83,11 @@ export const uploadCredential = createServerFn({ method: "POST" })
     const role = ctxRow?.papel ?? null;
     const ALLOWED = ["platform_admin", "platform_ops", "channel_admin", "owner", "finance"];
     if (typeof role !== "string" || !ALLOWED.includes(role)) {
-      throw new Error("Seu papel neste tenant não permite gerenciar credenciais.");
+      throw new Error(
+        `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role ?? "nenhum vínculo encontrado"}).`,
+      );
     }
+
     const onBehalf = ctxRow?.membership_direta === false;
 
 
