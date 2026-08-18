@@ -116,14 +116,51 @@ function Card({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Regimes que o cadastro público consegue derivar → opção do seletor. */
+const REGISTRY_TO_DECLARED: Partial<Record<string, RegimeDeclarado>> = {
+  mei: "mei",
+  simples: "simples",
+  presumido: "presumido",
+  real: "real",
+};
+
 function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => void }) {
   const { data } = useOnboarding(tenantId);
   const { saveSettings, saveTenantData } = useOnboardingMutations(tenantId);
-  const [cnpj, setCnpj] = useState(data?.tenant.cnpj ?? "");
+  const [cnpj, setCnpj] = useState(formatCnpj(data?.tenant.cnpj ?? ""));
   const [regime, setRegime] = useState<RegimeDeclarado | "">(data?.settings.regime_declared ?? "");
   const [accountant, setAccountant] = useState(data?.settings.accountant_email ?? "");
+  const [company, setCompany] = useState<OnboardingCompanyData>(
+    data?.settings.company ?? { razao_social: data?.tenant.name ?? "" },
+  );
+  const [fromRegistry, setFromRegistry] = useState(false);
   const digits = cnpj.replace(/\D/g, "");
   const cnpjOk = digits.length === 0 || isValidCnpj(digits);
+
+  const set = (patch: Partial<OnboardingCompanyData>) =>
+    setCompany((current) => ({ ...current, ...patch }));
+
+  function applyRecord(record: CnpjRecord) {
+    setFromRegistry(true);
+    set({
+      razao_social: record.razao_social ?? null,
+      nome_fantasia: record.nome_fantasia ?? null,
+      logradouro: record.logradouro ?? null,
+      numero: record.numero ?? null,
+      bairro: record.bairro ?? null,
+      municipio: record.municipio ?? null,
+      uf: record.uf ?? null,
+      cep: record.cep ?? null,
+      cnae: record.cnae_principal
+        ? `${record.cnae_principal}${record.cnae_principal_desc ? ` — ${record.cnae_principal_desc}` : ""}`
+        : null,
+      porte: record.porte ?? null,
+      situacao: record.situacao ?? null,
+      registry_fetched_at: record.fetched_at ?? new Date().toISOString(),
+    });
+    const derived = REGISTRY_TO_DECLARED[record.regime ?? ""];
+    if (derived) setRegime(derived);
+  }
 
   async function submit() {
     if (!regime) {
@@ -135,12 +172,15 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
       return;
     }
     try {
-      if (digits && digits !== (data?.tenant.cnpj ?? "")) {
-        await saveTenantData.mutateAsync({ cnpj: digits });
-      }
+      const name = (company.razao_social ?? "").trim();
+      await saveTenantData.mutateAsync({
+        ...(digits && digits !== (data?.tenant.cnpj ?? "") ? { cnpj: digits } : {}),
+        ...(name && name !== data?.tenant.name ? { name } : {}),
+      });
       await saveSettings.mutateAsync({
         regime_declared: regime,
         accountant_email: accountant.trim() || null,
+        company,
         step: 1,
       });
       onNext();
@@ -153,22 +193,12 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
     <Card>
       <h2 className="text-base font-medium">Empresa</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Confirme o CNPJ e o regime declarado. O regime orienta o cálculo e a simulação
-        tradicional × híbrido.
+        Digite o CNPJ: buscamos o cadastro público da Receita e preenchemos o resto. Todos os campos
+        continuam editáveis. O regime orienta o cálculo e a simulação tradicional × híbrido.
       </p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="ob-cnpj">CNPJ</Label>
-          <Input
-            id="ob-cnpj"
-            value={cnpj}
-            onChange={(e) => setCnpj(e.target.value)}
-            placeholder="00.000.000/0000-00"
-            className="font-mono tabular"
-            aria-invalid={!cnpjOk}
-          />
-          {!cnpjOk && <p className="text-xs text-destructive">Dígitos verificadores não conferem.</p>}
-        </div>
+        <CnpjAutofillField id="ob-cnpj" value={cnpj} onChange={setCnpj} onResolved={applyRecord} />
+
         <div className="space-y-1.5">
           <Label htmlFor="ob-regime">Regime declarado</Label>
           <Select value={regime} onValueChange={(v) => setRegime(v as RegimeDeclarado)}>
@@ -183,7 +213,93 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
               ))}
             </SelectContent>
           </Select>
+          {fromRegistry && <p className="text-[11px] text-muted-foreground">{PRESUMIDO_DISCLAIMER}</p>}
         </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="ob-razao">Razão social</Label>
+          <Input
+            id="ob-razao"
+            value={company.razao_social ?? ""}
+            onChange={(e) => set({ razao_social: e.target.value })}
+          />
+          {fromRegistry && <FromRegistryHint />}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-fantasia">Nome fantasia</Label>
+          <Input
+            id="ob-fantasia"
+            value={company.nome_fantasia ?? ""}
+            onChange={(e) => set({ nome_fantasia: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-porte">Porte</Label>
+          <Input
+            id="ob-porte"
+            value={company.porte ?? ""}
+            onChange={(e) => set({ porte: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="ob-cnae">CNAE principal</Label>
+          <Input
+            id="ob-cnae"
+            value={company.cnae ?? ""}
+            onChange={(e) => set({ cnae: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="ob-logradouro">Endereço</Label>
+          <div className="grid grid-cols-[1fr_6rem] gap-2">
+            <Input
+              id="ob-logradouro"
+              value={company.logradouro ?? ""}
+              onChange={(e) => set({ logradouro: e.target.value })}
+              placeholder="Logradouro"
+            />
+            <Input
+              value={company.numero ?? ""}
+              onChange={(e) => set({ numero: e.target.value })}
+              placeholder="Nº"
+            />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-bairro">Bairro</Label>
+          <Input
+            id="ob-bairro"
+            value={company.bairro ?? ""}
+            onChange={(e) => set({ bairro: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-cep">CEP</Label>
+          <Input
+            id="ob-cep"
+            value={company.cep ?? ""}
+            onChange={(e) => set({ cep: e.target.value })}
+            className="font-mono tabular"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-municipio">Município</Label>
+          <Input
+            id="ob-municipio"
+            value={company.municipio ?? ""}
+            onChange={(e) => set({ municipio: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ob-uf">UF</Label>
+          <Input
+            id="ob-uf"
+            value={company.uf ?? ""}
+            onChange={(e) => set({ uf: e.target.value.toUpperCase().slice(0, 2) })}
+            className="uppercase"
+          />
+        </div>
+
         <div className="space-y-1.5 sm:col-span-2">
           <Label htmlFor="ob-accountant">E-mail do contador (opcional)</Label>
           <Input
