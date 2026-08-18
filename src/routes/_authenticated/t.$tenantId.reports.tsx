@@ -10,6 +10,7 @@ import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state"
 import { KpiCard } from "@/components/techiva/metrics";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 import { useShellData } from "@/lib/tenant-shell-data";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/reports")({
@@ -58,8 +59,11 @@ function ReportsPage() {
           .from("regime_simulations")
           .select("id, tenant_id, run_at, recommendation, next_window, report_path")
           .order("run_at", { ascending: false })
-          .limit(500),
-        supabase.from("tenants").select("id, name"),
+          .order("id")
+          .range(0, 499),
+        fetchAllPages((from, to) =>
+          supabase.from("tenants").select("id, name").order("id").range(from, to),
+        ).then((rows) => ({ data: rows })),
       ]);
       if (error) throw error;
       const names = new Map((tenants ?? []).map((t) => [t.id, t.name]));

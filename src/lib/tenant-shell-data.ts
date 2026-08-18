@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { ShellData, ShellTenant } from "@/components/app/tenant-shell";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 import { buildScopeTree, type ScopeNode, type TenantContext } from "@/lib/tenant-scope";
 
 /**
@@ -27,7 +28,15 @@ export function useShellData(tenantId: string) {
         supabase.rpc("my_tenants"),
         supabase.rpc("tenant_context", { p_tenant: tenantId }),
         // Somente para a marca (white-label) da trilha: brand não vem do RPC.
-        supabase.from("tenants").select("id, name, kind, level, slug, status, brand, parent_id"),
+        // varredura paginada: uma plataforma com mais de 1000 tenants seria
+        // cortada em silêncio pelo limite padrão do PostgREST
+        fetchAllPages((from, to) =>
+          supabase
+            .from("tenants")
+            .select("id, name, kind, level, slug, status, brand, parent_id")
+            .order("id")
+            .range(from, to),
+        ).then((rows) => ({ data: rows, error: null })),
         supabase.from("profiles").select("full_name").eq("user_id", userId).maybeSingle(),
       ]);
       if (scopeError) throw scopeError;

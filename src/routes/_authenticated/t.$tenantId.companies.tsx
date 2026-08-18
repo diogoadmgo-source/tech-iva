@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchAllPages } from "@/lib/paginate";
 import { sendInviteEmail } from "@/lib/invite-email.functions";
 import { useCanAdmin, useMemberMutations } from "@/lib/members";
 import {
@@ -80,11 +81,22 @@ function CompaniesPage() {
     queryFn: async () => {
       const [{ data: tenants, error: tErr }, { data: integrations, error: iErr }] =
         await Promise.all([
-          supabase.from("tenants").select("id, settings").in("id", companyIds),
-          supabase
-            .from("integrations")
-            .select("id, kind, status, config, connected_at, error, tenant_id")
-            .in("tenant_id", companyIds),
+          fetchAllPages((from, to) =>
+            supabase
+              .from("tenants")
+              .select("id, settings")
+              .in("id", companyIds)
+              .order("id")
+              .range(from, to),
+          ).then((rows) => ({ data: rows, error: null })),
+          fetchAllPages((from, to) =>
+            supabase
+              .from("integrations")
+              .select("id, kind, status, config, connected_at, error, tenant_id")
+              .in("tenant_id", companyIds)
+              .order("id")
+              .range(from, to),
+          ).then((rows) => ({ data: rows, error: null })),
         ]);
       if (tErr) throw tErr;
       if (iErr) throw iErr;
