@@ -74,7 +74,10 @@ function PricePage() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
   const scenarios = usePriceScenarios(tenantId);
-  const customers = usePriceCustomers(tenantId);
+  // Cenário "por cliente" é UM cliente por vez: 5 mil SKUs × 200 clientes seriam
+  // 1 milhão de linhas. O seletor é busca no servidor, não a carteira inteira.
+  const [customerSearch, setCustomerSearch] = useState("");
+  const customers = usePriceCustomers(tenantId, customerSearch);
   const { createScenario, recompute, approve, updateProduct } = usePricingMutations(tenantId);
 
   const [scenarioId, setScenarioId] = useState<string>("");
@@ -512,7 +515,16 @@ function PricePage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Geral (todos os clientes)</SelectItem>
+                  <div className="p-2">
+                    <Input
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      placeholder="Buscar cliente por nome ou CNPJ…"
+                      className="h-8 text-sm"
+                      aria-label="Buscar cliente"
+                    />
+                  </div>
+                  <SelectItem value="all">Geral (preço de tabela, sem cliente)</SelectItem>
                   {(customers.data ?? []).map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
@@ -520,6 +532,11 @@ function PricePage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                O cenário por cliente calcula um cliente por vez. Não geramos a combinação
+                produto × cliente inteira: com 5 mil produtos e 200 clientes seria 1 milhão de
+                linhas, lento e ilegível. Busque o cliente que você quer negociar.
+              </p>
               {draftCustomer !== "all" ? (
                 <div className="pt-1">
                   <RegimeBadge

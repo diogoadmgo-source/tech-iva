@@ -60,7 +60,8 @@ export function useJobs(tenantId: string, limit = 20) {
         .select("*")
         .eq("tenant_id", tenantId)
         .order("queued_at", { ascending: false })
-        .limit(limit);
+        .order("id", { ascending: true }) // ordenação estável
+        .range(0, Math.max(0, limit - 1));
       if (error) throw error;
       return data ?? [];
     },
