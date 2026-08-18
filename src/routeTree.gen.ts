@@ -21,6 +21,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authenticated/select-tenant'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as STokenRouteImport } from './routes/s.$token'
 import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authenticated/t.$tenantId'
 import { Route as AuthenticatedTTenantIdIndexRouteImport } from './routes/_authenticated/t.$tenantId.index'
 import { Route as AuthenticatedTTenantIdAlertsRouteImport } from './routes/_authenticated/t.$tenantId.alerts'
@@ -41,7 +42,9 @@ import { Route as AuthenticatedTTenantIdPriceRouteImport } from './routes/_authe
 import { Route as AuthenticatedTTenantIdRegimeRouteImport } from './routes/_authenticated/t.$tenantId.regime'
 import { Route as AuthenticatedTTenantIdReportsRouteImport } from './routes/_authenticated/t.$tenantId.reports'
 import { Route as AuthenticatedTTenantIdRulesRouteImport } from './routes/_authenticated/t.$tenantId.rules'
+import { Route as AuthenticatedTTenantIdSimuladorRouteImport } from './routes/_authenticated/t.$tenantId.simulador'
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
+import { Route as AuthenticatedTTenantIdValidadorRouteImport } from './routes/_authenticated/t.$tenantId.validador'
 import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/public/cron.weekly-digest'
 import { Route as AuthenticatedTTenantIdSettingsIntegrationsRouteImport } from './routes/_authenticated/t.$tenantId.settings.integrations'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
@@ -104,6 +107,11 @@ const AuthenticatedSelectTenantRoute =
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const STokenRoute = STokenRouteImport.update({
+  id: '/s/$token',
+  path: '/s/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTTenantIdRoute = AuthenticatedTTenantIdRouteImport.update({
@@ -225,10 +233,22 @@ const AuthenticatedTTenantIdRulesRoute =
     path: '/rules',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdSimuladorRoute =
+  AuthenticatedTTenantIdSimuladorRouteImport.update({
+    id: '/simulador',
+    path: '/simulador',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdTenantsRoute =
   AuthenticatedTTenantIdTenantsRouteImport.update({
     id: '/tenants',
     path: '/tenants',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
+const AuthenticatedTTenantIdValidadorRoute =
+  AuthenticatedTTenantIdValidadorRouteImport.update({
+    id: '/validador',
+    path: '/validador',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
 const ApiPublicCronWeeklyDigestRoute =
@@ -262,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/s/$token': typeof STokenRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
   '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
@@ -281,7 +302,9 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
+  '/t/$tenantId/simulador': typeof AuthenticatedTTenantIdSimuladorRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
@@ -299,6 +322,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/s/$token': typeof STokenRoute
   '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
@@ -317,7 +341,9 @@ export interface FileRoutesByTo {
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
+  '/t/$tenantId/simulador': typeof AuthenticatedTTenantIdSimuladorRoute
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
@@ -337,6 +363,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/s/$token': typeof STokenRoute
   '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
   '/_authenticated/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/_authenticated/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
@@ -356,7 +383,9 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/_authenticated/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/_authenticated/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
+  '/_authenticated/t/$tenantId/simulador': typeof AuthenticatedTTenantIdSimuladorRoute
   '/_authenticated/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
+  '/_authenticated/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
@@ -376,6 +405,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
+    | '/s/$token'
     | '/t/$tenantId'
     | '/t/$tenantId/alerts'
     | '/t/$tenantId/apuracao'
@@ -395,7 +425,9 @@ export interface FileRouteTypes {
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
+    | '/t/$tenantId/simulador'
     | '/t/$tenantId/tenants'
+    | '/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/integrations'
@@ -413,6 +445,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
+    | '/s/$token'
     | '/t/$tenantId/alerts'
     | '/t/$tenantId/apuracao'
     | '/t/$tenantId/audit'
@@ -431,7 +464,9 @@ export interface FileRouteTypes {
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
+    | '/t/$tenantId/simulador'
     | '/t/$tenantId/tenants'
+    | '/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
     | '/t/$tenantId'
     | '/t/$tenantId/settings/integrations'
@@ -450,6 +485,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/select-tenant'
     | '/invite/$token'
+    | '/s/$token'
     | '/_authenticated/t/$tenantId'
     | '/_authenticated/t/$tenantId/alerts'
     | '/_authenticated/t/$tenantId/apuracao'
@@ -469,7 +505,9 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/regime'
     | '/_authenticated/t/$tenantId/reports'
     | '/_authenticated/t/$tenantId/rules'
+    | '/_authenticated/t/$tenantId/simulador'
     | '/_authenticated/t/$tenantId/tenants'
+    | '/_authenticated/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/integrations'
@@ -487,6 +525,7 @@ export interface RootRouteChildren {
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  STokenRoute: typeof STokenRoute
   ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
 }
 
@@ -574,6 +613,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/$token'
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/s/$token': {
+      id: '/s/$token'
+      path: '/s/$token'
+      fullPath: '/s/$token'
+      preLoaderRoute: typeof STokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/t/$tenantId': {
@@ -716,11 +762,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdRulesRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/simulador': {
+      id: '/_authenticated/t/$tenantId/simulador'
+      path: '/simulador'
+      fullPath: '/t/$tenantId/simulador'
+      preLoaderRoute: typeof AuthenticatedTTenantIdSimuladorRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/tenants': {
       id: '/_authenticated/t/$tenantId/tenants'
       path: '/tenants'
       fullPath: '/t/$tenantId/tenants'
       preLoaderRoute: typeof AuthenticatedTTenantIdTenantsRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
+    '/_authenticated/t/$tenantId/validador': {
+      id: '/_authenticated/t/$tenantId/validador'
+      path: '/validador'
+      fullPath: '/t/$tenantId/validador'
+      preLoaderRoute: typeof AuthenticatedTTenantIdValidadorRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
     '/api/public/cron/weekly-digest': {
@@ -766,7 +826,9 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdRegimeRoute: typeof AuthenticatedTTenantIdRegimeRoute
   AuthenticatedTTenantIdReportsRoute: typeof AuthenticatedTTenantIdReportsRoute
   AuthenticatedTTenantIdRulesRoute: typeof AuthenticatedTTenantIdRulesRoute
+  AuthenticatedTTenantIdSimuladorRoute: typeof AuthenticatedTTenantIdSimuladorRoute
   AuthenticatedTTenantIdTenantsRoute: typeof AuthenticatedTTenantIdTenantsRoute
+  AuthenticatedTTenantIdValidadorRoute: typeof AuthenticatedTTenantIdValidadorRoute
   AuthenticatedTTenantIdIndexRoute: typeof AuthenticatedTTenantIdIndexRoute
   AuthenticatedTTenantIdSettingsIntegrationsRoute: typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   AuthenticatedTTenantIdSettingsUsersRoute: typeof AuthenticatedTTenantIdSettingsUsersRoute
@@ -794,7 +856,9 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
     AuthenticatedTTenantIdRegimeRoute: AuthenticatedTTenantIdRegimeRoute,
     AuthenticatedTTenantIdReportsRoute: AuthenticatedTTenantIdReportsRoute,
     AuthenticatedTTenantIdRulesRoute: AuthenticatedTTenantIdRulesRoute,
+    AuthenticatedTTenantIdSimuladorRoute: AuthenticatedTTenantIdSimuladorRoute,
     AuthenticatedTTenantIdTenantsRoute: AuthenticatedTTenantIdTenantsRoute,
+    AuthenticatedTTenantIdValidadorRoute: AuthenticatedTTenantIdValidadorRoute,
     AuthenticatedTTenantIdIndexRoute: AuthenticatedTTenantIdIndexRoute,
     AuthenticatedTTenantIdSettingsIntegrationsRoute:
       AuthenticatedTTenantIdSettingsIntegrationsRoute,
@@ -833,6 +897,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
   InviteTokenRoute: InviteTokenRoute,
+  STokenRoute: STokenRoute,
   ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
 }
 export const routeTree = rootRouteImport

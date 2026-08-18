@@ -9,6 +9,8 @@ export type NavItem = {
     | "/t/$tenantId/cash"
     | "/t/$tenantId/apuracao"
     | "/t/$tenantId/chain"
+    | "/t/$tenantId/simulador"
+    | "/t/$tenantId/validador"
 
     | "/t/$tenantId/regime"
     | "/t/$tenantId/portfolio"
@@ -64,6 +66,8 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Apuração", block: "3.12", to: "/t/$tenantId/apuracao" },
+    { label: "Simulador", block: "3.13", to: "/t/$tenantId/simulador" },
+    { label: "Validador de XML", block: "3.13", to: "/t/$tenantId/validador" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },
@@ -76,6 +80,8 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Apuração", block: "3.12", to: "/t/$tenantId/apuracao" },
+    { label: "Simulador", block: "3.13", to: "/t/$tenantId/simulador" },
+    { label: "Validador de XML", block: "3.13", to: "/t/$tenantId/validador" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
     { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Integrações", block: "1.7.3", to: "/t/$tenantId/settings/integrations" },
