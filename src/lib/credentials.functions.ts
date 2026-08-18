@@ -119,6 +119,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
       // (b) CHAVE DE API — segredo opaco: cifrado no bucket, nunca na tabela.
       if (data.kind === "api_key") {
         const path = secretPath(data.tenantId, data.provider);
+        const { data: prevKey } = await supabaseAdmin
+          .from("integration_credentials")
+          .select("secret_ref")
+          .eq("tenant_id", data.tenantId)
+          .eq("provider", data.provider)
+          .eq("kind", "api_key")
+          .maybeSingle();
         const sealed = await sealSecret(data.apiKey);
         const up = await supabaseAdmin.storage
           .from(SECRETS_BUCKET)
@@ -141,8 +148,13 @@ export const uploadCredential = createServerFn({ method: "POST" })
           await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([path]);
           throw new Error(error.message);
         }
+        const prevRef = prevKey?.secret_ref ?? null;
+        if (prevRef && prevRef !== path) {
+          await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([prevRef]);
+        }
         return { ok: true as const, id: id as string, kind: data.kind };
       }
+
 
       // (c) CERTIFICADO A1 — CAMINHO PRINCIPAL do produto.
       const pfx = fromBase64(data.file);
