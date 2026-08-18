@@ -46,6 +46,7 @@ import { Route as AuthenticatedTTenantIdSimuladorRouteImport } from './routes/_a
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
 import { Route as AuthenticatedTTenantIdValidadorRouteImport } from './routes/_authenticated/t.$tenantId.validador'
 import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/public/cron.weekly-digest'
+import { Route as AuthenticatedTTenantIdSettingsIndexRouteImport } from './routes/_authenticated/t.$tenantId.settings.index'
 import { Route as AuthenticatedTTenantIdSettingsIntegrationsRouteImport } from './routes/_authenticated/t.$tenantId.settings.integrations'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
 
@@ -257,6 +258,12 @@ const ApiPublicCronWeeklyDigestRoute =
     path: '/api/public/cron/weekly-digest',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedTTenantIdSettingsIndexRoute =
+  AuthenticatedTTenantIdSettingsIndexRouteImport.update({
+    id: '/settings/',
+    path: '/settings/',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdSettingsIntegrationsRoute =
   AuthenticatedTTenantIdSettingsIntegrationsRouteImport.update({
     id: '/settings/integrations',
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -348,6 +356,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/t/$tenantId/settings': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -390,6 +399,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/_authenticated/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -432,6 +442,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/t/$tenantId/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -471,6 +482,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/t/$tenantId/settings'
   id:
     | '__root__'
     | '/'
@@ -512,6 +524,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/integrations'
     | '/_authenticated/t/$tenantId/settings/users'
+    | '/_authenticated/t/$tenantId/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -790,6 +803,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronWeeklyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/t/$tenantId/settings/': {
+      id: '/_authenticated/t/$tenantId/settings/'
+      path: '/settings'
+      fullPath: '/t/$tenantId/settings/'
+      preLoaderRoute: typeof AuthenticatedTTenantIdSettingsIndexRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/settings/integrations': {
       id: '/_authenticated/t/$tenantId/settings/integrations'
       path: '/settings/integrations'
@@ -832,6 +852,7 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdIndexRoute: typeof AuthenticatedTTenantIdIndexRoute
   AuthenticatedTTenantIdSettingsIntegrationsRoute: typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   AuthenticatedTTenantIdSettingsUsersRoute: typeof AuthenticatedTTenantIdSettingsUsersRoute
+  AuthenticatedTTenantIdSettingsIndexRoute: typeof AuthenticatedTTenantIdSettingsIndexRoute
 }
 
 const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
@@ -864,6 +885,8 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
       AuthenticatedTTenantIdSettingsIntegrationsRoute,
     AuthenticatedTTenantIdSettingsUsersRoute:
       AuthenticatedTTenantIdSettingsUsersRoute,
+    AuthenticatedTTenantIdSettingsIndexRoute:
+      AuthenticatedTTenantIdSettingsIndexRoute,
   }
 
 const AuthenticatedTTenantIdRouteWithChildren =
