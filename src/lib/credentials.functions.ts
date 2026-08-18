@@ -81,10 +81,27 @@ export const uploadCredential = createServerFn({ method: "POST" })
       | null
       | undefined;
     const role = ctxRow?.papel ?? null;
-    const ALLOWED = ["platform_admin", "platform_ops", "channel_admin", "owner", "finance"];
-    if (typeof role !== "string" || !ALLOWED.includes(role)) {
+
+    /*
+     * Fonte única da verdade: a decisão de permissão fica no banco (can_admin).
+     * Nunca replicar uma lista de papéis aqui — as duas cópias divergem.
+     */
+    if (role === null) {
+      throw new Error("Sua sessão expirou, entre novamente.");
+    }
+    const { data: pode, error: podeErr } = await context.supabase.rpc("can_admin", {
+      p_tenant: data.tenantId,
+    } as never);
+    if (podeErr) {
+      const m = podeErr.message.toLowerCase();
+      if (m.includes("jwt") || m.includes("expired")) {
+        throw new Error("Sua sessão expirou, entre novamente.");
+      }
+      throw new Error(podeErr.message);
+    }
+    if (pode !== true) {
       throw new Error(
-        `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role ?? "nenhum vínculo encontrado"}).`,
+        `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador.`,
       );
     }
 
@@ -262,11 +279,11 @@ export const uploadCredential = createServerFn({ method: "POST" })
       // Erro de segurança pode ser discreto, mas não pode ser mudo.
       const lower = raw.toLowerCase();
       if (lower.includes("jwt") || lower.includes("unauthorized") || lower.includes("expired")) {
-        throw new Error("Sua sessão expirou. Entre novamente e repita o envio.");
+        throw new Error("Sua sessão expirou, entre novamente.");
       }
       if (lower.includes("forbidden") || lower.includes("permission denied")) {
         throw new Error(
-          `Você não tem permissão para gerenciar credenciais desta empresa (papel atual: ${role}).`,
+          `Seu papel nesta empresa (${role}) não permite gerenciar credenciais. Peça a alguém com papel de proprietário ou administrador. (detalhe técnico: ${raw})`,
         );
       }
       throw new Error(raw);
