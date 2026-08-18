@@ -152,10 +152,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <RouteTransition>
-        <Outlet />
-      </RouteTransition>
+      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes.
+          Sem wrapper com key por rota: remontar a árvore a cada navegação apagava o
+          shell (sidebar) e refazia as consultas — era isso que causava a "piscada". */}
+      <Outlet />
       <Toaster />
     </QueryClientProvider>
   );
