@@ -1396,6 +1396,8 @@ export type Database = {
       receivables: {
         Row: {
           amount_cents: number
+          antecipacao_ref: string | null
+          antecipado_em: string | null
           arranjo: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence: number
           due_date: string
@@ -1406,10 +1408,13 @@ export type Database = {
           paid_at: string | null
           source: string
           tenant_id: string
+          tributo_em_aberto_cents: number | null
           valor_pago_cents: number | null
         }
         Insert: {
           amount_cents: number
+          antecipacao_ref?: string | null
+          antecipado_em?: string | null
           arranjo?: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence?: number
           due_date: string
@@ -1420,10 +1425,13 @@ export type Database = {
           paid_at?: string | null
           source?: string
           tenant_id: string
+          tributo_em_aberto_cents?: number | null
           valor_pago_cents?: number | null
         }
         Update: {
           amount_cents?: number
+          antecipacao_ref?: string | null
+          antecipado_em?: string | null
           arranjo?: Database["public"]["Enums"]["arranjo_pagamento"]
           confidence?: number
           due_date?: string
@@ -1434,6 +1442,7 @@ export type Database = {
           paid_at?: string | null
           source?: string
           tenant_id?: string
+          tributo_em_aberto_cents?: number | null
           valor_pago_cents?: number | null
         }
         Relationships: [
@@ -4416,6 +4425,7 @@ export type Database = {
       }
       platform_identity: { Args: never; Returns: Json }
       platform_ops_overview: { Args: never; Returns: Json }
+      premissa_credito_dias: { Args: never; Returns: number }
       premissa_dia_vencimento: { Args: never; Returns: number }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
