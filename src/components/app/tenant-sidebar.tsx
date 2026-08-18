@@ -91,26 +91,20 @@ export function TenantSidebar({
         }`}
         aria-label="Navegação"
       >
-        {/* Marca */}
+        {/* Marca: lockup TECH-IVA (ou o símbolo, quando recolhida) */}
         <div className="flex h-14 items-center gap-2 px-3">
-          {brand.color ? (
-            <span
-              className="grid size-8 shrink-0 place-items-center rounded-md font-mono text-xs font-semibold text-primary-foreground"
-              style={{ backgroundColor: brand.color }}
-            >
-              {(brand.name ?? "TECH-IVA").slice(0, 2).toUpperCase()}
-            </span>
-          ) : (
+          {collapsed ? (
             <BrandIcon className="size-8 shrink-0" />
+          ) : (
+            <BrandLogo className="h-6 w-auto" />
           )}
-          {!collapsed ? (
-            brand.name ? (
-              <span className="truncate text-sm font-medium text-foreground">{brand.name}</span>
-            ) : (
-              <BrandLogo className="h-5 w-auto" />
-            )
+          {!collapsed && brand.name ? (
+            <span className="truncate border-l border-border pl-2 text-xs text-muted-foreground">
+              {brand.name}
+            </span>
           ) : null}
         </div>
+
 
         {/* Cabeçalho de contexto: responde "onde estou" */}
         <div className="px-2">
