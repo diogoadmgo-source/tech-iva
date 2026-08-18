@@ -4142,40 +4142,24 @@ export type Database = {
       regime_iva_rate: { Args: { p_year: number }; Returns: number }
       regime_next_window: { Args: { p_from?: string }; Returns: string }
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
-      register_credential:
-        | {
-            Args: {
-              p_fingerprint?: string
-              p_kind: Database["public"]["Enums"]["credential_kind"]
-              p_not_after?: string
-              p_not_before?: string
-              p_provider: string
-              p_scopes?: string[]
-              p_secret_ref: string
-              p_subject_cn?: string
-              p_subject_cnpj?: string
-              p_tenant: string
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_finalidades?: string[]
-              p_fingerprint?: string
-              p_kind: Database["public"]["Enums"]["credential_kind"]
-              p_not_after?: string
-              p_not_before?: string
-              p_provider: string
-              p_scopes?: string[]
-              p_secret_ref: string
-              p_subject_cn?: string
-              p_subject_cnpj?: string
-              p_tenant: string
-              p_uploaded_by_role?: string
-              p_uploaded_on_behalf?: boolean
-            }
-            Returns: string
-          }
+      register_credential: {
+        Args: {
+          p_finalidades?: string[]
+          p_fingerprint?: string
+          p_kind: Database["public"]["Enums"]["credential_kind"]
+          p_not_after?: string
+          p_not_before?: string
+          p_provider: string
+          p_scopes?: string[]
+          p_secret_ref: string
+          p_subject_cn?: string
+          p_subject_cnpj?: string
+          p_tenant: string
+          p_uploaded_by_role?: string
+          p_uploaded_on_behalf?: boolean
+        }
+        Returns: string
+      }
       remove_member: {
         Args: { p_tenant: string; p_user: string }
         Returns: undefined
