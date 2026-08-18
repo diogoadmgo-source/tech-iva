@@ -580,3 +580,38 @@ select:-webkit-autofill {
     animation: none;
   }
 }
+
+/* campos e botão primário dentro do ambiente de auth */
+.ambient input,
+.ambient button[type="submit"] {
+  transition:
+    border-color 160ms ease-out,
+    box-shadow 200ms ease-out,
+    transform 160ms ease-out,
+    background-color 160ms ease-out;
+}
+
+.ambient input:hover:not(:focus-visible) {
+  border-color: oklch(1 0 0 / 18%);
+}
+
+.ambient button[type="submit"]:not(:disabled) {
+  box-shadow: 0 8px 24px -14px oklch(0.55 0.22 264 / 70%);
+}
+
+.ambient button[type="submit"]:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 30px -12px oklch(0.55 0.22 264 / 80%),
+    0 0 0 1px oklch(0.7 0.16 264 / 35%);
+}
+
+.ambient button[type="submit"]:not(:disabled):active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient button[type="submit"]:not(:disabled):hover {
+    transform: none;
+  }
+}
