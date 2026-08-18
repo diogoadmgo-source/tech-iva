@@ -43,7 +43,7 @@ export function useTenantTree(rootId: string) {
     queryFn: async () => {
       // a árvore inteira é necessária para montar hierarquia; varredura paginada
       // porque o PostgREST corta em 1000 linhas silenciosamente
-      const data = await fetchAllPages<Omit<TenantNode, "children">>((from, to) =>
+      const data = (await fetchAllPages((from, to) =>
         supabase
           .from("tenants")
           .select("id, parent_id, name, kind, level, slug, cnpj, status, brand, created_at")
@@ -51,7 +51,7 @@ export function useTenantTree(rootId: string) {
           .order("name")
           .order("id")
           .range(from, to),
-      );
+      )) as unknown as Array<Omit<TenantNode, "children">>;
 
       const rows = data;
       const nodes = new Map<string, TenantNode>(
