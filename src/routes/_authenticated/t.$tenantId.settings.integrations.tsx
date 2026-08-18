@@ -32,10 +32,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import {
   credentialSemaphore,
+  FINALIDADE_LABEL,
+  FINALIDADES_PADRAO,
   hasActiveDfe,
   KIND_LABEL,
   STATUS_LABEL,
   useCredentials,
+  useCredentialUsage,
   useRevokeCredential,
   useUploadCredential,
   type CredentialRow,
