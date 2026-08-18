@@ -13,6 +13,7 @@ import {
   MotorOficialNote,
   PrintButton,
 } from "@/components/techiva/simulator";
+import { ClassTribCombobox, CstCombobox } from "@/components/techiva/cst-combobox";
 import { NbsCombobox, nbsCapitulo } from "@/components/techiva/nbs-combobox";
 import { MunicipioCombobox } from "@/components/techiva/municipio-combobox";
 import { Badge } from "@/components/ui/badge";
