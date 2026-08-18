@@ -49,8 +49,8 @@ export const uploadCredential = createServerFn({ method: "POST" })
       CredentialError,
       SECRETS_BUCKET,
       fromBase64,
-      onlyDigits,
       readPfx,
+      sealCertificateBundle,
       sealSecret,
       secretPath,
     } = await import("@/lib/credentials.server");
