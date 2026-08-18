@@ -340,20 +340,25 @@ function StepDfe({
   onBack: () => void;
   onNext: () => void;
 }) {
-  const { data } = useOnboarding(tenantId);
+  const credentials = useCredentials(tenantId);
+  const upload = useUploadCredential(tenantId);
   const { setIntegration } = useOnboardingMutations(tenantId);
-  const dfe = data?.integrations.find((i) => i.kind === "dfe_auth");
-  const [fileName, setFileName] = useState<string | null>(null);
+  const done = hasActiveDfe(credentials.data);
 
-  async function mark(method: "certificate" | "proxy", extra?: Record<string, unknown>) {
+  const [apiKey, setApiKey] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [password, setPassword] = useState("");
+  const [ack, setAck] = useState(false);
+
+  async function register(input: Parameters<typeof upload.mutateAsync>[0], message: string) {
     try {
+      await upload.mutateAsync(input);
       await setIntegration.mutateAsync({
         kind: "dfe_auth",
         status: "connected",
-        config: { method, requested_at: new Date().toISOString(), ...(extra ?? {}) },
+        config: { method: input.kind, requested_at: new Date().toISOString() },
       });
-      toast.success("Autorização registrada.");
-      onNext();
+      toast.success(message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível registrar.");
     }
@@ -362,56 +367,149 @@ function StepDfe({
   return (
     <Card>
       <h2 className="text-base font-medium">Autorizar a leitura das notas</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Precisamos de autorização para baixar seus documentos fiscais na SEFAZ. Escolha um caminho.
+      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+        Precisamos de autorização para baixar seus documentos fiscais. Recomendamos a procuração
+        eletrônica: nela usamos o <strong>nosso</strong> certificado, então não guardamos chave
+        privada de cliente nenhum. Dizemos isso na cara: é escolha de confiança, não limitação.
       </p>
-      {dfe?.status === "connected" && (
-        <p className="mt-3 rounded-lg border border-in/30 bg-in/10 px-3 py-2 text-xs">
-          Autorização já registrada
-          {dfe.connected_at ? ` em ${new Date(dfe.connected_at).toLocaleDateString("pt-BR")}` : ""}.
+
+      {done && (
+        <p className="mt-3 rounded-lg border border-flow-in/30 bg-flow-in/10 px-3 py-2 text-xs">
+          Leitura de notas autorizada. Este passo está concluído.
         </p>
       )}
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg border border-border bg-surface-2 p-4">
-          <ShieldCheck className="size-4 text-primary" aria-hidden />
-          <p className="mt-2 text-sm font-medium">Certificado A1</p>
+      <div className="mt-4 space-y-4">
+        {/* (a) procuração — recomendado */}
+        <div className="rounded-lg border border-primary/40 bg-surface-2 p-4 ring-1 ring-primary/20">
+          <div className="flex items-center gap-2">
+            <FileCheck2 className="size-4 text-primary" aria-hidden />
+            <p className="text-sm font-medium">Procuração eletrônica</p>
+            <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary">
+              recomendado
+            </span>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Envie o arquivo .pfx e a senha. O arquivo é cifrado e guardado fora do banco; usamos só
-            para consultar documentos.
+            No e-CAC, em “Senhas e Procurações”, nomeie o TECH-IVA como procurador nos serviços de
+            consulta de documentos fiscais. O passo a passo completo, com o CNPJ para copiar, está
+            em Integrações.
           </p>
-          <div className="mt-3 space-y-2">
-            <Input
-              type="file"
-              accept=".pfx,.p12"
-              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
-            />
+          <div className="mt-3 flex flex-wrap gap-2">
             <Button
               size="sm"
-              className="w-full"
-              disabled={!fileName || setIntegration.isPending}
-              onClick={() => void mark("certificate", { file_name: fileName })}
+              disabled={upload.isPending}
+              onClick={() => void register({ kind: "procuracao" }, "Procuração registrada.")}
             >
-              Registrar certificado
+              {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              Já autorizei
+            </Button>
+            <Button size="sm" variant="ghost" asChild>
+              <Link to="/t/$tenantId/settings/integrations" params={{ tenantId }}>
+                Ver passo a passo
+              </Link>
             </Button>
           </div>
         </div>
 
+        {/* (b) chave de API */}
         <div className="rounded-lg border border-border bg-surface-2 p-4">
-          <FileCheck2 className="size-4 text-primary" aria-hidden />
-          <p className="mt-2 text-sm font-medium">Procuração eletrônica</p>
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" aria-hidden />
+            <p className="text-sm font-medium">Chave de API do Portal RTC</p>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            No e-CAC, conceda a procuração para o CNPJ do TECH-IVA nos serviços de consulta de
-            documentos fiscais. Depois marque abaixo.
+            Gere a chave no portal e cole aqui. Ela é cifrada no envio, não volta para a tela e você
+            pode revogá-la a qualquer momento.
           </p>
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="min-w-56 flex-1 space-y-1">
+              <Label htmlFor="onb-api-key" className="text-xs">
+                Chave
+              </Label>
+              <Input
+                id="onb-api-key"
+                type="password"
+                autoComplete="off"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={apiKey.trim().length < 8 || upload.isPending}
+              onClick={() =>
+                void register(
+                  { kind: "api_key", apiKey: apiKey.trim() },
+                  "Chave registrada e cifrada.",
+                ).then(() => setApiKey(""))
+              }
+            >
+              Registrar chave
+            </Button>
+          </div>
+        </div>
+
+        {/* (c) certificado A1 — último recurso */}
+        <div className="rounded-lg border border-border bg-surface-2 p-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-muted-foreground" aria-hidden />
+            <p className="text-sm font-medium">Certificado A1 (.pfx)</p>
+            <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+              último recurso
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            É uma chave privada que assina em nome da sua empresa. Validamos o titular, ciframos e
+            guardamos fora do banco — e não existe caminho para baixá-la de volta.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="onb-pfx" className="text-xs">
+                Arquivo
+              </Label>
+              <Input
+                id="onb-pfx"
+                type="file"
+                accept=".pfx,.p12"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="onb-pfx-pass" className="text-xs">
+                Senha
+              </Label>
+              <Input
+                id="onb-pfx-pass"
+                type="password"
+                autoComplete="off"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="mt-2 flex items-start gap-2 text-xs text-muted-foreground">
+            <Checkbox checked={ack} onCheckedChange={(v) => setAck(v === true)} />
+            <span>Entendo que estou enviando um certificado digital da minha empresa.</span>
+          </label>
           <Button
             size="sm"
             variant="outline"
-            className="mt-3 w-full"
-            disabled={setIntegration.isPending}
-            onClick={() => void mark("proxy")}
+            className="mt-3"
+            disabled={!file || password.length === 0 || !ack || upload.isPending}
+            onClick={() => {
+              if (!file) return;
+              void register(
+                { kind: "certificado_a1", file, password },
+                "Certificado validado e cifrado.",
+              ).then(() => {
+                setFile(null);
+                setPassword("");
+                setAck(false);
+              });
+            }}
           >
-            Já autorizei
+            Enviar certificado
           </Button>
         </div>
       </div>
@@ -420,8 +518,8 @@ function StepDfe({
         <Button variant="ghost" onClick={onBack}>
           Voltar
         </Button>
-        <Button variant="outline" onClick={onNext}>
-          Pular por enquanto
+        <Button variant={done ? "default" : "outline"} onClick={onNext}>
+          {done ? "Continuar" : "Pular por enquanto"}
         </Button>
       </div>
     </Card>
