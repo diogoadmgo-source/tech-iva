@@ -5,7 +5,6 @@ import { getSharedSimulation } from "@/lib/share.functions";
 import type { CalcResult, SimulatorInputs } from "@/lib/simulator";
 
 type SharedRow = {
-  nome: string | null;
   inputs: SimulatorInputs;
   results: CalcResult;
   calc_version: string | null;
@@ -56,7 +55,7 @@ function SharedSimulation() {
       <Shell>
         <h1 className="text-lg font-semibold">Simulação não encontrada</h1>
         <p className="text-sm text-muted-foreground">
-          O link pode ter expirado ou o compartilhamento foi desfeito.
+          O link expirou (os links públicos valem 90 dias) ou o compartilhamento foi revogado.
         </p>
       </Shell>
     );
@@ -67,7 +66,8 @@ function SharedSimulation() {
         <p className="text-xs uppercase tracking-widest text-muted-foreground">
           Simulação compartilhada
         </p>
-        <h1 className="text-2xl font-semibold">{row.nome ?? "Simulação"}</h1>
+        {/* nada que identifique quem calculou: sem empresa, CNPJ, tenant ou autor */}
+        <h1 className="text-2xl font-semibold">Simulação de CBS, IBS e IS</h1>
         <p className="text-sm text-muted-foreground">
           CST {row.inputs?.cst ?? "—"} × cClassTrib {row.inputs?.cclasstrib ?? "—"} ·{" "}
           {row.inputs?.uf_origem ?? "—"} → {row.inputs?.uf_destino ?? "—"} ·{" "}
