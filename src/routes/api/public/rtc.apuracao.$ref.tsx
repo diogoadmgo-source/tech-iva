@@ -47,10 +47,26 @@ export const Route = createFileRoute("/api/public/rtc/apuracao/$ref")({
           return new Response("Erro ao registrar o tíquete", { status: 500 });
         }
 
-        const ok = Boolean((data as { ok?: boolean } | null)?.ok);
-        if (!ok) {
+        const result = data as { ok?: boolean; id?: string } | null;
+        if (!result?.ok) {
           // ref desconhecido, expirado ou já consumido: não reenviar.
           return new Response("Solicitação não encontrada", { status: 404 });
+        }
+
+        /*
+         * PASSO 3 no próprio aplicativo: baixa o JSON com o tíquete e chama a
+         * ingestão. Não depende de worker externo. A Receita não precisa esperar
+         * o resultado disso — respondemos 200 de qualquer forma, e a falha fica
+         * registrada na apuração (status 'erro') para reprocessamento.
+         */
+        const { processarPendentes } = await import("@/lib/rtc-apuracao.server");
+        try {
+          await processarPendentes();
+        } catch (e) {
+          console.error(
+            "[rtc-webhook] tíquete gravado, mas o download falhou:",
+            e instanceof Error ? e.message : e,
+          );
         }
 
         return Response.json({ ok: true });

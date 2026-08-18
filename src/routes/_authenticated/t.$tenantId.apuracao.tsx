@@ -42,6 +42,7 @@ import {
   useCompetenciaInvoices,
   useInvoiceItems,
   useRequestApuracao,
+  useProcessarPendentesApuracao,
   useRtcQuota,
   type InvoiceRow,
 } from "@/lib/rtc";
@@ -80,6 +81,7 @@ function ApuracaoPage() {
   const divergencia = useApuracaoDivergencia(tenantId, competencia);
   const quota = useRtcQuota(tenantId);
   const request = useRequestApuracao(tenantId);
+  const pendentes = useProcessarPendentesApuracao(tenantId);
   const lista = useApuracoesLista(tenantId);
   const cash = useDashboardCash(tenantId, 90);
   const [invPage, setInvPage] = useState(0);
@@ -349,28 +351,54 @@ function ApuracaoPage() {
           </p>
         </div>
 
-        <Button
-          type="button"
-          className="gap-2"
-          title={!podeConsultar ? quota.data?.mensagem : undefined}
-          disabled={!podeConsultar || request.isPending || quota.isLoading}
-          onClick={async () => {
-            try {
-              await request.mutateAsync(competencia);
-              toast.success("Consulta enfileirada. A Receita responde de forma assíncrona.");
-            } catch (error) {
-              const message = error instanceof Error ? error.message : "Falha ao consultar.";
-              toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);
-            }
-          }}
-        >
-          {request.isPending ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <RefreshCw className="size-4" aria-hidden />
-          )}
-          Consultar Receita
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            disabled={pendentes.isPending}
+            onClick={async () => {
+              try {
+                const r = await pendentes.mutateAsync();
+                if (r.processadas > 0) toast.success(`${r.processadas} apuração(ões) baixada(s) da Receita.`);
+                else if (r.falhas.length > 0) toast.error(r.falhas[0] ?? "Falha ao baixar a apuração.");
+                else toast.info("Nenhum retorno da Receita aguardando download.");
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Falha ao reprocessar.");
+              }
+            }}
+          >
+            {pendentes.isPending ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden />
+            )}
+            Reprocessar retorno
+          </Button>
+
+          <Button
+            type="button"
+            className="gap-2"
+            title={!podeConsultar ? quota.data?.mensagem : undefined}
+            disabled={!podeConsultar || request.isPending || quota.isLoading}
+            onClick={async () => {
+              try {
+                await request.mutateAsync(competencia);
+                toast.success("Solicitação enviada. A Receita retorna o resultado em seguida.");
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "Falha ao consultar.";
+                toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);
+              }
+            }}
+          >
+            {request.isPending ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <RefreshCw className="size-4" aria-hidden />
+            )}
+            Consultar Receita
+          </Button>
+        </div>
       </section>
 
       {/* documentos da competência */}
