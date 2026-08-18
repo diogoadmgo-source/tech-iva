@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { CnpjText } from "@/components/techiva/money";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { Semaphore } from "@/components/techiva/badges";
+import { CnpjAutofillField } from "@/components/techiva/cnpj-autofill";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
