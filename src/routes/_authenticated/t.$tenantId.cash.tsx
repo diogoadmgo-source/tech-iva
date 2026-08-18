@@ -64,6 +64,8 @@ function weekLabel(week: string) {
 function CashScreen() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
+  const navigate = useNavigate();
+  const credit = useFeature(tenantId, "credit");
   const [horizon, setHorizon] = useState<CashHorizon>(90);
   const [week, setWeek] = useState<string | null>(null);
 
