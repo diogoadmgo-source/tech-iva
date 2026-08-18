@@ -141,7 +141,7 @@ function ValidadorPage() {
       </header>
 
       {/* avisos mantidos pela plataforma (notices_for) */}
-      <NoticeBoard scope="validador" />
+      <NoticeBoard scope="validador" highlightKeys={["conformidade_2026"]} />
 
 
 

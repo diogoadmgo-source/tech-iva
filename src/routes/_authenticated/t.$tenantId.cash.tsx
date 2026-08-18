@@ -6,6 +6,8 @@ import { AlertList } from "@/components/techiva/alerts";
 import { CashTimelineChart } from "@/components/techiva/cash-timeline-chart";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { HeroMetric, KpiCard } from "@/components/techiva/metrics";
+import { ComparadorModalidades, ModalidadeSelector } from "@/components/techiva/modalidade";
+import { NoticeBoard } from "@/components/techiva/notices";
 import { formatCents, MoneyText } from "@/components/techiva/money";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { Button } from "@/components/ui/button";
@@ -130,7 +132,8 @@ function CashScreen() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Caixa do Imposto</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Quanto o imposto tira do seu caixa nas próximas semanas — e quando aperta.
+            Quanto o imposto tira do seu caixa nas próximas semanas — e quando aperta. Em 2027 o
+            padrão é a apuração mensal: a guia vence no dia 20 do mês seguinte.
           </p>
         </div>
         <div
@@ -156,6 +159,16 @@ function CashScreen() {
           ))}
         </div>
       </header>
+
+      {/* avisos mantidos pela plataforma — inclui o adiamento do split payment */}
+      <NoticeBoard scope="caixa" highlightKeys={["split_adiado"]} />
+
+      <ModalidadeSelector
+        tenantId={tenantId}
+        canEdit={["platform_admin", "platform_ops", "channel_admin", "owner", "finance"].includes(
+          shell.data?.role ?? "",
+        )}
+      />
 
       <HeroMetric
         label={`Buraco líquido — próximos ${horizon} dias`}
@@ -196,6 +209,8 @@ function CashScreen() {
 
 
       </div>
+
+      <ComparadorModalidades tenantId={tenantId} horizonDays={horizon} />
 
       <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
         <div className="mb-3 flex items-center justify-between gap-3">
