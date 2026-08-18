@@ -1,4 +1,4 @@
--- 0141_share_expiry_and_public_grants.sql — ESPELHO da migration aplicada no banco.
+-- 0142_revoke_public_execute.sql — ESPELHO da migration aplicada no banco (renumerada de 0141: a faixa 0140-0199 é sua).
 --
 -- Complementa a 0140 fechando o resíduo que ela não pegava e dando prazo ao link
 -- público:

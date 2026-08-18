@@ -1,7 +1,4 @@
--- 0142_pagination_indexes.sql
--- ESPELHO da migration que você aplicou no banco (você a chamou de "0141";
--- aqui ela virou 0142 porque 0141_share_expiry_and_public_grants.sql já existia
--- no repositório — mesmo número, conteúdos diferentes, colisão evitada).
+-- 0141_indices_paginacao_estavel.sql — ESPELHO da migration aplicada por você no banco.
 --
 -- Motivo: a paginação estável passou a ordenar por (coluna_de_data desc, id).
 -- Sem um índice que case EXATAMENTE com esse ORDER BY, o Postgres ordena em
