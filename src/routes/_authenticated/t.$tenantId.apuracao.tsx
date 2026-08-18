@@ -203,14 +203,6 @@ function ApuracaoPage() {
         </p>
       )}
 
-      {/* aviso honesto */}
-      <section className="rounded-xl border border-amber-400/40 bg-amber-400/10 p-4">
-        <p className="flex items-center gap-2 text-sm font-medium">
-          <AlertTriangle className="size-4 text-amber-400" aria-hidden />
-          Limitação declarada pela Receita
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">{APURACAO_LIMITACAO}</p>
-      </section>
 
       {/* documentos da competência */}
       <section className="rounded-xl border border-border bg-surface-1 p-4">
