@@ -329,6 +329,7 @@ export type Database = {
           nome: string | null
           results: Json
           rule_version_id: string | null
+          share_expires_at: string | null
           share_token: string | null
           tenant_id: string
         }
@@ -342,6 +343,7 @@ export type Database = {
           nome?: string | null
           results: Json
           rule_version_id?: string | null
+          share_expires_at?: string | null
           share_token?: string | null
           tenant_id: string
         }
@@ -355,6 +357,7 @@ export type Database = {
           nome?: string | null
           results?: Json
           rule_version_id?: string | null
+          share_expires_at?: string | null
           share_token?: string | null
           tenant_id?: string
         }
@@ -4273,7 +4276,7 @@ export type Database = {
         Args: { p_note?: string; p_simulation: string }
         Returns: undefined
       }
-      share_simulation: { Args: { p_id: string }; Returns: string }
+      share_simulation: { Args: { p_id: string }; Returns: Json }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
       tenant_members: {
         Args: { p_tenant: string }
@@ -4291,6 +4294,7 @@ export type Database = {
         Args: { p_tenant: string }
         Returns: Database["public"]["Enums"]["modalidade_recolhimento"]
       }
+      unshare_simulation: { Args: { p_id: string }; Returns: undefined }
       update_product_price: {
         Args: {
           p_cost_cents?: number
