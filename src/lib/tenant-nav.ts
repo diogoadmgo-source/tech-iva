@@ -23,7 +23,10 @@ export type NavItem = {
     | "/t/$tenantId/audit"
     | "/t/$tenantId/rules"
     | "/t/$tenantId/ops"
-    | "/t/$tenantId/alerts";
+    | "/t/$tenantId/alerts"
+    | "/t/$tenantId/features";
+  /** Módulo obrigatório: o item só aparece se feature_enabled(tenant, feature). */
+  feature?: "credit";
 };
 
 /** Itens da sidebar por tipo de tenant (documento 01 §1.7.2). */
@@ -34,7 +37,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Regras", block: "3.9", to: "/t/$tenantId/rules" },
     { label: "Operações", block: "3.9", to: "/t/$tenantId/ops" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
-    { label: "Crédito", block: "1.7.5" },
+    { label: "Módulo de crédito", block: "1.7.5", to: "/t/$tenantId/features" },
     { label: "Comissões", block: "3.6", to: "/t/$tenantId/commissions" },
     { label: "Auditoria", block: "1.7.6", to: "/t/$tenantId/audit" },
     { label: "Usuários", block: "1.7.3", to: "/t/$tenantId/settings/users" },
@@ -58,7 +61,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
-    { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance" },
+    { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
@@ -68,7 +71,7 @@ export const NAV_BY_KIND: Record<TenantKind, NavItem[]> = {
     { label: "Carteira", block: "3.3", to: "/t/$tenantId/chain" },
     { label: "Preço", block: "3.7", to: "/t/$tenantId/price" },
     { label: "Regime", block: "3.5", to: "/t/$tenantId/regime" },
-    { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance" },
+    { label: "Financiamento", block: "3.8", to: "/t/$tenantId/finance", feature: "credit" },
     { label: "Alertas", block: "3.10", to: "/t/$tenantId/alerts" },
     { label: "Configurações", block: "1.7.3", to: "/t/$tenantId/settings/users" },
   ],
