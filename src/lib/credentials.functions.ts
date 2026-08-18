@@ -124,7 +124,6 @@ export const uploadCredential = createServerFn({ method: "POST" })
           p_kind: "procuracao",
           p_secret_ref: null,
           p_subject_cnpj: tenant.cnpj,
-          p_caller: context.userId,
           p_scopes: ["dfe.consulta"],
           p_finalidades: ["ingest_dfe", "consulta_apuracao"],
           p_uploaded_by_role: role,
