@@ -358,16 +358,19 @@
 /* entrada escalonada: fade + translateY, disparada por IntersectionObserver */
 @utility reveal {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translate3d(0, 16px, 0) scale(0.995);
+  filter: blur(4px);
   transition:
-    opacity 400ms ease-out,
-    transform 400ms ease-out;
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 620ms cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 
   &[data-shown="true"] {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 
@@ -375,6 +378,7 @@
   .reveal {
     opacity: 1;
     transform: none;
+    filter: none;
     transition: none;
   }
 }
