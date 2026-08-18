@@ -255,6 +255,8 @@ function ChainScreen() {
               : `${summary.count} ${isCustomer ? "clientes" : "fornecedores"} · ${formatPct(summary.regularPct)} do volume em regime regular · crédito perdido/ano ${formatCents(summary.lost)}`}
           </p>
         </div>
+        <div className="flex items-center gap-3">
+        <ClassifyCounterpartiesButton tenantId={tenantId} />
         <div
           className="inline-flex rounded-lg border border-border bg-surface-1 p-1"
           role="group"
