@@ -8,11 +8,14 @@
  *
  *  - toda consulta de lista usa `.range()` com ordenação ESTÁVEL (desempate por
  *    coluna única, senão a mesma linha aparece em duas páginas);
- *  - toda contagem exibida na tela vem de `count: "exact"` do servidor, NUNCA
- *    de `data.length`;
+ *  - toda contagem exibida na tela vem do servidor, NUNCA de `data.length`, e é
+ *    pedida em consulta SEPARADA (uma vez por conjunto de filtros) porque
+ *    `count` varre a tabela — ver `useRowCount` no fim deste arquivo;
  *  - quando é preciso mesmo varrer tudo (ex.: ids de escopo), use
  *    `fetchAllPages`, que percorre página por página até o fim.
  */
+
+import { useQuery } from "@tanstack/react-query";
 
 export const DEFAULT_PAGE_SIZE = 50;
 
@@ -21,6 +24,8 @@ export const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
 
 export type Paged<T> = {
   rows: T[];
+  /** true quando `total` é estimativa do planejador, não contagem exata. */
+  approx?: boolean;
   /** contagem EXATA do servidor (count: "exact"), não o tamanho do array. */
   total: number;
   page: number;
