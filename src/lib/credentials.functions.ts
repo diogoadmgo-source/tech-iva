@@ -221,6 +221,12 @@ export const uploadCredential = createServerFn({ method: "POST" })
         throw regError;
       }
 
+      const oldRef = previous?.secret_ref ?? null;
+      if (oldRef && oldRef !== path) {
+        await supabaseAdmin.storage.from(SECRETS_BUCKET).remove([oldRef]);
+      }
+
+
       // único identificador que pode ir para log
       console.info("[credential-upload] certificado registrado", {
         fingerprint: meta.fingerprint,
