@@ -258,6 +258,63 @@ export type Database = {
           },
         ]
       }
+      calc_simulations: {
+        Row: {
+          calc_version: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          inputs: Json
+          memory: Json | null
+          nome: string | null
+          results: Json
+          rule_version_id: string | null
+          share_token: string | null
+          tenant_id: string
+        }
+        Insert: {
+          calc_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inputs: Json
+          memory?: Json | null
+          nome?: string | null
+          results: Json
+          rule_version_id?: string | null
+          share_token?: string | null
+          tenant_id: string
+        }
+        Update: {
+          calc_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inputs?: Json
+          memory?: Json | null
+          nome?: string | null
+          results?: Json
+          rule_version_id?: string | null
+          share_token?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calc_simulations_rule_version_id_fkey"
+            columns: ["rule_version_id"]
+            isOneToOne: false
+            referencedRelation: "rule_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calc_simulations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cnpj_registry: {
         Row: {
           abertura: string | null
@@ -450,6 +507,77 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "counterparties_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_credentials: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fingerprint: string | null
+          id: string
+          kind: Database["public"]["Enums"]["credential_kind"]
+          last_error: string | null
+          last_used_at: string | null
+          not_after: string | null
+          not_before: string | null
+          provider: string
+          revoked_at: string | null
+          revoked_by: string | null
+          scopes: string[]
+          secret_ref: string | null
+          status: Database["public"]["Enums"]["credential_status"]
+          subject_cn: string | null
+          subject_cnpj: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fingerprint?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["credential_kind"]
+          last_error?: string | null
+          last_used_at?: string | null
+          not_after?: string | null
+          not_before?: string | null
+          provider: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scopes?: string[]
+          secret_ref?: string | null
+          status?: Database["public"]["Enums"]["credential_status"]
+          subject_cn?: string | null
+          subject_cnpj?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fingerprint?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["credential_kind"]
+          last_error?: string | null
+          last_used_at?: string | null
+          not_after?: string | null
+          not_before?: string | null
+          provider?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          scopes?: string[]
+          secret_ref?: string | null
+          status?: Database["public"]["Enums"]["credential_status"]
+          subject_cn?: string | null
+          subject_cnpj?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_credentials_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1165,6 +1293,131 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rtc_api_quota: {
+        Row: {
+          cnpj8: string
+          dia: string
+          downloads: number
+          solicitacoes: number
+          ultimo_erro: string | null
+        }
+        Insert: {
+          cnpj8: string
+          dia: string
+          downloads?: number
+          solicitacoes?: number
+          ultimo_erro?: string | null
+        }
+        Update: {
+          cnpj8?: string
+          dia?: string
+          downloads?: number
+          solicitacoes?: number
+          ultimo_erro?: string | null
+        }
+        Relationships: []
+      }
+      rtc_apuracao: {
+        Row: {
+          competencia: string
+          creditos_cents: number | null
+          debitos_cents: number | null
+          erro: string | null
+          id: string
+          pagamentos_cents: number | null
+          payload: Json | null
+          recebido_em: string | null
+          saldo_cents: number | null
+          solicitado_em: string
+          status: string
+          tenant_id: string
+          tiquete: string | null
+          webhook_ref: string | null
+        }
+        Insert: {
+          competencia: string
+          creditos_cents?: number | null
+          debitos_cents?: number | null
+          erro?: string | null
+          id?: string
+          pagamentos_cents?: number | null
+          payload?: Json | null
+          recebido_em?: string | null
+          saldo_cents?: number | null
+          solicitado_em?: string
+          status?: string
+          tenant_id: string
+          tiquete?: string | null
+          webhook_ref?: string | null
+        }
+        Update: {
+          competencia?: string
+          creditos_cents?: number | null
+          debitos_cents?: number | null
+          erro?: string | null
+          id?: string
+          pagamentos_cents?: number | null
+          payload?: Json | null
+          recebido_em?: string | null
+          saldo_cents?: number | null
+          solicitado_em?: string
+          status?: string
+          tenant_id?: string
+          tiquete?: string | null
+          webhook_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_apuracao_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtc_class_trib: {
+        Row: {
+          atualizado_em: string
+          base_legal: string | null
+          cclasstrib: string
+          cst: string
+          descricao: string | null
+          efeito: string | null
+          fonte: string
+          permite_credito: boolean | null
+          reducao_pct: number | null
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          base_legal?: string | null
+          cclasstrib: string
+          cst: string
+          descricao?: string | null
+          efeito?: string | null
+          fonte?: string
+          permite_credito?: boolean | null
+          reducao_pct?: number | null
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          base_legal?: string | null
+          cclasstrib?: string
+          cst?: string
+          descricao?: string | null
+          efeito?: string | null
+          fonte?: string
+          permite_credito?: boolean | null
+          reducao_pct?: number | null
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
+        }
+        Relationships: []
       }
       rule_versions: {
         Row: {
@@ -3299,6 +3552,56 @@ export type Database = {
           },
         ]
       }
+      xml_validations: {
+        Row: {
+          access_key: string | null
+          calc_version: string | null
+          created_at: string
+          created_by: string | null
+          filename: string | null
+          id: string
+          inconsistencias: Json
+          modelo: string | null
+          tenant_id: string
+          total_itens: number | null
+          valido: boolean
+        }
+        Insert: {
+          access_key?: string | null
+          calc_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          filename?: string | null
+          id?: string
+          inconsistencias?: Json
+          modelo?: string | null
+          tenant_id: string
+          total_itens?: number | null
+          valido: boolean
+        }
+        Update: {
+          access_key?: string | null
+          calc_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          filename?: string | null
+          id?: string
+          inconsistencias?: Json
+          modelo?: string | null
+          tenant_id?: string
+          total_itens?: number | null
+          valido?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xml_validations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mv_cash_timeline: {
@@ -3336,6 +3639,10 @@ export type Database = {
       approve_price_scenario: {
         Args: { p_scenario: string }
         Returns: undefined
+      }
+      apuracao_divergencia: {
+        Args: { p_competencia: string; p_tenant: string }
+        Returns: Json
       }
       auth_scopes: { Args: never; Returns: unknown[] }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
@@ -3379,6 +3686,7 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      check_expiring_credentials: { Args: never; Returns: number }
       claim_job: {
         Args: { p_kinds: string[]; p_lease_seconds?: number; p_worker: string }
         Returns: {
@@ -3437,6 +3745,21 @@ export type Database = {
           p_slug?: string
         }
         Returns: string
+      }
+      credentials_status: {
+        Args: { p_tenant: string }
+        Returns: {
+          dias_para_expirar: number
+          id: string
+          kind: Database["public"]["Enums"]["credential_kind"]
+          last_error: string
+          last_used_at: string
+          not_after: string
+          provider: string
+          status: Database["public"]["Enums"]["credential_status"]
+          subject_cn: string
+          subject_cnpj: string
+        }[]
       }
       credit_contract_detail: { Args: { p_contract: string }; Returns: Json }
       credit_contracts: { Args: { p_tenant: string }; Returns: Json[] }
@@ -3553,6 +3876,21 @@ export type Database = {
       regime_iva_rate: { Args: { p_year: number }; Returns: number }
       regime_next_window: { Args: { p_from?: string }; Returns: string }
       regime_wallet_summary: { Args: { p_tenant: string }; Returns: Json }
+      register_credential: {
+        Args: {
+          p_fingerprint?: string
+          p_kind: Database["public"]["Enums"]["credential_kind"]
+          p_not_after?: string
+          p_not_before?: string
+          p_provider: string
+          p_scopes?: string[]
+          p_secret_ref: string
+          p_subject_cn?: string
+          p_subject_cnpj?: string
+          p_tenant: string
+        }
+        Returns: string
+      }
       remove_member: {
         Args: { p_tenant: string; p_user: string }
         Returns: undefined
@@ -3579,6 +3917,10 @@ export type Database = {
         Returns: undefined
       }
       retry_job: { Args: { p_job: string }; Returns: string }
+      revoke_credential: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: undefined
+      }
       role_in: {
         Args: { p_tenant: string }
         Returns: Database["public"]["Enums"]["member_role"]
@@ -3587,10 +3929,39 @@ export type Database = {
         Args: { p_role: Database["public"]["Enums"]["member_role"] }
         Returns: boolean
       }
+      rtc_class_trib_upsert: { Args: { p: Json }; Returns: number }
+      rtc_quota_take: {
+        Args: { p_cnpj: string; p_kind: string }
+        Returns: Json
+      }
       rule_reprocess_progress: { Args: { p_id: string }; Returns: Json }
       rule_versions_list: { Args: never; Returns: Json[] }
       run_regime_simulation: {
         Args: { p_inputs?: Json; p_tenant: string }
+        Returns: string
+      }
+      save_simulation: {
+        Args: {
+          p_calc_version: string
+          p_inputs: Json
+          p_memory: Json
+          p_nome: string
+          p_results: Json
+          p_tenant: string
+        }
+        Returns: string
+      }
+      save_xml_validation: {
+        Args: {
+          p_access_key: string
+          p_calc_version: string
+          p_filename: string
+          p_inconsistencias: Json
+          p_modelo: string
+          p_tenant: string
+          p_total_itens: number
+          p_valido: boolean
+        }
         Returns: string
       }
       set_alert_prefs: {
@@ -3636,6 +4007,7 @@ export type Database = {
         Args: { p_note?: string; p_simulation: string }
         Returns: undefined
       }
+      share_simulation: { Args: { p_id: string }; Returns: string }
       tenant_members: {
         Args: { p_tenant: string }
         Returns: {
@@ -3656,6 +4028,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      validate_class_trib: {
+        Args: { p_cclasstrib: string; p_cst: string; p_data?: string }
+        Returns: Json
+      }
+      validation_summary: {
+        Args: { p_dias?: number; p_tenant: string }
+        Returns: Json
+      }
+      validation_top_issues: {
+        Args: { p_dias?: number; p_tenant: string }
+        Returns: {
+          codigo: string
+          descricao: string
+          documentos: number
+          ocorrencias: number
+          ultimo: string
+        }[]
+      }
       weekly_digest_batch: { Args: { p_weekday?: number }; Returns: Json[] }
     }
     Enums: {
@@ -3667,6 +4057,8 @@ export type Database = {
         | "credit_advance"
         | "loan_in"
         | "loan_out"
+      credential_kind: "procuracao" | "api_key" | "certificado_a1"
+      credential_status: "pendente" | "ativa" | "expirada" | "revogada" | "erro"
       invite_status: "pending" | "accepted" | "expired" | "revoked"
       invoice_direction: "out" | "in"
       job_status: "queued" | "running" | "done" | "failed" | "canceled"
@@ -3828,6 +4220,8 @@ export const Constants = {
         "loan_in",
         "loan_out",
       ],
+      credential_kind: ["procuracao", "api_key", "certificado_a1"],
+      credential_status: ["pendente", "ativa", "expirada", "revogada", "erro"],
       invite_status: ["pending", "accepted", "expired", "revoked"],
       invoice_direction: ["out", "in"],
       job_status: ["queued", "running", "done", "failed", "canceled"],
