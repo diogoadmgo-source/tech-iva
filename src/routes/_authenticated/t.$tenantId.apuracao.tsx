@@ -476,7 +476,7 @@ function ApuracaoPage() {
                     <NaturezaMoney cents={a.resultado_cents} natureza={a.natureza_resultado} />
                     <ArrowRight className="size-3.5 text-muted-foreground/60" aria-hidden />
                     <span className="text-xs text-muted-foreground">Saldo</span>
-                    <NaturezaMoney cents={a.saldo_atualizado_cents} natureza={a.natureza_resultado} />
+                    <NaturezaMoney cents={a.saldo_atualizado_cents} natureza={null} />
                   </div>
                 </li>
               );
