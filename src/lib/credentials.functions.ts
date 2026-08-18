@@ -118,7 +118,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
     try {
       // (a) PROCURAÇÃO — caminho recomendado: nenhum material sensível existe.
       if (data.kind === "procuracao") {
-        const { data: id, error } = await context.supabase.rpc("register_credential", {
+        const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "procuracao",
@@ -149,7 +149,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
           .upload(path, sealed, { contentType: "application/octet-stream", upsert: false });
         if (up.error) throw new Error(up.error.message);
 
-        const { data: id, error } = await context.supabase.rpc("register_credential", {
+        const { data: id, error } = await supabaseAdmin.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "api_key",
@@ -227,7 +227,7 @@ export const uploadCredential = createServerFn({ method: "POST" })
 
       let id: unknown;
       try {
-        const registered = await context.supabase.rpc("register_credential", {
+        const registered = await supabaseAdmin.rpc("register_credential", {
           p_tenant: data.tenantId,
           p_provider: data.provider,
           p_kind: "certificado_a1",
