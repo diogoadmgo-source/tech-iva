@@ -10,19 +10,36 @@ import { currentAal, roleRequiresMfa } from "@/lib/auth";
  *    (o banco reforça o mesmo com enforce_mfa() → "MFA required")
  *
  * ssr: false porque a sessão do Supabase vive no localStorage.
+ *
+ * Performance: o beforeLoad roda a CADA navegação. Sem cache, cada clique
+ * pagava um getUser + select em memberships + getAuthenticatorAssuranceLevel
+ * antes de montar a tela. Guardamos o resultado por usuário durante 5 min.
  */
+const GATE_TTL = 5 * 60_000;
+let gateCache: { userId: string; roles: string[]; checkedAt: number } | null = null;
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // getSession lê do storage local (sem round-trip); só valida no servidor
+    // quando não há sessão em cache.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user ?? null;
+    if (!user) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
     }
+
+    const cached =
+      gateCache && gateCache.userId === user.id && Date.now() - gateCache.checkedAt < GATE_TTL
+        ? gateCache
+        : null;
+
+    if (cached) return { user, roles: cached.roles };
 
     const { data: memberships } = await supabase
       .from("memberships")
       .select("role")
-      .eq("user_id", data.user.id);
+      .eq("user_id", user.id);
     const roles = (memberships ?? []).map((m) => m.role);
     const needsMfa = roles.some(roleRequiresMfa);
 
@@ -33,7 +50,8 @@ export const Route = createFileRoute("/_authenticated")({
       }
     }
 
-    return { user: data.user, roles };
+    gateCache = { userId: user.id, roles, checkedAt: Date.now() };
+    return { user, roles };
   },
   component: () => <Outlet />,
 });
