@@ -146,9 +146,7 @@ async function logUse(
   sucesso: boolean,
   detalhe?: string,
 ) {
-  await (
-    admin.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>
-  )("log_credential_use", {
+  await rpc(admin)("log_credential_use", {
     p_credential: credentialId,
     p_finalidade: finalidade,
     p_sucesso: sucesso,
@@ -157,14 +155,21 @@ async function logUse(
   });
 }
 
-const rpc = (admin: AdminClient) =>
-  admin.rpc as unknown as (
-    fn: string,
-    args: Record<string, unknown>,
-  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+/**
+ * IMPORTANTE: nunca destacar `admin.rpc` / `admin.from` da instância — o cliente
+ * é um Proxy e o método perde o `this` (erro "Cannot read properties of
+ * undefined (reading 'rest')"). Sempre chamar através do objeto.
+ */
+const rpc =
+  (admin: AdminClient) =>
+  (fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }> =>
+    (admin.rpc as unknown as (f: string, a: Record<string, unknown>) => any).call(admin, fn, args);
+
+const table = (admin: AdminClient, name: string): any =>
+  (admin.from as unknown as (t: string) => any).call(admin, name);
 
 async function marcarErro(admin: AdminClient, id: string, motivo: string) {
-  await (admin.from as unknown as (t: string) => any)("rtc_apuracao")
+  await table(admin, "rtc_apuracao")
     .update({ status: "erro", erro: motivo.slice(0, 400) })
     .eq("id", id);
 }
