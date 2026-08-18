@@ -26,6 +26,7 @@ import {
   type AlertRow,
   type AlertStatusFilter,
 } from "@/lib/alerts";
+import { InconsistentItemValidation } from "@/components/techiva/alert-inconsistency";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { useFeature } from "@/lib/features";
 
@@ -204,6 +205,9 @@ function AlertsPage() {
             <Badge variant="outline" className="font-mono text-xs">
               {detail.severity}
             </Badge>
+            {detail.kind === "inconsistent_item" && (
+              <InconsistentItemValidation payload={detail.payload} />
+            )}
             {typeof detail.payload?.["amount_cents"] === "number" && (
               <p>
                 Valor envolvido: <MoneyText cents={detail.payload["amount_cents"] as number} />
