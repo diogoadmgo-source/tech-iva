@@ -127,7 +127,7 @@ export type ClassifyProgress = {
   errors: number;
   updated: number;
   regimeChanged: number;
-  provider?: string;
+  provider?: string | undefined;
 };
 
 const EMPTY_PROGRESS: ClassifyProgress = {
