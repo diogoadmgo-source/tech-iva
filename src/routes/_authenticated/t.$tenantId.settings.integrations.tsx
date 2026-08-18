@@ -87,7 +87,7 @@ function IntegrationsPage() {
   if (shell.isLoading) return <Skeleton className="h-64 w-full" />;
   if (!canManage) {
     return (
-      <NoPermissionState message="Só owner, financeiro, administrador do canal ou da plataforma podem gerenciar credenciais." />
+      <NoPermissionState hint="Só owner, financeiro, administrador do canal ou da plataforma podem gerenciar credenciais." />
     );
   }
 
@@ -154,7 +154,7 @@ function CredentialsList({
         <div className="mt-4">
           <EmptyState
             title="Nenhuma credencial registrada"
-            message="Comece pela procuração eletrônica, abaixo."
+            hint="Comece pela procuração eletrônica, abaixo."
           />
         </div>
       ) : (
