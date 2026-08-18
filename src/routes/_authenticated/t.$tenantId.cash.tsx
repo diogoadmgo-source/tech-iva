@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { BadgeCheck, Banknote, Landmark, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +21,7 @@ import {
   type CashHorizon,
 } from "@/lib/cash";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { useFeature } from "@/lib/features";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/cash")({
