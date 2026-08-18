@@ -55,14 +55,11 @@ export type ShellData = {
   context: TenantContext;
 };
 
-const navItemClass =
-  "flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
-
 const COLLAPSE_KEY = "techiva:sidebar-collapsed";
 
 export function TenantShell({ data, children }: { data: ShellData; children: React.ReactNode }) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteTerm, setPaletteTerm] = useState("");
