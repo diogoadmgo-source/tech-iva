@@ -358,16 +358,19 @@
 /* entrada escalonada: fade + translateY, disparada por IntersectionObserver */
 @utility reveal {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translate3d(0, 16px, 0) scale(0.995);
+  filter: blur(4px);
   transition:
-    opacity 400ms ease-out,
-    transform 400ms ease-out;
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 620ms cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 
   &[data-shown="true"] {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 
@@ -375,6 +378,7 @@
   .reveal {
     opacity: 1;
     transform: none;
+    filter: none;
     transition: none;
   }
 }
@@ -743,6 +747,180 @@ select:-webkit-autofill {
 
 @media (prefers-reduced-motion: reduce) {
   .ambient button[type="submit"]:not(:disabled):hover {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Transições de sistema e brilho premium (landing + app)
+   ========================================================================== */
+
+/* entrada de página a cada troca de rota */
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.route-enter {
+  animation: route-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* superfície com luz seguindo o cursor */
+@utility spotlight {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease-out,
+    box-shadow 260ms ease-out;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 260ms ease-out;
+    background: radial-gradient(
+      18rem 18rem at var(--mx, 50%) var(--my, 0%),
+      oklch(0.62 0.2 264 / 22%),
+      transparent 70%
+    );
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+/* varredura de luz na borda superior, no hover */
+@utility sheen {
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      to right,
+      transparent,
+      oklch(0.78 0.14 264 / 85%),
+      transparent
+    );
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &:hover::after {
+    transform: translateX(100%);
+  }
+}
+
+/* título com luz que passa devagar pelas letras */
+@keyframes text-sheen {
+  0% {
+    background-position: 120% 50%;
+  }
+  100% {
+    background-position: -20% 50%;
+  }
+}
+
+@utility text-sheen {
+  background-image: linear-gradient(
+    100deg,
+    var(--foreground) 38%,
+    oklch(0.93 0.05 264) 50%,
+    var(--foreground) 62%
+  );
+  background-size: 220% 100%;
+  background-position: 120% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-sheen 9s ease-in-out 700ms infinite;
+}
+
+/* flutuação quase imperceptível do bloco do herói */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@utility float-soft {
+  animation: float-soft 11s ease-in-out infinite;
+}
+
+/* botão primário com elevação e brilho */
+@utility cta-lift {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 26px -16px oklch(0.55 0.22 264 / 75%);
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms ease-out,
+    opacity 200ms ease-out;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-120%) skewX(-18deg);
+    background: linear-gradient(to right, transparent, oklch(1 0 0 / 26%), transparent);
+    transition: transform 750ms cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 16px 34px -14px oklch(0.55 0.22 264 / 85%),
+      0 0 0 1px oklch(0.72 0.16 264 / 40%);
+  }
+
+  &:hover::after {
+    transform: translateX(120%) skewX(-18deg);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-enter,
+  .float-soft,
+  .text-sheen {
+    animation: none;
+  }
+
+  .text-sheen {
+    color: var(--foreground);
+    -webkit-text-fill-color: var(--foreground);
+  }
+
+  .sheen::after,
+  .cta-lift::after,
+  .spotlight::before {
+    transition: none;
+  }
+
+  .cta-lift:hover,
+  .spotlight:hover {
     transform: none;
   }
 }

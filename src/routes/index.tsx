@@ -3,6 +3,8 @@ import { ArrowRight, FileCheck2, Lock, Scale, TrendingDown } from "lucide-react"
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CashPreview } from "@/components/marketing/cash-preview";
+import { AmbientBackdrop } from "@/components/visual/ambient-backdrop";
+import { SpotlightCard } from "@/components/visual/spotlight-card";
 import { Reveal } from "@/components/marketing/reveal";
 
 export const Route = createFileRoute("/")({
@@ -51,6 +53,7 @@ const BENEFITS = [
 function Index() {
   return (
     <main className="ambient min-h-screen overflow-hidden">
+      <AmbientBackdrop />
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
         <BrandLogo className="h-8 w-auto" />
         <nav className="flex items-center gap-2 text-sm sm:gap-5">
@@ -62,7 +65,7 @@ function Index() {
           </Link>
           <Link
             to="/signup"
-            className="focus-glow rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            className="focus-glow cta-lift rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground"
           >
             Criar conta
           </Link>
@@ -77,7 +80,7 @@ function Index() {
           <Reveal
             as="h1"
             index={1}
-            className="mt-6 max-w-2xl text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.5rem]"
+            className="text-sheen mt-6 max-w-2xl text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.5rem]"
           >
             Descubra quanto o IBS e a CBS vão tirar do seu caixa — antes de 2027.
           </Reveal>
@@ -93,7 +96,7 @@ function Index() {
           <Reveal index={3} className="mt-9 flex flex-wrap gap-3">
             <a
               href="#como-funciona"
-              className="focus-glow group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              className="focus-glow cta-lift group inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
             >
               Ver como funciona
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
@@ -108,7 +111,9 @@ function Index() {
         </div>
 
         <Reveal index={2} className="lg:pl-4">
-          <CashPreview />
+          <div className="float-soft">
+            <CashPreview />
+          </div>
         </Reveal>
       </section>
 
@@ -123,14 +128,14 @@ function Index() {
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {BENEFITS.map((item, i) => (
             <Reveal key={item.label} index={i + 1}>
-              <article className="card-lift h-full rounded-xl bg-surface p-6">
+              <SpotlightCard as="article" className="card-lift sheen h-full rounded-xl bg-surface p-6">
                 <item.icon className="size-5 text-primary" aria-hidden />
                 <p className="mt-4 font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
                   {item.label}
                 </p>
                 <h3 className="mt-2 text-base font-medium text-foreground">{item.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.body}</p>
-              </article>
+              </SpotlightCard>
             </Reveal>
           ))}
         </div>
@@ -138,7 +143,7 @@ function Index() {
 
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <Reveal>
-          <div className="surface-lit rounded-2xl p-8 sm:p-10">
+          <SpotlightCard className="surface-lit sheen rounded-2xl p-8 sm:p-10">
             <p className="font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
               teste agora, sem conectar nada
             </p>
@@ -169,18 +174,18 @@ function Index() {
             </div>
             <Link
               to="/signup"
-              className="focus-glow mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              className="focus-glow cta-lift mt-8 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
             >
               Criar conta e testar
               <ArrowRight className="size-4" />
             </Link>
-          </div>
+          </SpotlightCard>
         </Reveal>
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-24">
         <Reveal>
-          <div className="card-lift flex flex-col gap-4 rounded-xl bg-surface/60 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <SpotlightCard className="card-lift sheen flex flex-col gap-4 rounded-xl bg-surface/60 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-mono text-[10px] tracking-[0.28em] text-warn uppercase">
                 programa nacional de conformidade
@@ -196,7 +201,7 @@ function Index() {
             >
               Revisar meus XMLs
             </Link>
-          </div>
+          </SpotlightCard>
         </Reveal>
       </section>
 
