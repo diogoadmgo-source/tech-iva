@@ -120,7 +120,8 @@ export function usePriceScenarios(tenantId: string) {
         .select("id, name, target_margin, fiscal_year, status, created_at, approved_at, assumptions")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .order("id", { ascending: true })
+        .range(0, 99); // cenários são poucos por natureza; range explícito, sem depender do corte do PostgREST
       if (error) throw error;
       return (data ?? []).map((s) => ({
         id: s.id,
@@ -149,17 +150,26 @@ export function usePriceScenarioDetail(scenarioId: string | null) {
   });
 }
 
-export function usePriceCustomers(tenantId: string) {
+/**
+ * Clientes para o cenário "por cliente". É BUSCA, não lista completa: com 200+
+ * clientes e 5 mil SKUs o produto cartesiano seria 1 milhão de linhas, então o
+ * cenário por cliente aceita UM cliente selecionado por vez.
+ */
+export function usePriceCustomers(tenantId: string, search = "") {
+  const term = search.trim();
   return useQuery({
-    queryKey: ["price-customers", tenantId],
+    queryKey: ["price-customers", tenantId, term],
     queryFn: async (): Promise<PriceCustomer[]> => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("counterparties")
         .select("id, name, cnpj, regime")
         .eq("tenant_id", tenantId)
         .in("role", ["customer", "both"])
         .order("name")
-        .limit(500);
+        .order("id", { ascending: true })
+        .range(0, 49); // 50 sugestões por busca — nunca a carteira inteira
+      if (term) q = q.or(`name.ilike.%${term}%,cnpj.ilike.%${term}%`);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []).map((c) => ({
         id: c.id,
