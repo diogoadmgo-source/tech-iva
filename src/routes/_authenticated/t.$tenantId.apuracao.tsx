@@ -8,7 +8,9 @@ import { NoticeBoard } from "@/components/techiva/notices";
 import { KpiCard } from "@/components/techiva/metrics";
 import { MoneyText, formatCents } from "@/components/techiva/money";
 import { ClassTribValidator, ItemsList } from "@/components/techiva/rtc";
+import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
