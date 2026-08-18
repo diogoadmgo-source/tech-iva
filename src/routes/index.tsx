@@ -146,7 +146,7 @@ function Index() {
               O validador de XML e o simulador funcionam antes de você conectar qualquer coisa.
             </h2>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
-              <div className="reveal" data-shown="true">
+              <div>
                 <h3 className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <FileCheck2 className="size-4 text-primary" aria-hidden />
                   Validador de XML
