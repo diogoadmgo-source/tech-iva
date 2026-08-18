@@ -14,21 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      _c: {
-        Row: {
-          resultado: string | null
-          teste: string | null
-        }
-        Insert: {
-          resultado?: string | null
-          teste?: string | null
-        }
-        Update: {
-          resultado?: string | null
-          teste?: string | null
-        }
-        Relationships: []
-      }
       alerts: {
         Row: {
           created_at: string | null
@@ -644,6 +629,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          falhas_consecutivas: number
           finalidades: string[]
           fingerprint: string | null
           id: string
@@ -667,6 +653,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          falhas_consecutivas?: number
           finalidades?: string[]
           fingerprint?: string | null
           id?: string
@@ -690,6 +677,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          falhas_consecutivas?: number
           finalidades?: string[]
           fingerprint?: string | null
           id?: string
