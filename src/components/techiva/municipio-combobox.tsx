@@ -176,10 +176,13 @@ export function MunicipioCombobox({
               ) : (
                 <CommandGroup
                   heading={
-                    uf
-                      ? `Municípios de ${uf} (tabela IBGE 2024)`
-                      : "Municípios do Brasil (tabela IBGE 2024)"
+                    term
+                      ? "Municípios do Brasil (tabela IBGE 2024)"
+                      : uf
+                        ? `Municípios de ${uf} — digite para buscar em todo o Brasil`
+                        : "Municípios do Brasil (tabela IBGE 2024)"
                   }
+
                 >
                   {results.map(([codigo, nome, sigla]) => (
                     <CommandItem
