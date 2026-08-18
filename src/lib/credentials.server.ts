@@ -11,7 +11,9 @@
  *  2. a DEK é embrulhada com uma KEK derivada da chave mestra DFE_SECRET_KEY
  *     (HKDF-SHA-256), também em AES-256-GCM;
  *  3. o que sobe para o bucket é um envelope JSON com iv, dek embrulhada e ciphertext.
- *     Sem a DFE_SECRET_KEY, o conteúdo do bucket é inútil.
+ *     Sem a chave mestra, o conteúdo do bucket é inútil.
+ *  4. o envelope grava o `kid` da chave mestra usada, então a chave pode ser
+ *     rotacionada sem invalidar material já cifrado (ver masterKeyRing()).
  */
 
 import forge from "node-forge";
