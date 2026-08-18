@@ -85,3 +85,44 @@ export async function fetchAllPages<T>(
     }
   }
 }
+
+/* ────────────────────────────── contagem ────────────────────────────────── */
+
+/**
+ * `count: "exact"` no PostgREST vira `count(*)` com os mesmos filtros: em tabela
+ * grande isso VARRE A TABELA. Pedir a contagem junto de cada página faz o custo
+ * ser pago de novo a cada clique em "próxima" — com 100 mil notas, a segunda
+ * página fica tão lenta quanto a primeira sem nenhum motivo, porque o total não
+ * muda enquanto o filtro é o mesmo.
+ *
+ * Então a contagem virou consulta SEPARADA, cacheada pela chave dos FILTROS (sem
+ * a página): pedida uma vez por conjunto de filtros e reaproveitada em todas as
+ * páginas seguintes.
+ */
+export function useRowCount(
+  key: readonly unknown[],
+  fetchCount: () => Promise<number>,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["row-count", ...key],
+    queryFn: fetchCount,
+    enabled,
+    staleTime: 60_000,
+    gcTime: 300_000,
+  });
+}
+
+/**
+ * Acima deste volume o `count` deixa de ser exato e passa a ser a estimativa do
+ * planejador (`count: "estimated"`), que não varre nada. A tela sinaliza com "≈".
+ */
+export const EXACT_COUNT_LIMIT = 50_000;
+
+/** Rótulo com "≈" quando o total é estimado. */
+export function pageLabelApprox(
+  p: { page: number; pageSize: number; total: number },
+  approx: boolean,
+): string {
+  return approx ? `${pageLabel(p)} (aprox.)` : pageLabel(p);
+}
