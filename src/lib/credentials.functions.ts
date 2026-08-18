@@ -246,3 +246,29 @@ export const uploadCredential = createServerFn({ method: "POST" })
     }
 
   });
+
+/**
+ * Remove material cifrado órfão do bucket privado (sem registro em
+ * integration_credentials). Só a plataforma executa: é operação de manutenção.
+ */
+export const cleanupCredentialSecrets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ dryRun: z.boolean().default(false) }).parse(input ?? {}))
+  .handler(async ({ data, context }) => {
+    const { data: isPlatform, error } = await context.supabase.rpc("is_platform" as never);
+    if (error) throw new Error(error.message);
+    if (isPlatform !== true) throw new Error("Só a plataforma pode rodar a limpeza de material órfão.");
+
+    const { cleanupOrphanSecrets } = await import("@/lib/credentials.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const result = await cleanupOrphanSecrets(
+      supabaseAdmin as unknown as Parameters<typeof cleanupOrphanSecrets>[0],
+      { dryRun: data.dryRun },
+    );
+    return {
+      scanned: result.scanned,
+      referenced: result.referenced,
+      orphans: result.orphans.length,
+      removed: result.removed.length,
+    };
+  });
