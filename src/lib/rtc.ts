@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  apuracaoProcessarPendentes,
+  apuracaoSolicitar,
+} from "@/lib/rtc-apuracao.functions";
 import {
   DEFAULT_PAGE_SIZE,
   EXACT_COUNT_LIMIT,
