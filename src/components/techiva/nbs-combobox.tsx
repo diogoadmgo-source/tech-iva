@@ -29,10 +29,19 @@ let loading: Promise<Row[]> | null = null;
 function loadNbs(): Promise<Row[]> {
   if (cache) return Promise.resolve(cache);
   if (!loading) {
-    loading = import("@/data/nbs-2.0.json").then((mod) => {
-      cache = (mod.default ?? mod) as unknown as Row[];
-      return cache;
-    });
+    loading = fetch("/data/nbs-2.0.json")
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
+      .then((data: Row[]) => {
+        cache = data;
+        return data;
+      })
+      .catch((err) => {
+        loading = null;
+        throw err;
+      });
   }
   return loading;
 }

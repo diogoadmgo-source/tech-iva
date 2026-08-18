@@ -28,10 +28,19 @@ let loading: Promise<Row[]> | null = null;
 function loadMunicipios(): Promise<Row[]> {
   if (cache) return Promise.resolve(cache);
   if (!loading) {
-    loading = import("@/data/municipios-ibge-2024.json").then((mod) => {
-      cache = (mod.default ?? mod) as unknown as Row[];
-      return cache;
-    });
+    loading = fetch("/data/municipios-ibge-2024.json")
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
+      .then((data: Row[]) => {
+        cache = data;
+        return data;
+      })
+      .catch((err) => {
+        loading = null;
+        throw err;
+      });
   }
   return loading;
 }
