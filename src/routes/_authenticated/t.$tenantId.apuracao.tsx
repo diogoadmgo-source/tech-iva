@@ -136,6 +136,7 @@ function ApuracaoPage() {
         <Button
           type="button"
           className="gap-2"
+          title={!podeConsultar ? quota.data?.mensagem : undefined}
           disabled={!podeConsultar || request.isPending || quota.isLoading}
           onClick={async () => {
             try {
