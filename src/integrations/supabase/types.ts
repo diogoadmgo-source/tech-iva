@@ -981,6 +981,39 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_notices: {
+        Row: {
+          active: boolean
+          body: string
+          key: string
+          scope: string
+          severity: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          body: string
+          key: string
+          scope: string
+          severity?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          body?: string
+          key?: string
+          scope?: string
+          severity?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       price_lines: {
         Row: {
           below_floor: boolean | null
@@ -3834,6 +3867,32 @@ export type Database = {
         Args: { p_new_parent: string; p_tenant: string }
         Returns: undefined
       }
+      my_tenants: {
+        Args: never
+        Returns: {
+          cnpj: string
+          credito_habilitado: boolean
+          id: string
+          kind: Database["public"]["Enums"]["tenant_kind"]
+          level: number
+          membership_direta: boolean
+          name: string
+          papel: Database["public"]["Enums"]["member_role"]
+          parent_id: string
+          path: string
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+        }[]
+      }
+      notices_for: {
+        Args: { p_scope: string }
+        Returns: {
+          body: string
+          key: string
+          severity: string
+          title: string
+        }[]
+      }
       platform_features: {
         Args: { p_feature?: string }
         Returns: {
@@ -3846,6 +3905,7 @@ export type Database = {
           tenant_name: string
         }[]
       }
+      platform_identity: { Args: never; Returns: Json }
       platform_ops_overview: { Args: never; Returns: Json }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
@@ -3930,8 +3990,10 @@ export type Database = {
         Returns: boolean
       }
       rtc_class_trib_upsert: { Args: { p: Json }; Returns: number }
+      rtc_credential_state: { Args: { p_tenant: string }; Returns: Json }
+      rtc_quota_status: { Args: { p_tenant: string }; Returns: Json }
       rtc_quota_take: {
-        Args: { p_cnpj: string; p_kind: string }
+        Args: { p_cnpj: string; p_kind: string; p_origem?: string }
         Returns: Json
       }
       rule_reprocess_progress: { Args: { p_id: string }; Returns: Json }
@@ -3985,6 +4047,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_platform_identity: {
+        Args: { p_cnpj: string; p_nome: string; p_razao: string }
+        Returns: undefined
+      }
       set_regime_manual: {
         Args: {
           p_party: string
@@ -4008,6 +4074,7 @@ export type Database = {
         Returns: undefined
       }
       share_simulation: { Args: { p_id: string }; Returns: string }
+      tenant_context: { Args: { p_tenant: string }; Returns: Json }
       tenant_members: {
         Args: { p_tenant: string }
         Returns: {
