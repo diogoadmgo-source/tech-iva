@@ -337,11 +337,12 @@
     content: "";
     position: absolute;
     inset-inline: 12%;
-    top: -1px;
+    top: 0;
     height: 1px;
     background: linear-gradient(to right, transparent, oklch(0.7 0.16 264 / 55%), transparent);
     pointer-events: none;
   }
+
 }
 
 @utility focus-glow {
