@@ -38,17 +38,37 @@ export const EMPTY_AUDIT_FILTERS: AuditFilters = {
   to: "",
 };
 
-/**
- * Auditoria somente leitura. O RLS já limita a `in_scope(tenant_id)`; aqui apenas
- * paginamos e filtramos. O escopo inclui descendentes do tenant ativo.
- */
-export function useAuditLog(tenantId: string, filters: AuditFilters, page: number) {
+type AuditQuery = ReturnType<typeof supabase.from<"audit_log", never>>;
+
+/** Mesmos filtros para a página e para a contagem — não podem divergir. */
+function applyAuditFilters<Q extends { ilike: unknown }>(query: Q, filters: AuditFilters, ids: string[]): Q {
+  let q = query as never as {
+    in: (c: string, v: string[]) => typeof q;
+    ilike: (c: string, v: string) => typeof q;
+    eq: (c: string, v: string) => typeof q;
+    gte: (c: string, v: string) => typeof q;
+    lte: (c: string, v: string) => typeof q;
+  };
+  if (ids.length > 0) q = q.in("tenant_id", ids);
+  // '%texto%' (trecho no meio): atendido pelos índices trigram audit_log_action_trgm
+  // e audit_log_entity_trgm — índice btree comum não serve para busca infixa.
+  if (filters.action.trim()) q = q.ilike("action", `%${filters.action.trim()}%`);
+  if (filters.entity.trim()) q = q.ilike("entity", `%${filters.entity.trim()}%`);
+  if (filters.actor.trim()) q = q.eq("actor_id", filters.actor.trim());
+  if (filters.from) q = q.gte("at", `${filters.from}T00:00:00Z`);
+  if (filters.to) q = q.lte("at", `${filters.to}T23:59:59Z`);
+  return q as never as Q;
+}
+
+/** Ids do escopo (tenant ativo + descendentes), cacheados por 5 min. */
+function useScopeIds(tenantId: string) {
   return useQuery({
-    queryKey: ["audit-log", tenantId, filters, page],
-    queryFn: async (): Promise<{ rows: AuditEntry[]; total: number }> => {
+    queryKey: ["audit-scope-ids", tenantId],
+    staleTime: 300_000,
+    queryFn: async (): Promise<string[]> => {
       // escopo pode passar de 1000 tenants numa plataforma grande: varre página
       // por página em vez de aceitar o corte silencioso do PostgREST.
-      const descendants = await fetchAllPages<{ id: string }>((from, to) =>
+      const rows = await fetchAllPages<{ id: string }>((from, to) =>
         supabase
           .from("tenants")
           .select("id")
@@ -56,31 +76,70 @@ export function useAuditLog(tenantId: string, filters: AuditFilters, page: numbe
           .order("id", { ascending: true })
           .range(from, to),
       );
-      const ids = descendants.map((t) => t.id);
+      return rows.map((t) => t.id);
+    },
+  });
+}
 
-      let query = supabase
+/**
+ * Auditoria somente leitura. O RLS já limita a `in_scope(tenant_id)`; aqui apenas
+ * paginamos e filtramos. O escopo inclui descendentes do tenant ativo.
+ *
+ * Ordenação `at desc, id desc`: sem o desempate por id, vários registros gravados
+ * no mesmo instante trocam de lugar entre páginas — a mesma linha aparece duas
+ * vezes ou desaparece. Em trilha de auditoria isso é inaceitável. Índice que
+ * cobre exatamente esse ORDER BY: audit_log_tenant_at_id.
+ *
+ * A CONTAGEM é consulta separada, cacheada pelos filtros (sem a página): antes,
+ * cada clique em "próxima" repetia um count(*) sobre a tabela inteira.
+ */
+export function useAuditLog(tenantId: string, filters: AuditFilters, page: number) {
+  const scope = useScopeIds(tenantId);
+  const ids = scope.data ?? [];
+  const ready = scope.isSuccess;
+
+  const rows = useQuery({
+    queryKey: ["audit-log", tenantId, filters, page],
+    enabled: ready,
+    queryFn: async (): Promise<AuditEntry[]> => {
+      const query = supabase
         .from("audit_log")
         .select(
           "id, tenant_id, actor_id, actor_role, impersonated_by, action, entity, entity_id, before, after, at, ip, user_agent",
-          { count: "exact" },
         )
         .order("at", { ascending: false })
         .order("id", { ascending: false }) // desempate estável entre páginas
         .range(page * AUDIT_PAGE_SIZE, page * AUDIT_PAGE_SIZE + AUDIT_PAGE_SIZE - 1);
 
-      if (ids.length > 0) query = query.in("tenant_id", ids);
-      if (filters.action.trim()) query = query.ilike("action", `%${filters.action.trim()}%`);
-      if (filters.entity.trim()) query = query.ilike("entity", `%${filters.entity.trim()}%`);
-      if (filters.actor.trim()) query = query.eq("actor_id", filters.actor.trim());
-      if (filters.from) query = query.gte("at", `${filters.from}T00:00:00Z`);
-      if (filters.to) query = query.lte("at", `${filters.to}T23:59:59Z`);
-
-      const { data, error, count } = await query;
+      const { data, error } = await applyAuditFilters(query as never as AuditQuery, filters, ids);
       if (error) throw error;
-      return { rows: (data ?? []) as AuditEntry[], total: count ?? 0 };
+      return (data ?? []) as AuditEntry[];
     },
   });
+
+  const count = useRowCount(
+    ["audit-log", tenantId, filters],
+    async () => {
+      // "estimated": abaixo do limite o PostgREST devolve contagem exata; acima,
+      // a estimativa do planejador — sem varrer a trilha inteira.
+      const query = supabase.from("audit_log").select("id", { count: "estimated", head: true });
+      const { count: n, error } = await applyAuditFilters(query as never as AuditQuery, filters, ids);
+      if (error) throw error;
+      return n ?? 0;
+    },
+    ready,
+  );
+
+  const total = count.data ?? 0;
+  return {
+    ...rows,
+    data: rows.data
+      ? { rows: rows.data, total, approx: total > EXACT_COUNT_LIMIT }
+      : undefined,
+    isLoading: scope.isLoading || rows.isLoading,
+  };
 }
+
 
 export type DiffLine = {
   key: string;
