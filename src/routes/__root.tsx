@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import iconAsset from "@/assets/techiva-icon.png.asset.json";
 import { Toaster } from "@/components/ui/sonner";
+import { RouteTransition } from "@/components/visual/route-transition";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -108,11 +109,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "TECH-IVA — IBS e CBS no seu caixa" },
+      { name: "description", content: "Projeção de IBS e CBS no caixa da sua empresa, com cálculo oficial da Receita Federal." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "TECH-IVA — IBS e CBS no seu caixa" },
+      { property: "og:description", content: "Projeção de IBS e CBS no caixa da sua empresa, com cálculo oficial da Receita Federal." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -152,7 +153,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <RouteTransition>
+        <Outlet />
+      </RouteTransition>
       <Toaster />
     </QueryClientProvider>
   );
