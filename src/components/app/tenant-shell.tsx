@@ -98,20 +98,9 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
   const impersonation = useImpersonation();
   const { stop: stopImpersonating } = useImpersonationMutations();
-  const brand = resolveBrand(data.chain);
-  const credit = useFeature(data.tenant.id, "credit");
-  // Item de módulo desligado (ou ainda desconhecido) não aparece: nunca visível-e-quebrado.
-  // O menu é montado pelo KIND do tenant ABERTO, nunca pelo papel do usuário:
-  // o platform_admin que abre uma empresa vê o menu completo de empresa.
-  const items = NAV_BY_KIND[data.tenant.kind].filter(
-    (item) => item.feature !== "credit" || credit.enabled,
-  );
-  const initials = (data.fullName ?? data.email ?? "?")
-    .split(/[\s@.]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
+  // A composição do menu vive em TenantSidebar: grupos por KIND do tenant aberto
+  // e visibilidade por PAPEL EFETIVO (tenant_context.papel).
+
 
   return (
     <div className="flex min-h-screen bg-background">
