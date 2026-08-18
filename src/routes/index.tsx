@@ -179,7 +179,7 @@ function Index() {
               Criar conta e testar
               <ArrowRight className="size-4" />
             </Link>
-          </div>
+          </SpotlightCard>
         </Reveal>
       </section>
 
@@ -201,7 +201,7 @@ function Index() {
             >
               Revisar meus XMLs
             </Link>
-          </div>
+          </SpotlightCard>
         </Reveal>
       </section>
 
