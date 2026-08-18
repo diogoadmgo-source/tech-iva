@@ -13,6 +13,7 @@ import {
   MotorOficialNote,
   PrintButton,
 } from "@/components/techiva/simulator";
+import { MunicipioCombobox } from "@/components/techiva/municipio-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,8 @@ function SimuladorPage() {
   const [ufOrigem, setUfOrigem] = useState("DF");
   const [ufDestino, setUfDestino] = useState("DF");
   const [municipio, setMunicipio] = useState("");
+  // Código IBGE do município escolhido — exibido na tela para conferência.
+  const [municipioCodigo, setMunicipioCodigo] = useState("");
   const [data, setData] = useState(todayIso());
   const [nome, setNome] = useState("");
   const [result, setResult] = useState<CalcResult | null>(null);
@@ -138,6 +141,7 @@ function SimuladorPage() {
     setUfOrigem(i.uf_origem ?? "DF");
     setUfDestino(i.uf_destino ?? "DF");
     setMunicipio(i.municipio_destino ?? "");
+    setMunicipioCodigo("");
     setData(i.data_fato_gerador ?? todayIso());
     setNome(row.nome ?? "");
     setResult(row.results ?? null);
@@ -159,8 +163,6 @@ function SimuladorPage() {
 
       {/* posicionamento e avisos mantidos pela plataforma (notices_for) */}
       <NoticeBoard scope="simulador" />
-
-
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-6">
@@ -259,12 +261,21 @@ function SimuladorPage() {
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="municipio">Município de destino</Label>
-                <Input
+                <MunicipioCombobox
                   id="municipio"
                   value={municipio}
-                  placeholder="Nome ou código IBGE"
-                  onChange={(e) => setMunicipio(e.target.value)}
+                  uf={ufDestino}
+                  onChange={(m) => {
+                    setMunicipio(m?.nome ?? "");
+                    setMunicipioCodigo(m?.codigo ?? "");
+                    if (m?.uf) setUfDestino(m.uf);
+                  }}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {municipioCodigo
+                    ? `Código IBGE ${municipioCodigo} — tabela DTB/IBGE 2024.`
+                    : "Busque por nome (sem acento serve) ou pelo código IBGE. Lista oficial DTB/IBGE 2024."}
+                </p>
               </div>
             </div>
 
