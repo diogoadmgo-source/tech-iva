@@ -118,7 +118,7 @@ export function TenantSidebar({
             type="button"
             onClick={onOpenScopePicker}
             className={`focus-glow group flex w-full items-center gap-2.5 rounded-lg border border-border/70 bg-surface-2/70 p-2 text-left transition-colors hover:border-primary/40 hover:bg-surface-2 ${
-              context.visitando ? "border-l-2 border-l-warning" : ""
+              context.visitando ? "border-l-2 border-l-warn" : ""
             }`}
             title={collapsed ? `${tenant.name} — trocar organização` : undefined}
             aria-label="Trocar organização"
@@ -145,7 +145,7 @@ export function TenantSidebar({
           {context.visitando ? (
             <div className="mt-1.5">
               {!collapsed ? (
-                <p className="flex items-center gap-1.5 px-1 pb-1 text-[11px] text-warning">
+                <p className="flex items-center gap-1.5 px-1 pb-1 text-[11px] text-warn">
                   <Eye className="size-3" aria-hidden />
                   Visitando — ações auditadas
                 </p>
