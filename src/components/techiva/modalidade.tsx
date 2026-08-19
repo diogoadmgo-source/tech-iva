@@ -193,12 +193,7 @@ export function ComparadorModalidades({
           );
         })}
       </div>
+    </Panel>
 
-      {/* observação com a fonte e a data vem da RPC, não do código */}
-      <p className="mt-4 flex gap-2 border-t border-border pt-3 text-[11px] text-muted-foreground">
-        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        <span>{observacao}</span>
-      </p>
-    </section>
   );
 }
