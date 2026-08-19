@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { cn } from "@/lib/utils";
 import { formatPct, MoneyText } from "./money";
 
@@ -21,6 +22,7 @@ export function KpiCard({
   value,
   delta,
   hint,
+  help,
   loading,
   className,
 }: {
@@ -29,22 +31,22 @@ export function KpiCard({
   value?: ReactNode | undefined;
   delta?: number | undefined;
   hint?: string | undefined;
+  /** Explicação do indicador — abre no balão "?". */
+  help?: ReactNode | undefined;
   loading?: boolean | undefined;
   className?: string | undefined;
 }) {
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border bg-surface-1 p-4 shadow-e1 transition-colors hover:border-border-strong",
-        className,
-      )}
-    >
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+    <div className={cn("panel panel-hover sheen p-4", className)}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        {help ? <InfoHint title={label}>{help}</InfoHint> : null}
+      </div>
       {loading ? (
         <Skeleton className="mt-3 h-7 w-32" />
       ) : (
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-xl font-semibold">
+          <span className="text-xl font-semibold tracking-[-0.01em]">
             {valueCents !== undefined ? <MoneyText cents={valueCents} /> : value}
           </span>
           {delta !== undefined && <Delta value={delta} />}
@@ -61,6 +63,7 @@ export function HeroMetric({
   sub,
   trend,
   action,
+  help,
   loading,
 }: {
   label: string;
@@ -68,17 +71,21 @@ export function HeroMetric({
   sub?: string | undefined;
   trend?: number | undefined;
   action?: ReactNode | undefined;
+  help?: ReactNode | undefined;
   loading?: boolean | undefined;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-2 p-6 shadow-e2">
+    <div className="panel-hero p-6 sm:p-7">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-muted-foreground">{label}</p>
+            {help ? <InfoHint title={label}>{help}</InfoHint> : null}
+          </div>
           {loading ? (
             <Skeleton className="mt-3 h-12 w-64" />
           ) : (
-            <p className="mt-2 text-[2.5rem] leading-none font-semibold">
+            <p className="mt-2 text-[2.25rem] leading-none font-semibold tracking-[-0.02em] sm:text-[2.5rem]">
               <MoneyText cents={valueCents} sign />
             </p>
           )}
