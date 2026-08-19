@@ -117,7 +117,9 @@ const WARMERS: Record<string, Warmer> = {
       queryFn: async () => {
         const { data, error } = await supabase
           .from("xml_validations")
-          .select("*")
+          .select(
+            "id, filename, access_key, modelo, valido, inconsistencias, total_itens, calc_version, created_at",
+          )
           .eq("tenant_id", t)
           .order("created_at", { ascending: false })
           .limit(50);
@@ -126,21 +128,6 @@ const WARMERS: Record<string, Warmer> = {
       },
     }),
 
-  "/t/$tenantId/audit": (qc, t) =>
-    qc.prefetchQuery({
-      queryKey: ["audit-log", t],
-      staleTime,
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from("audit_log")
-          .select("id, action, entity, entity_id, actor_id, created_at, diff")
-          .eq("tenant_id", t)
-          .order("created_at", { ascending: false })
-          .limit(50);
-        if (error) throw error;
-        return data ?? [];
-      },
-    }),
 };
 
 /** Aquece a consulta principal da rota; erros são ignorados de propósito. */
