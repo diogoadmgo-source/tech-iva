@@ -924,3 +924,90 @@ select:-webkit-autofill {
     transform: none;
   }
 }
+
+/* ==========================================================================
+   Identidade do app — painéis com profundidade, entrada em cascata, hints
+   ========================================================================== */
+
+/* painel padrão do produto: superfície elevada com luz de topo */
+@utility panel {
+  position: relative;
+  border-radius: var(--radius-xl);
+  border: 1px solid oklch(1 0 0 / 8%);
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 3.5%), oklch(1 0 0 / 0%) 42%),
+    var(--surface-1, oklch(0.23 0.024 265));
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 5%) inset,
+    0 2px 6px -3px oklch(0 0 0 / 45%),
+    0 20px 44px -30px oklch(0 0 0 / 80%);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease-out,
+    box-shadow 220ms ease-out;
+}
+
+/* painel que reage ao ponteiro (usar em cartões clicáveis / KPIs) */
+@utility panel-hover {
+  &:hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.62 0.2 264 / 38%);
+    box-shadow:
+      0 1px 0 0 oklch(1 0 0 / 7%) inset,
+      0 18px 40px -24px oklch(0 0 0 / 85%),
+      0 0 0 1px oklch(0.62 0.2 264 / 14%);
+  }
+}
+
+/* painel herói: mais luz, mais sombra, borda superior iluminada */
+@utility panel-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-2xl);
+  border: 1px solid oklch(1 0 0 / 10%);
+  background:
+    radial-gradient(38rem 20rem at 12% -30%, oklch(0.62 0.2 264 / 16%), transparent 70%),
+    linear-gradient(180deg, oklch(0.255 0.026 265), oklch(0.215 0.024 265));
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 7%) inset,
+    0 3px 10px -4px oklch(0 0 0 / 55%),
+    0 36px 80px -40px oklch(0 0 0 / 92%);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 10%;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(to right, transparent, oklch(0.72 0.16 264 / 60%), transparent);
+  }
+}
+
+/* entrada em cascata das seções da página (sem depender de observer) */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility rise {
+  animation: rise-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--rise-i, 0) * 55ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  .panel,
+  .panel-hover:hover {
+    transform: none;
+    transition: none;
+  }
+}
