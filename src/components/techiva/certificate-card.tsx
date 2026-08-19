@@ -49,10 +49,10 @@ const STATE_STYLE: Record<
     bar: "bg-flow-in",
   },
   expirando: {
-    badge: "bg-warning/15 text-warning border-warning/30",
-    ring: "border-warning/40",
-    accent: "text-warning",
-    bar: "bg-warning",
+    badge: "bg-warn/15 text-warn border-warn/30",
+    ring: "border-warn/40",
+    accent: "text-warn",
+    bar: "bg-warn",
   },
   expirado: {
     badge: "bg-flow-out/15 text-flow-out border-flow-out/30",
@@ -73,10 +73,10 @@ const STATE_STYLE: Record<
     bar: "bg-muted-foreground",
   },
   pendente: {
-    badge: "bg-warning/15 text-warning border-warning/30",
-    ring: "border-warning/30",
-    accent: "text-warning",
-    bar: "bg-warning",
+    badge: "bg-warn/15 text-warn border-warn/30",
+    ring: "border-warn/30",
+    accent: "text-warn",
+    bar: "bg-warn",
   },
 };
 
@@ -153,8 +153,8 @@ export function CertificateStatusCard({
         </p>
 
         {state === "expirando" && (
-          <p className="mt-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
+          <p className="mt-3 flex items-start gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
             <span>
               Renove antes de {formatDate(row.not_after)} para não interromper a ingestão dos seus
               documentos fiscais.
