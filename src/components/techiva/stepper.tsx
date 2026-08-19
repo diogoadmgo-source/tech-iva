@@ -11,31 +11,33 @@ export function Stepper({
   className?: string | undefined;
 }) {
   return (
-    <ol className={cn("flex items-center gap-3", className)}>
+    <ol className={cn("flex items-center gap-2 overflow-x-auto pb-1 sm:gap-3", className)}>
       {steps.map((step, i) => {
         const done = i < current;
         const active = i === current;
         return (
-          <li key={step} className="flex flex-1 items-center gap-3">
+          <li key={step} className="flex shrink-0 items-center gap-2 sm:flex-1 sm:gap-3">
             <span
               className={cn(
                 "flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium",
                 done && "border-primary bg-primary text-primary-foreground",
                 active && "border-primary text-primary",
-                !done && !active && "border-border text-muted-foreground",
+                !done && !active && "border-border/70 text-muted-foreground",
               )}
             >
               {done ? <Check className="size-3.5" aria-hidden /> : i + 1}
             </span>
             <span
               className={cn(
-                "truncate text-sm",
+                "truncate text-xs sm:text-sm",
                 active ? "font-medium text-foreground" : "text-muted-foreground",
               )}
             >
               {step}
             </span>
-            {i < steps.length - 1 && <span className="h-px flex-1 bg-border" aria-hidden />}
+            {i < steps.length - 1 && (
+              <span className="hidden h-px flex-1 bg-border/60 sm:inline-block" aria-hidden />
+            )}
           </li>
         );
       })}
