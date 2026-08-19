@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { NoPermissionState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,17 +55,17 @@ function BrandScreen() {
 
   if (tenant && tenant.kind !== "channel" && tenant.kind !== "platform") {
     return (
-      <div className="p-6">
+      <Page>
         <NoPermissionState hint="A marca é configurada no canal ou na plataforma." />
-      </div>
+      </Page>
     );
   }
 
   if (tenant && !canEdit) {
     return (
-      <div className="p-6">
+      <Page>
         <NoPermissionState hint="Somente administradores do canal podem alterar a marca." />
-      </div>
+      </Page>
     );
   }
 
@@ -85,63 +86,71 @@ function BrandScreen() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Marca</h1>
-        <p className="text-sm text-muted-foreground">
-          O white-label vale para {tenant?.name ?? "este canal"} e todas as empresas abaixo dele.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="canal"
+        title="Marca"
+        helpTitle="Alcance do white-label"
+        help={
+          <p>
+            O white-label vale para <strong>{tenant?.name ?? "este canal"}</strong> e todas as
+            empresas abaixo dele.
+          </p>
+        }
+      />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-4 rounded-xl border border-border bg-surface-1 p-5 shadow-e1">
-          <div className="space-y-1.5">
-            <Label htmlFor="brand-name">Nome exibido</Label>
-            <Input
-              id="brand-name"
-              value={form.name ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Contábil Alfa"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="brand-logo">URL do logo</Label>
-            <Input
-              id="brand-logo"
-              value={form.logo_url ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
-              placeholder="https://…/logo.png"
-            />
-            <p className="text-xs text-muted-foreground">
-              PNG ou SVG com fundo transparente, altura mínima de 64 px.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="brand-color">Cor primária</Label>
-            <div className="flex items-center gap-3">
-              <input
-                id="brand-color"
-                type="color"
-                value={form.color ?? "#2563EB"}
-                onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                className="size-9 cursor-pointer rounded-md border border-border bg-transparent"
-              />
+      <Rise index={1} className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Identidade">
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="brand-name">Nome exibido</Label>
               <Input
-                value={form.color ?? ""}
-                onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                className="w-32 font-mono"
-                aria-label="Cor primária em hexadecimal"
+                id="brand-name"
+                value={form.name ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Contábil Alfa"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="brand-logo" className="flex items-center gap-2">
+                URL do logo
+              </Label>
+              <Input
+                id="brand-logo"
+                value={form.logo_url ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+                placeholder="https://…/logo.png"
+              />
+              <p className="text-xs text-muted-foreground">
+                PNG ou SVG com fundo transparente, altura mínima de 64 px.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="brand-color">Cor primária</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  id="brand-color"
+                  type="color"
+                  value={form.color ?? "#2563EB"}
+                  onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
+                  className="size-9 cursor-pointer rounded-md border border-border bg-transparent"
+                />
+                <Input
+                  value={form.color ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
+                  className="w-32 font-mono"
+                  aria-label="Cor primária em hexadecimal"
+                />
+              </div>
+            </div>
+            <Button onClick={() => void save()} disabled={mutations.update.isPending}>
+              {mutations.update.isPending ? "Salvando…" : "Salvar marca"}
+            </Button>
           </div>
-          <Button onClick={() => void save()} disabled={mutations.update.isPending}>
-            {mutations.update.isPending ? "Salvando…" : "Salvar marca"}
-          </Button>
-        </div>
+        </Panel>
 
-        <div className="rounded-xl border border-border bg-surface-1 p-5 shadow-e1">
-          <p className="text-xs font-medium text-muted-foreground">Pré-visualização do shell</p>
-          <div className="mt-3 overflow-hidden rounded-lg border border-border">
+        <Panel title="Pré-visualização do shell">
+          <div className="overflow-hidden rounded-lg border border-border">
             <div
               className="flex items-center gap-3 px-4 py-3"
               style={{ backgroundColor: form.color ?? "#2563EB" }}
@@ -149,7 +158,9 @@ function BrandScreen() {
               {form.logo_url ? (
                 <img src={form.logo_url} alt="Logo do canal" className="h-7 w-auto" />
               ) : (
-                <span className="text-sm font-semibold text-white">{form.name || "Seu canal"}</span>
+                <span className="text-sm font-semibold text-primary-foreground">
+                  {form.name || "Seu canal"}
+                </span>
               )}
             </div>
             <div className="grid grid-cols-[140px_1fr]">
@@ -167,8 +178,8 @@ function BrandScreen() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </Panel>
+      </Rise>
+    </Page>
   );
 }
