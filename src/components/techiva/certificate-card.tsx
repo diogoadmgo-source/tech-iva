@@ -12,7 +12,6 @@ import {
   BadgeCheck,
   Check,
   Copy,
-  RefreshCw,
   RotateCcw,
   ShieldCheck,
   Upload,
@@ -22,6 +21,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoHint } from "@/components/techiva/info-hint";
+import { Panel } from "@/components/techiva/page";
 import {
   CERT_STATE_LABEL,
   certificateState,
@@ -48,10 +49,10 @@ const STATE_STYLE: Record<
     bar: "bg-flow-in",
   },
   expirando: {
-    badge: "bg-amber-400/15 text-amber-400 border-amber-400/30",
-    ring: "border-amber-400/40",
-    accent: "text-amber-400",
-    bar: "bg-amber-400",
+    badge: "bg-warn/15 text-warn border-warn/30",
+    ring: "border-warn/40",
+    accent: "text-warn",
+    bar: "bg-warn",
   },
   expirado: {
     badge: "bg-flow-out/15 text-flow-out border-flow-out/30",
@@ -72,10 +73,10 @@ const STATE_STYLE: Record<
     bar: "bg-muted-foreground",
   },
   pendente: {
-    badge: "bg-amber-400/15 text-amber-400 border-amber-400/30",
-    ring: "border-amber-400/30",
-    accent: "text-amber-400",
-    bar: "bg-amber-400",
+    badge: "bg-warn/15 text-warn border-warn/30",
+    ring: "border-warn/30",
+    accent: "text-warn",
+    bar: "bg-warn",
   },
 };
 
@@ -100,29 +101,36 @@ export function CertificateStatusCard({
   const progresso = validityProgress(row);
 
   return (
-    <section
-      className={`rounded-xl border ${style.ring} bg-surface-1 p-5 shadow-[0_1px_0_hsl(var(--border)),0_12px_32px_-24px_rgba(0,0,0,0.8)]`}
+    <Panel
+      className={style.ring}
+      icon={ShieldCheck}
+      title="Certificado digital A1"
+      help={
+        <>
+          <p>
+            Mostramos primeiro a <strong>validade</strong>, que é o que exige ação. O restante prova
+            que o certificado guardado é seu e só é usado para o que você autorizou.
+          </p>
+          <p>O material cifrado nunca pode ser baixado, nem por nós.</p>
+        </>
+      }
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className={`text-[11px] ${style.badge}`}>
+            {CERT_STATE_LABEL[state]}
+          </Badge>
+          <Badge variant="outline" className="text-[10px] uppercase text-muted-foreground">
+            {row.provider}
+          </Badge>
+        </div>
+      }
     >
-      {/* topo: o que é e em que estado está */}
-      <header className="flex flex-wrap items-center gap-2">
-        <span className={`rounded-lg border ${style.ring} bg-surface-2 p-2`}>
-          <ShieldCheck className={`size-4 ${style.accent}`} aria-hidden />
-        </span>
-        <h3 className="text-sm font-medium">Certificado digital A1</h3>
-        <Badge variant="outline" className={`text-[11px] ${style.badge}`}>
-          {CERT_STATE_LABEL[state]}
-        </Badge>
-        <Badge variant="outline" className="text-[10px] uppercase text-muted-foreground">
-          {row.provider}
-        </Badge>
-      </header>
-
       {/* destaque: validade */}
-      <div className="mt-4">
+      <div>
         <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Validade</p>
-        <p className="mt-1 text-xl font-medium tracking-tight">
+        <p className="mt-1 text-lg font-medium tracking-tight sm:text-xl">
           Válido até {formatDate(row.not_after)}{" "}
-          <span className={`text-base font-normal ${style.accent}`}>
+          <span className={`text-sm font-normal sm:text-base ${style.accent}`}>
             · {diasEmPalavras(row.dias_para_expirar)}
           </span>
         </p>
@@ -145,8 +153,8 @@ export function CertificateStatusCard({
         </p>
 
         {state === "expirando" && (
-          <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
-            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
+          <p className="mt-3 flex items-start gap-2 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2 text-xs">
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warn" aria-hidden />
             <span>
               Renove antes de {formatDate(row.not_after)} para não interromper a ingestão dos seus
               documentos fiscais.
@@ -218,7 +226,9 @@ export function CertificateStatusCard({
       {/* finalidades */}
       {(row.finalidades?.length ?? 0) > 0 && (
         <div className="mt-4">
-          <p className="text-xs text-muted-foreground">Este certificado só pode ser usado para:</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground">Este certificado só pode ser usado para:</p>
+          </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {row.finalidades!.map((f) => (
               <Badge key={f} variant="outline" className="border-primary/30 bg-primary/10 text-primary">
@@ -264,9 +274,11 @@ export function CertificateStatusCard({
         </div>
       ) : (
         falhas > 0 && (
-          <p className="mt-4 text-xs text-muted-foreground">
-            {falhas} falha{falhas === 1 ? "" : "s"} recente{falhas === 1 ? "" : "s"}, tentaremos
-            novamente. O contador zera no primeiro sucesso.
+          <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+            {falhas} falha{falhas === 1 ? "" : "s"} recente{falhas === 1 ? "" : "s"}
+            <InfoHint title="Falhas recentes">
+              <p>Tentaremos novamente. O contador zera no primeiro sucesso.</p>
+            </InfoHint>
           </p>
         )
       )}
@@ -280,7 +292,7 @@ export function CertificateStatusCard({
       )}
 
       {/* ações */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {onReplace && (
           <Button size="sm" variant="outline" onClick={onReplace}>
             <Upload className="mr-1 size-3.5" aria-hidden />
@@ -292,12 +304,13 @@ export function CertificateStatusCard({
             Revogar
           </Button>
         )}
+        <InfoHint title="Substituir certificado">
+          <p>
+            Substituir envia um novo certificado que passa a valer no lugar do atual. O material
+            guardado nunca pode ser baixado.
+          </p>
+        </InfoHint>
       </div>
-      <p className="mt-2 text-[11px] text-muted-foreground">
-        <RefreshCw className="mr-1 inline size-3" aria-hidden />
-        Substituir envia um novo certificado que passa a valer no lugar do atual. O material guardado
-        nunca pode ser baixado.
-      </p>
-    </section>
+    </Panel>
   );
 }
