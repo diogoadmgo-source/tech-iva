@@ -79,6 +79,7 @@ export type SimulatorInputs = {
   uf_origem: string;
   uf_destino: string;
   municipio_destino?: string;
+  municipio_codigo?: string;
   data_fato_gerador: string;
   descricao?: string;
 };

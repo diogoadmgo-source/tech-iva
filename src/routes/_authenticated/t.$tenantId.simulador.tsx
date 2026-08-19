@@ -107,6 +107,7 @@ function SimuladorPage() {
     uf_origem: ufOrigem,
     uf_destino: ufDestino,
     ...(municipio.trim() ? { municipio_destino: municipio.trim() } : {}),
+    ...(municipioCodigo.trim() ? { municipio_codigo: municipioCodigo.trim() } : {}),
     data_fato_gerador: data,
   };
 

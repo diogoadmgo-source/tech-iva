@@ -20,6 +20,7 @@ const CALC_INPUT = z.object({
   uf_origem: z.string().trim().length(2),
   uf_destino: z.string().trim().length(2),
   municipio_destino: z.string().trim().max(80).optional(),
+  municipio_codigo: z.string().trim().regex(/^\d{7}$/).optional(),
   data_fato_gerador: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   descricao: z.string().trim().max(200).optional(),
 });
@@ -60,10 +61,11 @@ export const rtcCalculate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => CALC_INPUT.parse(input))
   .handler(async ({ data, context }) => {
-    const { calculate, EngineUnavailableError } = await import("@/lib/rtc-calc.server");
+    const { calculate, engineStatus, EngineUnavailableError } = await import("@/lib/rtc-calc.server");
     await assertScope(context.supabase as never, data.tenantId);
     try {
-      const result = await calculate({
+      // versão do motor (versaoApp-dbVersaoDb) carimba o resultado — é a rule_version corrente
+      const [status, result] = await Promise.all([engineStatus(), calculate({
         cst: data.cst,
         cclasstrib: data.cclasstrib,
         ncm: data.ncm,
@@ -72,9 +74,12 @@ export const rtcCalculate = createServerFn({ method: "POST" })
         uf_origem: data.uf_origem.toUpperCase(),
         uf_destino: data.uf_destino.toUpperCase(),
         municipio_destino: data.municipio_destino,
+        municipio_codigo: data.municipio_codigo,
         data_fato_gerador: data.data_fato_gerador,
         descricao: data.descricao,
-      });
+      })]);
+      result.calc_version = status.calc_version;
+      result.memory.versao = status.calc_version;
       return { available: true as const, result };
     } catch (error) {
       if (error instanceof EngineUnavailableError) {
@@ -88,7 +93,8 @@ export const rtcValidate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => VALIDATE_INPUT.parse(input))
   .handler(async ({ data, context }) => {
-    const { validateXml, EngineUnavailableError } = await import("@/lib/rtc-calc.server");
+    const { validateXml, engineStatus, EngineUnavailableError } = await import("@/lib/rtc-calc.server");
+    const engineVersion = (await engineStatus()).calc_version;
     await assertScope(context.supabase as never, data.tenantId);
 
     const results: Array<
@@ -99,6 +105,7 @@ export const rtcValidate = createServerFn({ method: "POST" })
     for (const file of data.files) {
       try {
         const validation = await validateXml(file.filename, file.xml);
+        validation.calc_version = validation.calc_version ?? engineVersion;
         // save_xml_validation roda com o client do usuário (in_scope) e, quando
         // inválido, já cria o alerta 'inconsistent_item'.
         const { data: id, error } = await context.supabase.rpc("save_xml_validation" as never, {
