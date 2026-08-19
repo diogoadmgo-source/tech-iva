@@ -4,12 +4,12 @@ import { Loader2, ShieldCheck, Upload, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { FormError } from "@/components/auth/auth-shell";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { authErrorMessage } from "@/lib/auth";
 import { useProfile, useProfileMutations } from "@/lib/profile";
@@ -45,6 +45,7 @@ function ProfilePage() {
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [tab, setTab] = useState<"dados" | "seguranca">("dados");
 
   useEffect(() => {
     if (!profile.data) return;
@@ -54,19 +55,19 @@ function ProfilePage() {
 
   if (profile.isLoading) {
     return (
-      <div className="mx-auto w-full max-w-3xl space-y-4 px-4 py-10">
+      <Page className="max-w-3xl">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Page>
     );
   }
 
   const data = profile.data;
   if (!data) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      <Page className="max-w-3xl">
         <FormError message={authErrorMessage(profile.error)} />
-      </div>
+      </Page>
     );
   }
 
@@ -109,20 +110,33 @@ function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Meu perfil</h1>
-        <p className="font-mono text-sm text-muted-foreground">{data.email}</p>
-      </header>
+    <Page className="max-w-3xl">
+      <PageHeader
+        eyebrow="CONTA"
+        title="Meu perfil"
+        help={
+          <p>
+            Dados pessoais, foto, verificação em duas etapas (TOTP) e sessões ativas da sua conta.
+          </p>
+        }
+        actions={<span className="font-mono text-xs text-muted-foreground">{data.email}</span>}
+      />
 
-      <Tabs defaultValue="dados">
-        <TabsList>
-          <TabsTrigger value="dados">Dados</TabsTrigger>
-          <TabsTrigger value="seguranca">Segurança</TabsTrigger>
-        </TabsList>
+      <Rise index={1}>
+        <Segmented
+          label="Seção do perfil"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "dados", label: "Dados" },
+            { value: "seguranca", label: "Segurança" },
+          ]}
+        />
+      </Rise>
 
-        <TabsContent value="dados" className="space-y-4 pt-4">
-          <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
+      {tab === "dados" ? (
+        <Rise index={2} className="space-y-4">
+          <Panel title="Foto de perfil" bodyClassName="flex flex-wrap items-center gap-4 p-4">
             {data.avatarSignedUrl ? (
               <img
                 src={data.avatarSignedUrl}
@@ -130,7 +144,7 @@ function ProfilePage() {
                 className="size-16 rounded-full object-cover"
               />
             ) : (
-              <span className="grid size-16 place-items-center rounded-full bg-muted">
+              <span className="grid size-16 place-items-center rounded-full bg-surface-2">
                 <UserRound className="size-6 text-muted-foreground" />
               </span>
             )}
@@ -168,51 +182,59 @@ function ProfilePage() {
                 </Button>
               ) : null}
             </div>
-          </div>
+          </Panel>
 
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Nome completo</Label>
-              <Input
-                id="full_name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Seu nome"
-              />
+          <Panel title="Dados pessoais">
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Nome completo</Label>
+                <Input
+                  id="full_name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+55 11 90000-0000"
+                />
+              </div>
+              <FormError message={error} />
+              <Button onClick={() => void submit()} disabled={save.isPending}>
+                {save.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                Salvar
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+55 11 90000-0000"
-              />
-            </div>
-            <FormError message={error} />
-            <Button onClick={() => void submit()} disabled={save.isPending}>
-              {save.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Salvar
-            </Button>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="seguranca" className="space-y-4 pt-4">
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-primary" />
-              <p className="text-sm font-medium text-foreground">Verificação em duas etapas (TOTP)</p>
+          </Panel>
+        </Rise>
+      ) : (
+        <Rise index={2} className="space-y-4">
+          <Panel
+            title="Verificação em duas etapas (TOTP)"
+            icon={ShieldCheck}
+            help={
+              <p>
+                Papéis de plataforma e administradores de canal precisam de TOTP para acessar o
+                app.
+              </p>
+            }
+            actions={
               <Badge variant={data.aal === "aal2" ? "secondary" : "outline"}>
                 sessão {data.aal ?? "aal1"}
               </Badge>
-            </div>
+            }
+          >
             {verifiedTotp.length === 0 ? (
               <>
-                <p className="text-sm text-muted-foreground">
-                  Nenhum autenticador cadastrado. Papéis de plataforma e administradores de canal
-                  precisam de TOTP para acessar o app.
-                </p>
-                <Button onClick={() => void navigate({ to: "/mfa" })}>Cadastrar autenticador</Button>
+                <p className="text-sm text-muted-foreground">Nenhum autenticador cadastrado.</p>
+                <Button className="mt-3" onClick={() => void navigate({ to: "/mfa" })}>
+                  Cadastrar autenticador
+                </Button>
               </>
             ) : (
               <div className="space-y-2">
@@ -243,22 +265,26 @@ function ProfilePage() {
                 </Button>
               </div>
             )}
-          </div>
+          </Panel>
 
-          <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-            <p className="text-sm font-medium text-foreground">Sessão</p>
+          <Panel title="Sessão">
             <p className="font-mono text-xs text-muted-foreground">
               último acesso{" "}
               {data.lastSignInAt ? new Date(data.lastSignInAt).toLocaleString("pt-BR") : "—"}
             </p>
             <FormError message={error} />
-            <Button variant="destructive" onClick={() => void signOutEverywhere()} disabled={signingOut}>
+            <Button
+              className="mt-3"
+              variant="destructive"
+              onClick={() => void signOutEverywhere()}
+              disabled={signingOut}
+            >
               {signingOut ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
               Encerrar sessões em todos os dispositivos
             </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </Panel>
+        </Rise>
+      )}
+    </Page>
   );
 }
