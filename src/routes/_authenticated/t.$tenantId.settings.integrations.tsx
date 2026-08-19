@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,7 +31,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   credentialSemaphore,
@@ -80,23 +80,6 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/settings/integ
 const PROCURADOR_CNPJ = import.meta.env["VITE_TECHIVA_PROCURADOR_CNPJ"] as string | undefined;
 const ECAC_URL = "https://cav.receita.fazenda.gov.br/autenticacao/login";
 
-function Card({
-  children,
-  className = "",
-  id,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  id?: string;
-}) {
-  return (
-    <section id={id} className={`rounded-xl border border-border bg-surface-1 p-5 ${className}`}>
-      {children}
-    </section>
-  );
-}
-
-
 function IntegrationsPage() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
@@ -116,48 +99,74 @@ function IntegrationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-lg font-medium">Integrações e credenciais</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          Para projetar o caixa do imposto precisamos ler seus documentos fiscais. Existem três
-          caminhos. Recomendamos a procuração eletrônica porque nela usamos o{" "}
-          <strong>nosso</strong> certificado — assim não guardamos chave privada de cliente nenhum.
-          É uma escolha de confiança, não uma limitação técnica.
-        </p>
-      </header>
-
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="credenciais">Credenciais desta empresa</TabsTrigger>
-          <TabsTrigger value="uso">Onde meu certificado foi usado</TabsTrigger>
-        </TabsList>
-        <TabsContent value="credenciais" className="mt-4">
-          <CredentialsList tenantId={tenantId} query={credentials} onOpenUsage={() => setTab("uso")} />
-        </TabsContent>
-
-        <TabsContent value="uso" className="mt-4">
-          <Card>
-            <h2 className="text-base font-medium">Onde meu certificado foi usado</h2>
-            <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Toda vez que usamos a sua credencial, registramos: quando, para quê e se deu certo.
-              Você não precisa confiar na nossa palavra — confira aqui.
+    <Page>
+      <PageHeader
+        eyebrow="INTEGRAÇÕES"
+        title="Integrações e credenciais"
+        help={
+          <>
+            <p>
+              Para projetar o caixa do imposto precisamos ler seus documentos fiscais. Existem três
+              caminhos possíveis.
             </p>
-            <div className="mt-4">
-              <UsageTab tenantId={tenantId} />
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            <p>
+              Recomendamos a <strong>procuração eletrônica</strong> porque nela usamos o{" "}
+              <strong>nosso</strong> certificado — assim não guardamos chave privada de cliente
+              nenhum. É uma escolha de confiança, não uma limitação técnica.
+            </p>
+          </>
+        }
+      />
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <Rise index={1}>
+        <Segmented
+          label="Seção de credenciais"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "credenciais", label: "Credenciais desta empresa" },
+            { value: "uso", label: "Onde foi usado" },
+          ]}
+        />
+      </Rise>
+
+      {tab === "credenciais" ? (
+        <Rise index={2}>
+          <CredentialsList tenantId={tenantId} query={credentials} onOpenUsage={() => setTab("uso")} />
+        </Rise>
+      ) : (
+        <Rise index={2}>
+          <Panel
+            title="Onde meu certificado foi usado"
+            icon={ShieldCheck}
+            help={
+              <>
+                <p>
+                  Toda vez que usamos a sua credencial, registramos: quando, para quê e se deu
+                  certo. Você não precisa confiar na nossa palavra — confira aqui.
+                </p>
+                <p>
+                  Mostramos os últimos 90 dias. Esta trilha é somente leitura: nem você nem nós
+                  podemos editá-la pelo aplicativo.
+                </p>
+              </>
+            }
+          >
+            <UsageTab tenantId={tenantId} />
+          </Panel>
+        </Rise>
+      )}
+
+      <Rise index={3} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <ProcuracaoCard tenantId={tenantId} />
         <ApiKeyCard tenantId={tenantId} />
         <CertificateCard tenantId={tenantId} />
-      </div>
+      </Rise>
 
-      <RtcCredentialPaths tenantId={tenantId} />
-    </div>
+      <Rise index={4}>
+        <RtcCredentialPaths tenantId={tenantId} />
+      </Rise>
+    </Page>
   );
 }
 
@@ -210,36 +219,44 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
   const cnpjPendente = cnpj.startsWith("(");
 
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <KeyRound className="size-4 text-primary" aria-hidden />
-        <h2 className="text-base font-medium">Apuração assistida de CBS (Plataforma RTC)</h2>
-        <CredentialStateBadge state={state.data} />
-        {caminho && (
-          <Badge variant="outline" className="text-[10px] uppercase">
-            caminho: {caminho === "proprio" ? "credencial própria" : "procurador"}
-          </Badge>
-        )}
-      </div>
-
-      <p className="max-w-3xl text-xs text-muted-foreground">
-        {state.data?.mensagem ??
-          "Existem dois caminhos para conectar a sua apuração da Receita. Ambos funcionam igual para você aqui dentro — escolha o que preferir."}
-      </p>
-
-      <div className="grid gap-4 lg:grid-cols-2">
+    <Panel
+      title="Apuração assistida de CBS (Plataforma RTC)"
+      icon={KeyRound}
+      help={
+        <p>
+          {state.data?.mensagem ??
+            "Existem dois caminhos para conectar a sua apuração da Receita. Ambos funcionam igual para você aqui dentro — escolha o que preferir."}
+        </p>
+      }
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <CredentialStateBadge state={state.data} />
+          {caminho && (
+            <Badge variant="outline" className="text-[10px] uppercase">
+              caminho: {caminho === "proprio" ? "credencial própria" : "procurador"}
+            </Badge>
+          )}
+        </div>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* caminho 1 — o cliente gera a credencial */}
-        <Card>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <KeyRound className="size-4 text-primary" aria-hidden />
-              <h3 className="text-sm font-medium">Credencial própria</h3>
-            </div>
-            {caminho === "proprio" && (
+        <Panel
+          title="Credencial própria"
+          icon={KeyRound}
+          interactive={false}
+          help={
+            <p>
+              O ClientSecret é cifrado no envio, nunca é exibido de novo e não pode ser baixado. Você
+              pode revogá-lo no portal da Receita ou aqui, quando quiser.
+            </p>
+          }
+          actions={
+            caminho === "proprio" ? (
               <Badge className="bg-flow-in/15 text-flow-in text-[10px]">em uso</Badge>
-            )}
-          </div>
-
+            ) : undefined
+          }
+        >
           <PathSteps notice={noticeProprio} />
 
           <a
@@ -298,25 +315,25 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
             {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             Salvar credencial
           </Button>
-
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            O ClientSecret é cifrado no envio, nunca é exibido de novo e não pode ser baixado. Você
-            pode revogá-lo no portal da Receita ou aqui, quando quiser.
-          </p>
-        </Card>
+        </Panel>
 
         {/* caminho 2 — nos autoriza como procurador */}
-        <Card>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <FileCheck2 className="size-4 text-primary" aria-hidden />
-              <h3 className="text-sm font-medium">Nos autorizar como procurador</h3>
-            </div>
-            {caminho === "procurador" && (
+        <Panel
+          title="Nos autorizar como procurador"
+          icon={FileCheck2}
+          interactive={false}
+          help={
+            <p>
+              A autorização é sua: você pode cancelá-la a qualquer momento no e-CAC, e revogar aqui
+              também. Nesse caminho usamos o nosso certificado — não guardamos chave privada sua.
+            </p>
+          }
+          actions={
+            caminho === "procurador" ? (
               <Badge className="bg-flow-in/15 text-flow-in text-[10px]">em uso</Badge>
-            )}
-          </div>
-
+            ) : undefined
+          }
+        >
           <PathSteps notice={noticeProcurador} />
 
           <div className="mt-4 rounded-lg border border-border bg-surface-2 p-3">
@@ -402,23 +419,18 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
             {upload.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             Já autorizei
           </Button>
-
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            A autorização é sua: você pode cancelá-la a qualquer momento no e-CAC, e revogar aqui
-            também. Nesse caminho usamos o nosso certificado — não guardamos chave privada sua.
-          </p>
-        </Card>
+        </Panel>
       </div>
 
       {state.data?.ultimo_erro && (
-        <p className="text-xs text-flow-out">Última tentativa falhou: {state.data.ultimo_erro}</p>
+        <p className="mt-4 text-xs text-flow-out">Última tentativa falhou: {state.data.ultimo_erro}</p>
       )}
       {state.data?.ultimo_uso && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="mt-1 text-[11px] text-muted-foreground">
           Último uso: {new Date(state.data.ultimo_uso).toLocaleString("pt-BR")}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -454,14 +466,15 @@ function CredentialsList({
   const rows = query.data ?? [];
 
   return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-medium">Credenciais registradas</h2>
-        {hasActiveDfe(rows) && (
+    <Panel
+      title="Credenciais registradas"
+      icon={ShieldCheck}
+      actions={
+        hasActiveDfe(rows) ? (
           <Badge className="bg-flow-in/15 text-flow-in">leitura de notas autorizada</Badge>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
       {rows.length === 0 ? (
         <div className="mt-4">
           <EmptyState
@@ -645,7 +658,7 @@ function CredentialsList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+    </Panel>
   );
 }
 
@@ -656,18 +669,19 @@ function ProcuracaoCard({ tenantId }: { tenantId: string }) {
   const cnpj = PROCURADOR_CNPJ ?? null;
 
   return (
-    <Card className="border-primary/40 ring-1 ring-primary/20">
-      <div className="flex items-center gap-2">
-        <FileCheck2 className="size-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-medium">Procuração eletrônica</h3>
-        <Badge className="bg-primary/15 text-primary">recomendado</Badge>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Você nos nomeia procurador no e-CAC e nós usamos o nosso próprio certificado. Nenhuma chave
-        privada sua fica com o TECH-IVA.
-      </p>
-
-      <ol className="mt-3 space-y-2 text-xs text-muted-foreground">
+    <Panel
+      title="Procuração eletrônica"
+      icon={FileCheck2}
+      className="border-primary/40 ring-1 ring-primary/20"
+      help={
+        <p>
+          Você nos nomeia procurador no e-CAC e nós usamos o nosso próprio certificado. Nenhuma
+          chave privada sua fica com o TECH-IVA.
+        </p>
+      }
+      actions={<Badge className="bg-primary/15 text-primary">recomendado</Badge>}
+    >
+      <ol className="space-y-2 text-xs text-muted-foreground">
         <li>1. Entre no e-CAC com o certificado da empresa ou conta gov.br.</li>
         <li>2. Abra “Senhas e Procurações” → “Cadastrar/Consultar procuração”.</li>
         <li>
@@ -725,7 +739,7 @@ function ProcuracaoCard({ tenantId }: { tenantId: string }) {
         )}
         Já autorizei
       </Button>
-    </Card>
+    </Panel>
   );
 }
 
@@ -736,16 +750,17 @@ function ApiKeyCard({ tenantId }: { tenantId: string }) {
   const [value, setValue] = useState("");
 
   return (
-    <Card>
-      <div className="flex items-center gap-2">
-        <KeyRound className="size-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-medium">Chave de API (Portal RTC)</h3>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Gere a chave no Portal RTC e cole aqui. Você pode revogá-la lá e aqui, quando quiser. A
-        chave é cifrada no envio e nunca é exibida de novo.
-      </p>
-      <div className="mt-4 space-y-2">
+    <Panel
+      title="Chave de API (Portal RTC)"
+      icon={KeyRound}
+      help={
+        <p>
+          Gere a chave no Portal RTC e cole aqui. Você pode revogá-la lá e aqui, quando quiser. A
+          chave é cifrada no envio e nunca é exibida de novo.
+        </p>
+      }
+    >
+      <div className="space-y-2">
         <Label htmlFor="api-key">Chave</Label>
         <Input
           id="api-key"
@@ -773,7 +788,7 @@ function ApiKeyCard({ tenantId }: { tenantId: string }) {
           Registrar chave
         </Button>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -786,23 +801,31 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
   const [ack, setAck] = useState(false);
 
   return (
-    <Card className="scroll-mt-24" id="cert-upload">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="size-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-medium">Certificado A1 (.pfx)</h3>
-      </div>
-      <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
-        <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
-        <p>
-          Um certificado A1 é uma <strong>chave privada</strong> que assina em nome da sua empresa.
-          O arquivo é cifrado no envio, guardado em área privada e{" "}
-          <strong>nunca pode ser baixado de volta</strong> — nem por nós. A senha também é cifrada e
-          não é exibida novamente.
-        </p>
-      </div>
-
+    <div id="cert-upload" className="scroll-mt-24">
+    <Panel
+      title="Certificado A1 (.pfx)"
+      icon={ShieldCheck}
+      help={
+        <>
+          <p>
+            Um certificado A1 é uma <strong>chave privada</strong> que assina em nome da sua
+            empresa. O arquivo é cifrado no envio, guardado em área privada e{" "}
+            <strong>nunca pode ser baixado de volta</strong> — nem por nós. A senha também é
+            cifrada e não é exibida novamente.
+          </p>
+          <p>
+            Nada além das finalidades listadas abaixo. Cada uso fica registrado e você consulta na
+            aba “Onde foi usado”.
+          </p>
+          <p>
+            Validamos abrindo o arquivo com a senha e conferindo se o titular é o CNPJ desta
+            empresa. Se não bater, recusamos e nada é guardado.
+          </p>
+        </>
+      }
+    >
       {/* O cliente autoriza usos ESPECÍFICOS, não acesso genérico. */}
-      <div className="mt-3 rounded-lg border border-border bg-surface-2 px-3 py-2">
+      <div className="rounded-lg border border-border bg-surface-2 px-3 py-2">
         <p className="text-xs font-medium">Para que vamos usar este certificado</p>
         <ul className="mt-2 space-y-1.5">
           {FINALIDADES_PADRAO.map((f) => (
@@ -812,10 +835,6 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Nada além disso. Cada uso fica registrado e você consulta na aba “Onde meu certificado foi
-          usado”.
-        </p>
       </div>
 
       <div className="mt-4 space-y-3">
@@ -874,12 +893,9 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
           )}
           Enviar certificado
         </Button>
-        <p className="text-[11px] text-muted-foreground">
-          Validamos abrindo o arquivo com a senha e conferindo se o titular é o CNPJ desta empresa.
-          Se não bater, recusamos e nada é guardado.
-        </p>
       </div>
-    </Card>
+    </Panel>
+    </div>
   );
 }
 
@@ -933,10 +949,6 @@ function UsageTab({ tenantId }: { tenantId: string }) {
           ))}
         </tbody>
       </table>
-      <p className="mt-3 text-[11px] text-muted-foreground">
-        Últimos 90 dias. Esta trilha é somente leitura: nem você nem nós podemos editá-la pelo
-        aplicativo.
-      </p>
     </div>
   );
 }

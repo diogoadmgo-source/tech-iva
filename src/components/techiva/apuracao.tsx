@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Circle, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, Circle } from "lucide-react";
 
 import { EmptyState } from "@/components/techiva/empty-state";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { formatCents } from "@/components/techiva/money";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -217,10 +218,12 @@ export function VisoesTabs({ visoes }: { visoes: Record<string, ApuracaoConta[]>
       </TabsList>
       {APURACAO_VISOES.map((v) => (
         <TabsContent key={v.key} value={v.key} className="mt-3">
-          <p className="mb-2 flex items-start gap-1.5 text-xs text-muted-foreground">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            {v.hint}
-          </p>
+          <div className="mb-2 flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">{v.label}</span>
+            <InfoHint title={v.label}>
+              <p>{v.hint}</p>
+            </InfoHint>
+          </div>
           <ContaTree contas={visoes[v.key]} />
         </TabsContent>
       ))}

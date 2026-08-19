@@ -4,8 +4,10 @@ import { Calculator, Link2, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { formatCents } from "@/components/techiva/money";
 import { NoticeBoard } from "@/components/techiva/notices";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { ClassTribFeedback } from "@/components/techiva/rtc";
 import {
   CalcResultPanel,
@@ -27,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useValidateClassTrib } from "@/lib/rtc";
 import {
   UF_LIST,
@@ -154,26 +157,29 @@ function SimuladorPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Simulador de CBS, IBS e IS</h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+    <Page>
+      <PageHeader
+        eyebrow="ferramentas · simulador"
+        title="Simulador de CBS, IBS e IS"
+        helpTitle="Como usar o simulador"
+        help={
+          <p>
             Monte a operação, valide a classificação e veja cada tributo separado com a memória de
             cálculo. Serve antes de conectar qualquer nota.
           </p>
-        </div>
-        <EngineBanner status={engine.data} loading={engine.isLoading} />
-      </header>
+        }
+        actions={<EngineBanner status={engine.data} loading={engine.isLoading} />}
+      />
 
       {/* posicionamento e avisos mantidos pela plataforma (notices_for) */}
-      <NoticeBoard scope="simulador" />
+      <Rise index={1}>
+        <NoticeBoard scope="simulador" />
+      </Rise>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-            <h2 className="text-sm font-semibold">Operação</h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <Rise index={2} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4">
+          <Panel title="Operação">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="cst">CST</Label>
                 <CstCombobox id="cst" value={cst} onChange={(row) => setCst(row?.[0] ?? "")} />
@@ -198,7 +204,10 @@ function SimuladorPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="nbs">NBS (serviço)</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="nbs">NBS (serviço)</Label>
+                  <InfoHintNbs />
+                </div>
                 <NbsCombobox
                   id="nbs"
                   value={nbs}
@@ -207,15 +216,10 @@ function SimuladorPage() {
                     setNbsDescricao(item?.descricao ?? "");
                   }}
                 />
-                {nbs ? (
+                {nbs && (
                   <p className="text-xs text-muted-foreground">
                     {nbsCapitulo(nbs) ? `Capítulo: ${nbsCapitulo(nbs)}. ` : ""}
-                    Subitem (9 dígitos) — nível usado na nota fiscal.
-                    {nbsDescricao ? ` ${nbsDescricao}` : ""}
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Busque pela descrição do serviço ou pelo código. Tabela NBS 2.0 (Anexo I).
+                    {nbsDescricao}
                   </p>
                 )}
               </div>
@@ -269,7 +273,10 @@ function SimuladorPage() {
                 </Select>
               </div>
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="municipio">Município de destino</Label>
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="municipio">Município de destino</Label>
+                  <InfoHintMunicipio />
+                </div>
                 <MunicipioCombobox
                   id="municipio"
                   value={municipio}
@@ -280,11 +287,9 @@ function SimuladorPage() {
                     if (m?.uf) setUfDestino(m.uf);
                   }}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {municipioCodigo
-                    ? `Código IBGE ${municipioCodigo} — tabela DTB/IBGE 2024.`
-                    : "Busque por nome (sem acento serve) ou pelo código IBGE. Lista oficial DTB/IBGE 2024."}
-                </p>
+                {municipioCodigo ? (
+                  <p className="text-xs text-muted-foreground">Código IBGE {municipioCodigo}</p>
+                ) : null}
               </div>
             </div>
 
@@ -311,14 +316,14 @@ function SimuladorPage() {
                 </span>
               )}
             </div>
-          </section>
+          </Panel>
 
           {(unavailable || engine.data?.available === false) && (
             <EngineBanner status={engine.data} message={unavailable} />
           )}
 
           {result && (
-            <section className="space-y-4">
+            <div className="space-y-4">
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-52 flex-1 space-y-1.5">
                   <Label htmlFor="nome">Nome da simulação</Label>
@@ -349,97 +354,115 @@ function SimuladorPage() {
                 <PrintButton />
               </div>
               <CalcResultPanel result={result} />
-            </section>
+            </div>
           )}
 
           <MotorOficialNote />
         </div>
 
-        <aside className="space-y-3">
-          <h2 className="text-sm font-semibold">Simulações salvas</h2>
-          {history.isLoading ? (
-            <p className="text-xs text-muted-foreground">Carregando…</p>
-          ) : (history.data ?? []).length === 0 ? (
-            <EmptyState
-              title="Nenhuma simulação salva"
-              hint="Calcule uma operação e salve para reaproveitar depois."
-            />
-          ) : (
-            <ul className="space-y-2">
-              {(history.data ?? []).map((row) => (
-                <li
-                  key={row.id}
-                  className="rounded-lg border border-border bg-surface-1 p-3 text-xs shadow-e1"
-                >
-                  <button
-                    type="button"
-                    className="text-left font-medium hover:underline"
-                    onClick={() => loadSimulation(row)}
+        <aside className="min-w-0 space-y-3">
+          <Panel title="Simulações salvas">
+            {history.isLoading ? (
+              <Skeleton className="h-24 w-full" />
+            ) : (history.data ?? []).length === 0 ? (
+              <EmptyState
+                title="Nenhuma simulação salva"
+                hint="Calcule uma operação e salve para reaproveitar depois."
+              />
+            ) : (
+              <ul className="space-y-2">
+                {(history.data ?? []).map((row) => (
+                  <li
+                    key={row.id}
+                    className="rounded-lg border border-border bg-surface-2 p-3 text-xs"
                   >
-                    {row.nome ?? "Simulação sem nome"}
-                  </button>
-                  <p className="mt-1 text-muted-foreground">
-                    {new Date(row.created_at).toLocaleString("pt-BR")}
-                    {row.calc_version && (
-                      <>
-                        {" · "}
-                        <Badge variant="outline" className="font-mono text-[10px]">
-                          {row.calc_version}
-                        </Badge>
-                      </>
-                    )}
-                  </p>
-                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      disabled={share.isPending}
-                      onClick={() =>
-                        share.mutate(row.id, {
-                          onSuccess: ({ token, expires_at }) => {
-                            void navigator.clipboard?.writeText(shareUrl(token));
-                            toast.success(
-                              `Link copiado. Vale até ${new Date(expires_at).toLocaleDateString("pt-BR")}.`,
-                            );
-                          },
-                          onError: (e) => toast.error((e as Error).message),
-                        })
-                      }
+                    <button
+                      type="button"
+                      className="text-left font-medium hover:underline"
+                      onClick={() => loadSimulation(row)}
                     >
-                      <Link2 className="size-3.5" aria-hidden />
-                      {shareIsActive(row) ? "Copiar link" : "Compartilhar"}
-                    </Button>
-                    {row.share_token ? (
+                      {row.nome ?? "Simulação sem nome"}
+                    </button>
+                    <p className="mt-1 text-muted-foreground">
+                      {new Date(row.created_at).toLocaleString("pt-BR")}
+                      {row.calc_version && (
+                        <>
+                          {" · "}
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            {row.calc_version}
+                          </Badge>
+                        </>
+                      )}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-muted-foreground"
-                        disabled={unshare.isPending}
+                        className="h-7 px-2"
+                        disabled={share.isPending}
                         onClick={() =>
-                          unshare.mutate(row.id, {
-                            onSuccess: () => toast.success("Link revogado."),
+                          share.mutate(row.id, {
+                            onSuccess: ({ token, expires_at }) => {
+                              void navigator.clipboard?.writeText(shareUrl(token));
+                              toast.success(
+                                `Link copiado. Vale até ${new Date(expires_at).toLocaleDateString("pt-BR")}.`,
+                              );
+                            },
                             onError: (e) => toast.error((e as Error).message),
                           })
                         }
                       >
-                        Revogar link
+                        <Link2 className="size-3.5" aria-hidden />
+                        {shareIsActive(row) ? "Copiar link" : "Compartilhar"}
                       </Button>
+                      {row.share_token ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-muted-foreground"
+                          disabled={unshare.isPending}
+                          onClick={() =>
+                            unshare.mutate(row.id, {
+                              onSuccess: () => toast.success("Link revogado."),
+                              onError: (e) => toast.error((e as Error).message),
+                            })
+                          }
+                        >
+                          Revogar link
+                        </Button>
+                      ) : null}
+                    </div>
+                    {row.share_token ? (
+                      <p className="mt-1.5 text-[11px] text-muted-foreground">
+                        {shareIsActive(row)
+                          ? `Link público válido até ${new Date(row.share_expires_at ?? row.created_at).toLocaleDateString("pt-BR")}`
+                          : "Link público expirado — compartilhe de novo para gerar outro"}
+                      </p>
                     ) : null}
-                  </div>
-                  {row.share_token ? (
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">
-                      {shareIsActive(row)
-                        ? `Link público válido até ${new Date(row.share_expires_at ?? row.created_at).toLocaleDateString("pt-BR")}`
-                        : "Link público expirado — compartilhe de novo para gerar outro"}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </aside>
-      </div>
-    </div>
+      </Rise>
+    </Page>
+  );
+}
+
+function InfoHintNbs() {
+  return (
+    <InfoHint title="NBS">
+      <p>Busque pela descrição do serviço ou pelo código. Tabela NBS 2.0 (Anexo I).</p>
+      <p>O nível usado na nota fiscal é o subitem, com 9 dígitos.</p>
+    </InfoHint>
+  );
+}
+
+function InfoHintMunicipio() {
+  return (
+    <InfoHint title="Município de destino">
+      <p>Busque por nome (sem acento serve) ou pelo código IBGE. Lista oficial DTB/IBGE 2024.</p>
+    </InfoHint>
   );
 }
