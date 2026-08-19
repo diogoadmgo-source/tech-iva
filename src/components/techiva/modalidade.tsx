@@ -1,7 +1,8 @@
-import { ArrowRight, CalendarClock, Info } from "lucide-react";
+import { ArrowRight, CalendarClock, Scale } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatCents, MoneyText } from "@/components/techiva/money";
+import { Panel, Segmented } from "@/components/techiva/page";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MODALIDADES,
@@ -12,6 +13,7 @@ import {
   type Modalidade,
 } from "@/lib/modalidade";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Seletor da modalidade de recolhimento.
