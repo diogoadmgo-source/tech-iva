@@ -25,6 +25,7 @@ import { ROLE_LABELS, signOutAndRedirect, type MemberRole } from "@/lib/auth";
 import { useAlerts } from "@/lib/cash";
 import { useFeature } from "@/lib/features";
 import { useJobs } from "@/lib/jobs";
+import { prefetchRouteData } from "@/lib/nav-prefetch";
 import {
   CONTEXT_KIND_LABELS,
   formatCnpj,
@@ -262,10 +263,17 @@ function SidebarItem({
   count: number;
 }) {
   const Icon = item.icon;
+  const queryClient = useQueryClient();
+  // Aquece a consulta principal da tela ANTES do clique: sem isto o clique
+  // montava a tela com cache frio e o esqueleto piscava.
+  const warm = () => prefetchRouteData(queryClient, item.to, tenantId);
   const content = (
     <Link
       to={item.to ?? "/t/$tenantId"}
       params={{ tenantId }}
+      onMouseEnter={warm}
+      onFocus={warm}
+      onTouchStart={warm}
       activeOptions={{ exact: item.to === "/t/$tenantId" }}
       activeProps={{
         className:
