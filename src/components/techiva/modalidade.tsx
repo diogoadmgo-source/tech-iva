@@ -1,7 +1,8 @@
-import { ArrowRight, CalendarClock, Info } from "lucide-react";
+import { ArrowRight, CalendarClock, Scale } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatCents, MoneyText } from "@/components/techiva/money";
+import { Panel, Segmented } from "@/components/techiva/page";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MODALIDADES,
@@ -12,6 +13,7 @@ import {
   type Modalidade,
 } from "@/lib/modalidade";
 import { cn } from "@/lib/utils";
+
 
 /**
  * Seletor da modalidade de recolhimento.
@@ -42,57 +44,51 @@ export function ModalidadeSelector({
     });
   };
 
+  const currentLabel =
+    MODALIDADES.find((m) => m.value === current.data)?.label ?? "Não definida";
+
   return (
-    <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarClock className="size-4 text-primary" aria-hidden /> Modalidade de recolhimento
-          </h2>
-          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            Define <strong>quando</strong> o imposto sai do seu caixa, não quanto você paga. Em 2027
-            a CBS passa a ser efetivamente cobrada e o padrão é a apuração mensal — a guia vence no
-            dia 20 do mês seguinte. O RAD e o split payment são modalidades opcionais, e o split
-            ainda não tem data definida.
+    <Panel
+      title="Modalidade de recolhimento"
+      icon={CalendarClock}
+      help={
+        <>
+          <p>
+            Define <strong>quando</strong> o imposto sai do seu caixa, não quanto você paga.
           </p>
-        </div>
-        {current.isLoading ? (
-          <Skeleton className="h-9 w-64" />
-        ) : (
-          <div
-            className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-surface-2 p-1"
-            role="group"
-            aria-label="Modalidade de recolhimento"
-          >
-            {MODALIDADES.map((m) => (
-              <button
-                key={m.value}
-                type="button"
-                disabled={!canEdit || setModalidade.isPending}
-                aria-pressed={current.data === m.value}
-                onClick={() => change(m.value)}
-                title={m.label}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60",
-                  current.data === m.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {m.short}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {!canEdit ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Seu papel não permite alterar a premissa — a comparação abaixo continua disponível.
-        </p>
-      ) : null}
-    </section>
+          <p>
+            Em 2027 o padrão é a <strong>apuração mensal</strong> — guia no dia 20 do mês seguinte.
+            RAD e split payment são opcionais e o split ainda não tem data.
+          </p>
+          {!canEdit ? <p>Seu papel não permite alterar esta premissa.</p> : null}
+        </>
+      }
+      bodyClassName="flex flex-wrap items-center justify-between gap-3 p-4"
+    >
+      <p className="text-xs text-muted-foreground">
+        Atual:{" "}
+        <span className="font-medium text-foreground">
+          {current.isLoading ? "…" : currentLabel}
+        </span>
+      </p>
+      {current.isLoading ? (
+        <Skeleton className="h-9 w-56" />
+      ) : canEdit ? (
+        <Segmented
+          label="Modalidade de recolhimento"
+          value={current.data ?? "apuracao"}
+          onChange={(v) => change(v as Modalidade)}
+          options={MODALIDADES.map((m) => ({ value: m.value, label: m.short }))}
+        />
+      ) : (
+        <span className="rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          {currentLabel}
+        </span>
+      )}
+    </Panel>
   );
 }
+
 
 function GapCell({ label, cents }: { label: string; cents: number }) {
   return (
@@ -119,9 +115,9 @@ export function ComparadorModalidades({
 
   if (comparison.isLoading) {
     return (
-      <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
+      <Panel title="Compare as modalidades" icon={Scale}>
         <Skeleton className="h-40 w-full" />
-      </section>
+      </Panel>
     );
   }
   if (comparison.isError || !comparison.data) return null;
@@ -133,16 +129,24 @@ export function ComparadorModalidades({
     base && c.modalidade !== "apuracao" ? c.gap_30_cents - base.gap_30_cents : null;
 
   return (
-    <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Compare as modalidades</h2>
-        <p className="text-xs text-muted-foreground">Horizonte de {horizonDays} dias</p>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Mesmo imposto, ritmos diferentes de saída. A escolha muda o seu caixa nos próximos meses.
-      </p>
+    <Panel
+      title="Compare as modalidades"
+      icon={Scale}
+      help={
+        <>
+          <p>
+            Mesmo imposto, ritmos diferentes de saída. A escolha muda o seu caixa nos próximos
+            meses.
+          </p>
+          <p>{observacao}</p>
+        </>
+      }
+      actions={
+        <span className="text-xs text-muted-foreground">Horizonte de {horizonDays} dias</span>
+      }
+    >
+      <div className="grid gap-3 lg:grid-cols-3">
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {cenarios.map((c) => {
           const d = diff(c);
           return (
@@ -189,12 +193,7 @@ export function ComparadorModalidades({
           );
         })}
       </div>
+    </Panel>
 
-      {/* observação com a fonte e a data vem da RPC, não do código */}
-      <p className="mt-4 flex gap-2 border-t border-border pt-3 text-[11px] text-muted-foreground">
-        <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        <span>{observacao}</span>
-      </p>
-    </section>
   );
 }
