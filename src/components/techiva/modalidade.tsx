@@ -44,57 +44,51 @@ export function ModalidadeSelector({
     });
   };
 
+  const currentLabel =
+    MODALIDADES.find((m) => m.value === current.data)?.label ?? "Não definida";
+
   return (
-    <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <CalendarClock className="size-4 text-primary" aria-hidden /> Modalidade de recolhimento
-          </h2>
-          <p className="mt-1 max-w-2xl text-xs text-muted-foreground">
-            Define <strong>quando</strong> o imposto sai do seu caixa, não quanto você paga. Em 2027
-            a CBS passa a ser efetivamente cobrada e o padrão é a apuração mensal — a guia vence no
-            dia 20 do mês seguinte. O RAD e o split payment são modalidades opcionais, e o split
-            ainda não tem data definida.
+    <Panel
+      title="Modalidade de recolhimento"
+      icon={CalendarClock}
+      help={
+        <>
+          <p>
+            Define <strong>quando</strong> o imposto sai do seu caixa, não quanto você paga.
           </p>
-        </div>
-        {current.isLoading ? (
-          <Skeleton className="h-9 w-64" />
-        ) : (
-          <div
-            className="inline-flex flex-wrap gap-1 rounded-lg border border-border bg-surface-2 p-1"
-            role="group"
-            aria-label="Modalidade de recolhimento"
-          >
-            {MODALIDADES.map((m) => (
-              <button
-                key={m.value}
-                type="button"
-                disabled={!canEdit || setModalidade.isPending}
-                aria-pressed={current.data === m.value}
-                onClick={() => change(m.value)}
-                title={m.label}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60",
-                  current.data === m.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {m.short}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {!canEdit ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Seu papel não permite alterar a premissa — a comparação abaixo continua disponível.
-        </p>
-      ) : null}
-    </section>
+          <p>
+            Em 2027 o padrão é a <strong>apuração mensal</strong> — guia no dia 20 do mês seguinte.
+            RAD e split payment são opcionais e o split ainda não tem data.
+          </p>
+          {!canEdit ? <p>Seu papel não permite alterar esta premissa.</p> : null}
+        </>
+      }
+      bodyClassName="flex flex-wrap items-center justify-between gap-3 p-4"
+    >
+      <p className="text-xs text-muted-foreground">
+        Atual:{" "}
+        <span className="font-medium text-foreground">
+          {current.isLoading ? "…" : currentLabel}
+        </span>
+      </p>
+      {current.isLoading ? (
+        <Skeleton className="h-9 w-56" />
+      ) : canEdit ? (
+        <Segmented
+          label="Modalidade de recolhimento"
+          value={current.data ?? "apuracao"}
+          onChange={(v) => change(v as Modalidade)}
+          options={MODALIDADES.map((m) => ({ value: m.value, label: m.short }))}
+        />
+      ) : (
+        <span className="rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+          {currentLabel}
+        </span>
+      )}
+    </Panel>
   );
 }
+
 
 function GapCell({ label, cents }: { label: string; cents: number }) {
   return (
