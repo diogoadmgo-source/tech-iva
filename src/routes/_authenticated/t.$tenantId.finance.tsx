@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { FormError } from "@/components/auth/auth-shell";
 import { EmptyState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import { formatCents, formatPct, MoneyText } from "@/components/techiva/money";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { Stepper } from "@/components/techiva/stepper";
@@ -32,7 +33,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDashboardCash } from "@/lib/cash";
 import {
   LEDGER_COPY,
@@ -97,12 +97,12 @@ function FinancePage() {
 
   if (creditFeature.data === false) {
     return (
-      <div className="mx-auto w-full max-w-2xl py-10">
+      <Page className="max-w-2xl py-10">
         <FeatureEmptyState
           title="Módulo não habilitado"
           hint="O módulo de crédito não está habilitado para esta empresa — fale com o administrador da plataforma. Levando você de volta ao Caixa do imposto."
         />
-      </div>
+      </Page>
     );
   }
 
@@ -124,6 +124,7 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
   const [signature, setSignature] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [contractId, setContractId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"offers" | "contracts">("offers");
 
   const detail = useOfferDetail(offerId);
   const contract = useContractDetail(contractId);
@@ -164,40 +165,46 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
   const readOnly = canCredit.data === false;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold text-foreground">Financiamento</h1>
-          <p className="text-sm text-muted-foreground">
-            Crédito para o caixa do imposto de{" "}
-            <span className="text-foreground">{shell.data?.tenant.name ?? "…"}</span> — cada oferta
-            mostra o impacto na sua projeção de 30 e 90 dias.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={async () => {
-            try {
-              const count = await generate.mutateAsync();
-              toast.success(
-                count > 0 ? `${count} oferta(s) atualizada(s).` : "Nenhuma oferta elegível agora.",
-              );
-            } catch (err) {
-              toast.error(err instanceof Error ? err.message : "Falha ao recalcular.");
-            }
-          }}
-          disabled={generate.isPending || readOnly}
-        >
-          {generate.isPending ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-2 size-4" />
-          )}
-          Recalcular ofertas
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="caixa · financiamento"
+        title="Financiamento"
+        help={
+          <>
+            <p>
+              Crédito para o caixa do imposto de{" "}
+              <strong>{shell.data?.tenant.name ?? "…"}</strong> — cada oferta mostra o impacto na
+              sua projeção de 30 e 90 dias.
+            </p>
+            {readOnly ? <p>Somente owner e financeiro podem contratar crédito. Você está em modo leitura.</p> : null}
+          </>
+        }
+        actions={
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const count = await generate.mutateAsync();
+                toast.success(
+                  count > 0 ? `${count} oferta(s) atualizada(s).` : "Nenhuma oferta elegível agora.",
+                );
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Falha ao recalcular.");
+              }
+            }}
+            disabled={generate.isPending || readOnly}
+          >
+            {generate.isPending ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 size-4" />
+            )}
+            Recalcular ofertas
+          </Button>
+        }
+      />
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Rise index={1} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Buraco em 30 dias"
           valueCents={hero?.gap_30_cents ?? 0}
@@ -219,21 +226,24 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
           value={String((contracts.data ?? []).filter((c) => c.status === "active").length)}
           loading={contracts.isLoading}
         />
-      </section>
+      </Rise>
 
-      {readOnly ? (
-        <p className="rounded-lg border border-border bg-surface-1 p-3 text-xs text-muted-foreground">
-          Somente owner e financeiro podem contratar crédito. Você está em modo leitura.
-        </p>
-      ) : null}
+      <Rise index={2}>
+        <div className="flex items-center justify-between gap-3">
+          <Segmented
+            label="Seção"
+            value={tab}
+            onChange={(v) => setTab(v)}
+            options={[
+              { value: "offers", label: "Ofertas" },
+              { value: "contracts", label: "Contratos" },
+            ]}
+          />
+        </div>
+      </Rise>
 
-      <Tabs defaultValue="offers">
-        <TabsList>
-          <TabsTrigger value="offers">Ofertas</TabsTrigger>
-          <TabsTrigger value="contracts">Contratos</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="offers" className="space-y-4 pt-4">
+      {tab === "offers" ? (
+        <Rise index={3}>
           {offers.isLoading ? (
             <div className="grid gap-4 lg:grid-cols-3">
               <Skeleton className="h-52 w-full" />
@@ -252,7 +262,7 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
               }
             />
           ) : (
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {(offers.data ?? []).map((offer) => {
                 const Icon = OFFER_ICON[offer.kind];
                 const copy = OFFER_COPY[offer.kind];
@@ -299,9 +309,9 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
               })}
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="contracts" className="space-y-4 pt-4">
+        </Rise>
+      ) : (
+        <Rise index={3}>
           {contracts.isLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : (contracts.data ?? []).length === 0 ? (
@@ -311,7 +321,7 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
               hint="Contratos assinados aparecem aqui com timeline de repagamento e extrato."
             />
           ) : (
-            <div className="rounded-lg border border-border">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -356,8 +366,8 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
               </Table>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </Rise>
+      )}
 
       {/* drawer da oferta: revisar → assinar */}
       <SideSheet
@@ -528,7 +538,7 @@ function FinanceModule({ tenantId }: { tenantId: string }) {
           </div>
         )}
       </SideSheet>
-    </div>
+    </Page>
   );
 }
 

@@ -8,6 +8,7 @@ import { FormError } from "@/components/auth/auth-shell";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { formatCents, formatPct, MoneyText } from "@/components/techiva/money";
 import { RegimeBadge } from "@/components/techiva/badges";
 import { Badge } from "@/components/ui/badge";
@@ -264,119 +265,133 @@ function PricePage() {
   }, [editable, compareId, scenarioId, compareByProduct]);
 
   if (scenarios.isError) {
-    return <ErrorState message={authErrorMessage(scenarios.error)} onRetry={() => void scenarios.refetch()} />;
+    return (
+      <Page>
+        <ErrorState message={authErrorMessage(scenarios.error)} onRetry={() => void scenarios.refetch()} />
+      </Page>
+    );
   }
 
   const scenarioList = scenarios.data ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Preço com IVA</h1>
-        <p className="text-sm text-muted-foreground">
-          Piso e preço-alvo por produto de{" "}
-          <span className="text-foreground">{shell.data?.tenant.name ?? "…"}</span>, considerando o
-          crédito na entrada e a alíquota do ano fiscal.
-        </p>
-      </header>
+    <Page className="max-w-7xl">
+      <PageHeader
+        eyebrow="ferramentas · precificação"
+        title="Preço com IVA"
+        help={
+          <p>
+            Piso e preço-alvo por produto de <strong>{shell.data?.tenant.name ?? "…"}</strong>,
+            considerando o crédito na entrada e a alíquota do ano fiscal. O piso sobe com a
+            alíquota do ano fiscal, com despesas variáveis maiores e com clientes que aproveitam
+            menos crédito (Simples/MEI); a margem alvo altera só o preço-alvo.
+          </p>
+        }
+      />
 
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-        <div className="min-w-56 space-y-2">
-          <Label>Cenário</Label>
-          <Select value={scenarioId} onValueChange={setScenarioId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Nenhum cenário" />
-            </SelectTrigger>
-            <SelectContent>
-              {scenarioList.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name} · {s.fiscal_year} · {STATUS_LABEL[s.status] ?? s.status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <Rise index={1}>
+        <Panel interactive={false}>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-56 flex-1 space-y-2">
+              <Label>Cenário</Label>
+              <Select value={scenarioId} onValueChange={setScenarioId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhum cenário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {scenarioList.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} · {s.fiscal_year} · {STATUS_LABEL[s.status] ?? s.status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="min-w-56 space-y-2">
-          <Label>Comparar com</Label>
-          <Select value={compareId || "none"} onValueChange={(v) => setCompareId(v === "none" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Sem comparação" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sem comparação</SelectItem>
-              {scenarioList
-                .filter((s) => s.id !== scenarioId)
-                .map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.fiscal_year}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
+            <div className="min-w-56 flex-1 space-y-2">
+              <Label>Comparar com</Label>
+              <Select value={compareId || "none"} onValueChange={(v) => setCompareId(v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem comparação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem comparação</SelectItem>
+                  {scenarioList
+                    .filter((s) => s.id !== scenarioId)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name} · {s.fiscal_year}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          {scenario ? (
-            <Badge variant={scenario.status === "approved" ? "secondary" : "outline"}>
-              {STATUS_LABEL[scenario.status] ?? scenario.status} · IVA{" "}
-              {formatPct(scenario.iva_rate * 100)} · margem {formatPct(scenario.target_margin)}
-            </Badge>
-          ) : null}
-          <Button variant="outline" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 size-4" /> Novo cenário
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!scenarioId || !editable || recompute.isPending}
-            onClick={async () => {
-              try {
-                await recompute.mutateAsync(scenarioId);
-                toast.success("Cenário recalculado.");
-              } catch (err) {
-                toast.error(authErrorMessage(err));
-              }
-            }}
-          >
-            {recompute.isPending ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 size-4" />
-            )}
-            Recalcular
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!detail.data || lines.length === 0}
-            onClick={() => {
-              if (!detail.data) return;
-              downloadCsv(
-                `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
-                  /\s+/g,
-                  "-",
-                ),
-                scenarioCsv(detail.data),
-              );
-            }}
-          >
-            <Download className="mr-2 size-4" /> Exportar ERP
-          </Button>
-          <Button disabled={!scenario || scenario.status !== "draft"} onClick={() => setApproveOpen(true)}>
-            <Check className="mr-2 size-4" /> Aprovar
-          </Button>
-        </div>
-      </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {scenario ? (
+                <Badge variant={scenario.status === "approved" ? "secondary" : "outline"}>
+                  {STATUS_LABEL[scenario.status] ?? scenario.status} · IVA{" "}
+                  {formatPct(scenario.iva_rate * 100)} · margem {formatPct(scenario.target_margin)}
+                </Badge>
+              ) : null}
+              <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-2 size-4" /> Novo cenário
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!scenarioId || !editable || recompute.isPending}
+                onClick={async () => {
+                  try {
+                    await recompute.mutateAsync(scenarioId);
+                    toast.success("Cenário recalculado.");
+                  } catch (err) {
+                    toast.error(authErrorMessage(err));
+                  }
+                }}
+              >
+                {recompute.isPending ? (
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 size-4" />
+                )}
+                Recalcular
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!detail.data || lines.length === 0}
+                onClick={() => {
+                  if (!detail.data) return;
+                  downloadCsv(
+                    `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
+                      /\s+/g,
+                      "-",
+                    ),
+                    scenarioCsv(detail.data),
+                  );
+                }}
+              >
+                <Download className="mr-2 size-4" /> Exportar ERP
+              </Button>
+              <Button disabled={!scenario || scenario.status !== "draft"} onClick={() => setApproveOpen(true)}>
+                <Check className="mr-2 size-4" /> Aprovar
+              </Button>
+            </div>
+          </div>
+        </Panel>
+      </Rise>
 
       {!scenarioId && !scenarios.isLoading ? (
-        <EmptyState
-          title="Nenhum cenário de preço"
-          hint="Crie um cenário informando a margem alvo e o ano fiscal para calcular piso e preço-alvo dos produtos."
-        />
+        <Rise index={2}>
+          <EmptyState
+            title="Nenhum cenário de preço"
+            hint="Crie um cenário informando a margem alvo e o ano fiscal para calcular piso e preço-alvo dos produtos."
+          />
+        </Rise>
       ) : null}
 
       {scenarioId ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Rise index={2} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <KpiCard
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
@@ -404,51 +419,42 @@ function PricePage() {
                   : `${totals?.lines ?? 0} linhas no cenário`
               }
             />
+          </Rise>
 
-          </div>
+          <Rise index={3} className="overflow-x-auto">
+            {detail.isError ? (
+              <ErrorState
+                message={authErrorMessage(detail.error)}
+                onRetry={() => void detail.refetch()}
+              />
+            ) : (
+              <DataTable
+                columns={columns}
+                data={lines}
+                loading={detail.isLoading}
+                searchPlaceholder="Buscar SKU, produto ou NCM…"
+                emptyTitle="Nenhuma linha calculada"
+                emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
+                density="compact"
+              />
+            )}
+          </Rise>
 
-          {detail.isError ? (
-            <ErrorState
-              message={authErrorMessage(detail.error)}
-              onRetry={() => void detail.refetch()}
-            />
-          ) : (
-            <DataTable
-              columns={columns}
-              data={lines}
-              loading={detail.isLoading}
-              searchPlaceholder="Buscar SKU, produto ou NCM…"
-              emptyTitle="Nenhuma linha calculada"
-              emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
-              density="compact"
-            />
-          )}
-
-          {!detail.isLoading && !detail.isError && lines.length > 0 && (totals?.below_floor ?? 0) === 0 ? (
+          <Rise index={4}>
             <p className="text-xs text-muted-foreground">
-              Nenhum item abaixo do piso neste cenário — todos os preços atuais cobrem o piso
-              calculado. O piso sobe com a alíquota do ano fiscal, com despesas variáveis maiores e
-              com clientes que aproveitam menos crédito (Simples/MEI); a margem alvo altera só o
-              preço-alvo.
+              {scenario?.assumptions["counterparty_id"] ? (
+                <>
+                  Cenário por cliente:{" "}
+                  <span className="text-foreground">
+                    {lines[0]?.counterparty_name ?? "cliente selecionado"}
+                  </span>{" "}
+                  — o crédito na entrada é ajustado pelo regime do cliente.
+                </>
+              ) : (
+                "Cenário geral (crédito integral na entrada). Crie um cenário por cliente para ajustar pelo regime dele."
+              )}
             </p>
-          ) : null}
-
-
-
-          {scenario?.assumptions["counterparty_id"] ? (
-            <p className="text-xs text-muted-foreground">
-              Cenário por cliente:{" "}
-              <span className="text-foreground">
-                {lines[0]?.counterparty_name ?? "cliente selecionado"}
-              </span>{" "}
-              — o crédito na entrada é ajustado pelo regime do cliente.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Cenário geral (crédito integral na entrada). Crie um cenário por cliente para ajustar
-              pelo regime dele.
-            </p>
-          )}
+          </Rise>
         </>
       ) : null}
 
@@ -509,7 +515,9 @@ function PricePage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Escopo</Label>
+              <div className="flex items-center gap-2">
+                <Label>Escopo</Label>
+              </div>
               <Select value={draftCustomer} onValueChange={setDraftCustomer}>
                 <SelectTrigger>
                   <SelectValue />
@@ -533,9 +541,8 @@ function PricePage() {
                 </SelectContent>
               </Select>
               <p className="text-[11px] text-muted-foreground">
-                O cenário por cliente calcula um cliente por vez. Não geramos a combinação
-                produto × cliente inteira: com 5 mil produtos e 200 clientes seria 1 milhão de
-                linhas, lento e ilegível. Busque o cliente que você quer negociar.
+                O cenário por cliente calcula um cliente por vez (não a combinação produto ×
+                cliente inteira). Busque o cliente que você quer negociar.
               </p>
               {draftCustomer !== "all" ? (
                 <div className="pt-1">
@@ -605,7 +612,7 @@ function PricePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   );
 }
 

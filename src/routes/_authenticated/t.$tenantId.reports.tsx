@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel } from "@/components/techiva/page";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAllPages } from "@/lib/paginate";
@@ -157,13 +158,17 @@ function ReportsPage() {
   const hybrid = rows.filter((r) => r.recommendation === "hybrid").length;
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
-        <p className="text-sm text-muted-foreground">
-          Simulações de regime geradas para as empresas da carteira, com PDF para o contador.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="carteira"
+        title="Relatórios"
+        helpTitle="Sobre esta tela"
+        help={
+          <p>
+            Simulações de regime geradas para as empresas da carteira, com PDF para o contador.
+          </p>
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard label="Relatórios gerados" value={`${rows.length}`} loading={reports.isLoading} />
@@ -176,16 +181,20 @@ function ReportsPage() {
         />
       </div>
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        loading={reports.isLoading}
-        searchPlaceholder="Buscar empresa ou recomendação…"
-        emptyTitle="Nenhum relatório ainda"
-        emptyHint="Enfileire simulações em Carteira para gerar relatórios em lote."
-        exportName="relatorios-regime"
-      />
-    </div>
+      <Panel title="Simulações">
+        <div className="overflow-x-auto">
+          <DataTable
+            columns={columns}
+            data={rows}
+            loading={reports.isLoading}
+            searchPlaceholder="Buscar empresa ou recomendação…"
+            emptyTitle="Nenhum relatório ainda"
+            emptyHint="Enfileire simulações em Carteira para gerar relatórios em lote."
+            exportName="relatorios-regime"
+          />
+        </div>
+      </Panel>
+    </Page>
   );
 }
 

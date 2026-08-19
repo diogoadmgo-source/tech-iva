@@ -14,7 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { JobProgress } from "@/components/techiva/job-progress";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Stepper } from "@/components/techiva/stepper";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -72,10 +74,10 @@ function OnboardingPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <Page className="max-w-3xl">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Page>
     );
   }
   if (isError) {
@@ -94,54 +96,53 @@ function OnboardingPage() {
   const current = step ?? data.suggestedStep;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <header className="space-y-1">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Onboarding</p>
-        <h1 className="text-2xl font-semibold">{shell.data?.tenant.name ?? data.tenant.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Quatro passos para o TECH-IVA ler sua operação e mostrar o caixa do imposto.
-        </p>
-      </header>
+    <Page className="max-w-3xl">
+      <PageHeader
+        eyebrow="onboarding"
+        title={shell.data?.tenant.name ?? data.tenant.name}
+        helpTitle="Como funciona o onboarding"
+        help={
+          <>
+            <p>
+              Quatro passos para o TECH-IVA ler sua operação e mostrar o caixa do imposto.
+            </p>
+            <p>
+              Cálculo pelo motor oficial da Receita Federal, com memória de cálculo e base legal.
+              Seus dados não saem da nossa infraestrutura.
+            </p>
+          </>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/t/$tenantId/simulador" params={{ tenantId }}>
+                Simulador de CBS, IBS e IS
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/t/$tenantId/validador" params={{ tenantId }}>
+                Validador de XML
+              </Link>
+            </Button>
+          </div>
+        }
+      />
 
-      <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-        <h2 className="text-sm font-semibold">Use agora, antes de conectar as notas</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Cálculo pelo motor oficial da Receita Federal, com memória de cálculo e base legal. Seus
-          dados não saem da nossa infraestrutura.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/t/$tenantId/simulador" params={{ tenantId }}>
-              Simulador de CBS, IBS e IS
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/t/$tenantId/validador" params={{ tenantId }}>
-              Validador de XML
-            </Link>
-          </Button>
-        </div>
-      </section>
+      <Rise index={1}>
+        <Stepper steps={STEPS} current={current} />
+      </Rise>
 
-      <Stepper steps={STEPS} current={current} />
-
-      {current === 0 && <StepCompany tenantId={tenantId} onNext={() => setStep(1)} />}
-      {current === 1 && (
-        <StepDfe tenantId={tenantId} onBack={() => setStep(0)} onNext={() => setStep(2)} />
-      )}
-      {current === 2 && (
-        <StepBank tenantId={tenantId} onBack={() => setStep(1)} onNext={() => setStep(3)} />
-      )}
-      {current === 3 && <StepReading tenantId={tenantId} onBack={() => setStep(2)} />}
-    </div>
-  );
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="rounded-xl border border-border bg-surface-1 p-5 shadow-[var(--shadow-1)]">
-      {children}
-    </section>
+      <Rise index={2}>
+        {current === 0 && <StepCompany tenantId={tenantId} onNext={() => setStep(1)} />}
+        {current === 1 && (
+          <StepDfe tenantId={tenantId} onBack={() => setStep(0)} onNext={() => setStep(2)} />
+        )}
+        {current === 2 && (
+          <StepBank tenantId={tenantId} onBack={() => setStep(1)} onNext={() => setStep(3)} />
+        )}
+        {current === 3 && <StepReading tenantId={tenantId} onBack={() => setStep(2)} />}
+      </Rise>
+    </Page>
   );
 }
 
@@ -219,13 +220,18 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
   }
 
   return (
-    <Card>
-      <h2 className="text-base font-medium">Empresa</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Digite o CNPJ: buscamos o cadastro público da Receita e preenchemos o resto. Todos os campos
-        continuam editáveis. O regime orienta o cálculo e a simulação tradicional × híbrido.
-      </p>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <Panel
+      title="Empresa"
+      icon={Building2}
+      help={
+        <p>
+          Digite o CNPJ: buscamos o cadastro público da Receita e preenchemos o resto. Todos os
+          campos continuam editáveis. O regime orienta o cálculo e a simulação tradicional ×
+          híbrido.
+        </p>
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
         <CnpjAutofillField id="ob-cnpj" value={cnpj} onChange={setCnpj} onResolved={applyRecord} />
 
         <div className="space-y-1.5">
@@ -330,7 +336,15 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
         </div>
 
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="ob-accountant">E-mail do contador (opcional)</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ob-accountant">E-mail do contador (opcional)</Label>
+            <InfoHint title="E-mail do contador">
+              <p>
+                Guardamos aqui; convide como <strong>viewer</strong> na tela de usuários quando
+                quiser dar acesso.
+              </p>
+            </InfoHint>
+          </div>
           <Input
             id="ob-accountant"
             type="email"
@@ -338,10 +352,6 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
             onChange={(e) => setAccountant(e.target.value)}
             placeholder="contador@escritorio.com.br"
           />
-          <p className="text-xs text-muted-foreground">
-            Guardamos aqui; convide como <span className="font-medium">viewer</span> na tela de
-            usuários quando quiser dar acesso.
-          </p>
         </div>
       </div>
       <div className="mt-5 flex justify-end">
@@ -349,7 +359,7 @@ function StepCompany({ tenantId, onNext }: { tenantId: string; onNext: () => voi
           Continuar
         </Button>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -387,21 +397,24 @@ function StepDfe({
   }
 
   return (
-    <Card>
-      <h2 className="text-base font-medium">Autorizar a leitura das notas</h2>
-      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-        Precisamos de autorização para baixar seus documentos fiscais. Recomendamos a procuração
-        eletrônica: nela usamos o <strong>nosso</strong> certificado, então não guardamos chave
-        privada de cliente nenhum. Dizemos isso na cara: é escolha de confiança, não limitação.
-      </p>
-
+    <Panel
+      title="Autorizar a leitura das notas"
+      icon={ShieldCheck}
+      help={
+        <p>
+          Precisamos de autorização para baixar seus documentos fiscais. Recomendamos a procuração
+          eletrônica: nela usamos o <strong>nosso</strong> certificado, então não guardamos chave
+          privada de cliente nenhum. É escolha de confiança, não limitação.
+        </p>
+      }
+    >
       {done && (
-        <p className="mt-3 rounded-lg border border-flow-in/30 bg-flow-in/10 px-3 py-2 text-xs">
+        <p className="mb-3 rounded-lg border border-flow-in/30 bg-flow-in/10 px-3 py-2 text-xs">
           Leitura de notas autorizada. Este passo está concluído.
         </p>
       )}
 
-      <div className="mt-4 space-y-4">
+      <div className="space-y-4">
         {/* (a) procuração — recomendado */}
         <div className="rounded-lg border border-primary/40 bg-surface-2 p-4 ring-1 ring-primary/20">
           <div className="flex items-center gap-2">
@@ -410,12 +423,14 @@ function StepDfe({
             <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary">
               recomendado
             </span>
+            <InfoHint title="Procuração eletrônica">
+              <p>
+                No e-CAC, em “Senhas e Procurações”, nomeie o TECH-IVA como procurador nos serviços
+                de consulta de documentos fiscais. O passo a passo completo, com o CNPJ para
+                copiar, está em Integrações.
+              </p>
+            </InfoHint>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            No e-CAC, em “Senhas e Procurações”, nomeie o TECH-IVA como procurador nos serviços de
-            consulta de documentos fiscais. O passo a passo completo, com o CNPJ para copiar, está
-            em Integrações.
-          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -438,11 +453,13 @@ function StepDfe({
           <div className="flex items-center gap-2">
             <ShieldCheck className="size-4 text-primary" aria-hidden />
             <p className="text-sm font-medium">Chave de API do Portal RTC</p>
+            <InfoHint title="Chave de API do Portal RTC">
+              <p>
+                Gere a chave no portal e cole aqui. Ela é cifrada no envio, não volta para a tela e
+                você pode revogá-la a qualquer momento.
+              </p>
+            </InfoHint>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Gere a chave no portal e cole aqui. Ela é cifrada no envio, não volta para a tela e você
-            pode revogá-la a qualquer momento.
-          </p>
           <div className="mt-3 flex flex-wrap items-end gap-2">
             <div className="min-w-56 flex-1 space-y-1">
               <Label htmlFor="onb-api-key" className="text-xs">
@@ -480,11 +497,13 @@ function StepDfe({
             <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
               último recurso
             </span>
+            <InfoHint title="Certificado A1">
+              <p>
+                É uma chave privada que assina em nome da sua empresa. Validamos o titular,
+                ciframos e guardamos fora do banco — e não existe caminho para baixá-la de volta.
+              </p>
+            </InfoHint>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            É uma chave privada que assina em nome da sua empresa. Validamos o titular, ciframos e
-            guardamos fora do banco — e não existe caminho para baixá-la de volta.
-          </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="onb-pfx" className="text-xs">
@@ -544,7 +563,7 @@ function StepDfe({
           {done ? "Continuar" : "Pular por enquanto"}
         </Button>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -562,20 +581,24 @@ function StepBank({
   const bank = data?.integrations.find((i) => i.kind === "open_finance");
 
   return (
-    <Card>
-      <h2 className="text-base font-medium">Conectar banco (opcional)</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Com o extrato conectado, a projeção usa a data real de recebimento — a confiança do caixa
-        sobe de estimada para observada.
-      </p>
-      <div className="mt-4 rounded-lg border border-border bg-surface-2 p-4">
+    <Panel
+      title="Conectar banco (opcional)"
+      icon={Landmark}
+      help={
+        <p>
+          Com o extrato conectado, a projeção usa a data real de recebimento — a confiança do
+          caixa sobe de estimada para observada.
+        </p>
+      }
+    >
+      <div className="rounded-lg border border-border bg-surface-2 p-4">
         <Landmark className="size-4 text-primary" aria-hidden />
         <p className="mt-2 text-sm font-medium">Open Finance</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Você autoriza o compartilhamento no seu banco e volta para cá. Somos somente leitura.
         </p>
         {bank?.status === "connected" ? (
-          <p className="mt-3 text-xs text-in">Banco conectado.</p>
+          <p className="mt-3 text-xs text-flow-in">Banco conectado.</p>
         ) : (
           <Button
             size="sm"
@@ -615,7 +638,7 @@ function StepBank({
           <Button onClick={onNext}>Continuar</Button>
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -641,14 +664,17 @@ function StepReading({ tenantId, onBack }: { tenantId: string; onBack: () => voi
   }, [allDone, state, saveSettings]);
 
   return (
-    <Card>
-      <h2 className="text-base font-medium">Lendo sua operação</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Importamos os documentos, classificamos a cadeia, calculamos IBS/CBS e projetamos o caixa.
-      </p>
-
+    <Panel
+      title="Lendo sua operação"
+      help={
+        <p>
+          Importamos os documentos, classificamos a cadeia, calculamos IBS/CBS e projetamos o
+          caixa.
+        </p>
+      }
+    >
       {chain.length === 0 ? (
-        <div className="mt-4">
+        <div>
           <EmptyState
             title="Nenhuma leitura iniciada"
             hint="Enfileire a leitura da operação para gerar a primeira projeção."
@@ -673,7 +699,7 @@ function StepReading({ tenantId, onBack }: { tenantId: string; onBack: () => voi
           />
         </div>
       ) : (
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2">
           {chain.map((job) => (
             <JobProgress key={job.id} job={job} />
           ))}
@@ -681,7 +707,7 @@ function StepReading({ tenantId, onBack }: { tenantId: string; onBack: () => voi
       )}
 
       {allDone && (
-        <div className="mt-4 rounded-lg border border-in/30 bg-in/10 p-4">
+        <div className="mt-4 rounded-lg border border-flow-in/30 bg-flow-in/10 p-4">
           <p className="text-sm font-medium">Sua operação foi lida.</p>
           <p className="mt-1 text-xs text-muted-foreground">
             A projeção do caixa do imposto já está disponível, com clientes e fornecedores
@@ -705,6 +731,6 @@ function StepReading({ tenantId, onBack }: { tenantId: string; onBack: () => voi
           </span>
         )}
       </div>
-    </Card>
+    </Panel>
   );
 }

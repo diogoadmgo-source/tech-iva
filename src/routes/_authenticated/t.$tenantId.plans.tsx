@@ -33,8 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { authErrorMessage } from "@/lib/auth";
+import { EmptyState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import {
   SUBSCRIPTION_STATUSES,
   formatCents,
@@ -100,6 +101,7 @@ function PlansPage() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
 
+  const [tab, setTab] = useState<"catalog" | "subscription">("catalog");
   const [planId, setPlanId] = useState<string>("");
   const [status, setStatus] = useState<string>("active");
   const [subError, setSubError] = useState<string | null>(null);
@@ -191,39 +193,49 @@ function PlansPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Planos e assinatura</h1>
-        <p className="text-sm text-muted-foreground">
-          Catálogo global de planos e a assinatura de{" "}
-          <span className="text-foreground">{shell.data?.tenant.name ?? "…"}</span>.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="administração"
+        title="Planos e assinatura"
+        helpTitle="Sobre esta tela"
+        help={
+          <p>
+            Catálogo global de planos e a assinatura de{" "}
+            <strong>{shell.data?.tenant.name ?? "…"}</strong>.{" "}
+            {canManagePlans
+              ? "Você pode criar e editar planos (papel de plataforma)."
+              : "Somente papéis de plataforma podem alterar o catálogo."}
+          </p>
+        }
+        actions={
+          <Segmented
+            label="Seção"
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: "catalog", label: "Catálogo" },
+              { value: "subscription", label: "Assinatura" },
+            ]}
+          />
+        }
+      />
 
-      <Tabs defaultValue="catalog">
-        <TabsList>
-          <TabsTrigger value="catalog">Catálogo</TabsTrigger>
-          <TabsTrigger value="subscription">Assinatura</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="catalog" className="space-y-4 pt-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {canManagePlans
-                ? "Você pode criar e editar planos (papel de plataforma)."
-                : "Somente papéis de plataforma podem alterar o catálogo."}
-            </p>
-            {canManagePlans ? (
-              <Button onClick={openCreate}>
-                <Plus className="mr-2 size-4" /> Novo plano
-              </Button>
-            ) : null}
-          </div>
-
+      {tab === "catalog" ? (
+        <Rise index={1}>
+          <Panel
+            title="Catálogo de planos"
+            actions={
+              canManagePlans ? (
+                <Button size="sm" onClick={openCreate}>
+                  <Plus className="mr-2 size-4" /> Novo plano
+                </Button>
+              ) : undefined
+            }
+          >
           {plans.isLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : (
-            <div className="rounded-lg border border-border">
+            <div className="overflow-x-auto rounded-lg border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -272,8 +284,8 @@ function PlansPage() {
                   ))}
                   {(plans.data ?? []).length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-sm text-muted-foreground">
-                        Nenhum plano cadastrado.
+                      <TableCell colSpan={5}>
+                        <EmptyState title="Nenhum plano cadastrado" />
                       </TableCell>
                     </TableRow>
                   ) : null}
@@ -281,15 +293,17 @@ function PlansPage() {
               </Table>
             </div>
           )}
-        </TabsContent>
-
-        <TabsContent value="subscription" className="space-y-4 pt-4">
+          </Panel>
+        </Rise>
+      ) : (
+        <Rise index={1}>
+          <Panel title="Assinatura vigente">
           {subscription.isLoading ? (
             <Skeleton className="h-32 w-full" />
           ) : (
-            <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+            <div className="space-y-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Assinatura vigente</p>
+                <p className="text-sm text-muted-foreground">Plano atual</p>
                 <p className="text-foreground">
                   {currentPlan ? `${currentPlan.name} · ${formatCents(currentPlan.price_cents)}` : "Sem assinatura"}
                 </p>
@@ -344,14 +358,11 @@ function PlansPage() {
                 {changeSubscription.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
                 Salvar assinatura
               </Button>
-              <p className="text-xs text-muted-foreground">
-                A alteração só é aceita para papéis de plataforma ou administrador do canal — o banco
-                valida via RLS.
-              </p>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+          </Panel>
+        </Rise>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -432,6 +443,6 @@ function PlansPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   );
 }

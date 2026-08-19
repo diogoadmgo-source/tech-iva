@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { CnpjText } from "@/components/techiva/money";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Semaphore } from "@/components/techiva/badges";
 import { CnpjAutofillField } from "@/components/techiva/cnpj-autofill";
 import { Button } from "@/components/ui/button";
@@ -142,10 +143,10 @@ function CompaniesPage() {
 
   if (tree.isLoading) {
     return (
-      <div className="space-y-3">
+      <Page>
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </Page>
     );
   }
   if (tree.isError) {
@@ -153,75 +154,80 @@ function CompaniesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Canal</p>
-          <h1 className="text-2xl font-semibold">Empresas</h1>
-          <p className="text-sm text-muted-foreground">
+    <Page>
+      <PageHeader
+        eyebrow="canal"
+        title="Empresas"
+        helpTitle="Sobre esta tela"
+        help={
+          <p>
             {rows.length} CNPJ{rows.length === 1 ? "" : "s"} sob{" "}
-            {shell.data?.tenant.name ?? "este canal"} · cadastre, convide o dono e acompanhe o
-            onboarding.
+            <strong>{shell.data?.tenant.name ?? "este canal"}</strong>. Cadastre, convide o dono e
+            acompanhe o onboarding.
           </p>
-        </div>
-        {canAdmin && <NewCompanyDialog parentId={tenantId} />}
-      </header>
+        }
+        actions={canAdmin ? <NewCompanyDialog parentId={tenantId} /> : undefined}
+      />
 
-      {rows.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title="Nenhuma empresa cadastrada"
-          hint="Cadastre o primeiro CNPJ para começar a ler a operação e projetar o caixa."
-          action={canAdmin ? <NewCompanyDialog parentId={tenantId} /> : undefined}
-        />
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
-          <table className="w-full text-sm">
-            <thead className="border-b border-border bg-surface-2 text-xs text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Empresa</th>
-                <th className="px-3 py-2 text-left font-medium">CNPJ</th>
-                <th className="px-3 py-2 text-left font-medium">Onboarding</th>
-                <th className="px-3 py-2 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id} className="border-b border-border/60 last:border-0">
-                  <td className="px-3 py-2 font-medium">{row.name}</td>
-                  <td className="px-3 py-2">
-                    {row.cnpj ? <CnpjText value={row.cnpj} /> : <span className="text-muted-foreground">—</span>}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="flex items-center gap-2">
-                      <Semaphore level={row.step >= 4 ? "ok" : row.step >= 2 ? "warn" : "crit"} />
-                      <span className="text-xs text-muted-foreground">
-                        {row.step >= 4 ? "Concluído" : `Passo ${row.step + 1}/4 · ${row.stepLabel}`}
-                      </span>
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex justify-end gap-1.5">
-                      <InviteOwnerDialog companyId={row.id} companyName={row.name} />
-                      <Button asChild size="sm" variant="outline">
-                        <Link to="/t/$tenantId/onboarding" params={{ tenantId: row.id }}>
-                          Onboarding
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <Link to="/t/$tenantId/cash" params={{ tenantId: row.id }}>
-                          Caixa
-                        </Link>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+      <Rise index={1}>
+        {rows.length === 0 ? (
+          <EmptyState
+            icon={Building2}
+            title="Nenhuma empresa cadastrada"
+            hint="Cadastre o primeiro CNPJ para começar a ler a operação e projetar o caixa."
+            action={canAdmin ? <NewCompanyDialog parentId={tenantId} /> : undefined}
+          />
+        ) : (
+          <Panel bodyClassName="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="border-b border-border bg-surface-2 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Empresa</th>
+                    <th className="px-3 py-2 text-left font-medium">CNPJ</th>
+                    <th className="px-3 py-2 text-left font-medium">Onboarding</th>
+                    <th className="px-3 py-2 text-right font-medium">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id} className="border-b border-border/60 last:border-0">
+                      <td className="px-3 py-2 font-medium">{row.name}</td>
+                      <td className="px-3 py-2">
+                        {row.cnpj ? <CnpjText value={row.cnpj} /> : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="flex items-center gap-2">
+                          <Semaphore level={row.step >= 4 ? "ok" : row.step >= 2 ? "warn" : "crit"} />
+                          <span className="text-xs text-muted-foreground">
+                            {row.step >= 4 ? "Concluído" : `Passo ${row.step + 1}/4 · ${row.stepLabel}`}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-1.5">
+                          <InviteOwnerDialog companyId={row.id} companyName={row.name} />
+                          <Button asChild size="sm" variant="outline">
+                            <Link to="/t/$tenantId/onboarding" params={{ tenantId: row.id }}>
+                              Onboarding
+                            </Link>
+                          </Button>
+                          <Button asChild size="sm" variant="ghost">
+                            <Link to="/t/$tenantId/cash" params={{ tenantId: row.id }}>
+                              Caixa
+                            </Link>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        )}
+      </Rise>
+    </Page>
   );
 }
 

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { CnpjText, MoneyText, formatPct } from "@/components/techiva/money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,32 +152,37 @@ function CommissionsPage() {
   const totals = statement.data?.totals;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Comissões</h1>
-          <p className="text-sm text-muted-foreground">
-            Comissão recorrente sobre as assinaturas das empresas da carteira.
+    <Page>
+      <PageHeader
+        eyebrow="canal · comissões"
+        title="Comissões"
+        help={
+          <p>
+            Comissão recorrente do canal sobre a mensalidade das empresas da carteira
+            {showCredit ? " e sobre o crédito antecipado" : ""}. O percentual vigente aparece
+            abaixo, em "Regra vigente".
           </p>
-        </div>
-        <div className="w-56">
-          <Label className="text-xs text-muted-foreground">Mês de referência</Label>
-          <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger aria-label="Mês de referência">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {months.map((m) => (
-                <SelectItem key={m} value={m}>
-                  {formatMonth(m)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </header>
+        }
+        actions={
+          <div className="w-48">
+            <Label className="text-xs text-muted-foreground">Mês de referência</Label>
+            <Select value={month} onValueChange={setMonth}>
+              <SelectTrigger aria-label="Mês de referência">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {formatMonth(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Rise index={1} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Comissão do mês"
           value={<MoneyText cents={totals?.commission_cents ?? 0} className="text-flow-in" />}
@@ -203,47 +209,54 @@ function CommissionsPage() {
             loading={statement.isLoading}
           />
         ) : null}
-      </div>
+      </Rise>
 
-      <section className="rounded-lg border bg-card p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <Percent className="size-4 text-muted-foreground" aria-hidden />
-          <h2 className="text-sm font-medium">Regra vigente</h2>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {rule
-            ? showCredit
-              ? `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa e ${formatPct(
-                  rule.credit_pct,
-                )} sobre o crédito antecipado.`
-              : `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa.`
-            : "Carregando…"}
-          {rule?.note ? ` — ${rule.note}` : ""}
-        </p>
-        {isPlatform && rule ? (
-          <RuleEditor
-            tenantId={tenantId}
-            mrrPct={rule.mrr_pct}
-            creditPct={rule.credit_pct}
-            showCredit={showCredit}
-          />
-        ) : (
-          <p className="mt-2 text-xs text-muted-foreground">
-            A regra é definida pela plataforma.
-          </p>
-        )}
-      </section>
+      <Rise index={2}>
+        <Panel
+          title="Regra vigente"
+          icon={Percent}
+          help={
+            <p>
+              {rule
+                ? showCredit
+                  ? `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa e ${formatPct(
+                      rule.credit_pct,
+                    )} sobre o crédito antecipado.`
+                  : `${formatPct(rule.mrr_pct)} sobre a mensalidade de cada empresa ativa.`
+                : "Carregando…"}
+              {rule?.note ? ` — ${rule.note}` : ""}
+              {!isPlatform ? " A regra é definida pela plataforma." : ""}
+            </p>
+          }
+        >
+          {isPlatform && rule ? (
+            <RuleEditor
+              tenantId={tenantId}
+              mrrPct={rule.mrr_pct}
+              creditPct={rule.credit_pct}
+              showCredit={showCredit}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {formatPct(rule?.mrr_pct ?? 0)} sobre a mensalidade
+              {showCredit ? ` · ${formatPct(rule?.credit_pct ?? 0)} sobre o crédito` : ""}
+            </p>
+          )}
+        </Panel>
+      </Rise>
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        loading={statement.isLoading}
-        searchPlaceholder="Buscar empresa, CNPJ ou plano…"
-        emptyTitle="Nenhuma empresa na carteira"
-        emptyHint="Cadastre empresas em Empresas para gerar comissão."
-        exportName={`comissoes-${month}`}
-      />
-    </div>
+      <Rise index={3} className="overflow-x-auto">
+        <DataTable
+          columns={columns}
+          data={rows}
+          loading={statement.isLoading}
+          searchPlaceholder="Buscar empresa, CNPJ ou plano…"
+          emptyTitle="Nenhuma empresa na carteira"
+          emptyHint="Cadastre empresas em Empresas para gerar comissão."
+          exportName={`comissoes-${month}`}
+        />
+      </Rise>
+    </Page>
   );
 }
 
@@ -265,7 +278,7 @@ function RuleEditor({
 
   return (
     <form
-      className="mt-4 flex flex-wrap items-end gap-3"
+      className="flex flex-wrap items-end gap-3"
       onSubmit={(event) => {
         event.preventDefault();
         const mrrValue = Number(mrr.replace(",", "."));

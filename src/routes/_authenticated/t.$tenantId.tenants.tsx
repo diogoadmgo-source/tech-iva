@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth/auth-shell";
+import { EmptyState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { KIND_LABELS, authErrorMessage, type TenantKind } from "@/lib/auth";
 import {
   CHILD_KINDS,
@@ -102,67 +104,81 @@ function TenantsPage() {
   if (tree.error) return <FormError message={authErrorMessage(tree.error)} />;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Organizações</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+    <Page>
+      <PageHeader
+        eyebrow="administração"
+        title="Organizações"
+        helpTitle="Sobre esta tela"
+        help={
+          <p>
             Hierarquia a partir de{" "}
-            <span className="font-medium text-foreground">{shell.data?.tenant.name ?? "—"}</span>. A
-            visibilidade é limitada pelo seu escopo no banco.
+            <strong>{shell.data?.tenant.name ?? "—"}</strong>. A visibilidade é limitada pelo seu
+            escopo no banco.
           </p>
-        </div>
-        {tree.data?.root && CHILD_KINDS[tree.data.root.kind].length > 0 ? (
-          <Button className="gap-2" onClick={() => setCreateParent(tree.data!.root!)}>
-            <Plus className="size-4" />
-            Nova organização
-          </Button>
-        ) : null}
-      </header>
+        }
+        actions={
+          tree.data?.root && CHILD_KINDS[tree.data.root.kind].length > 0 ? (
+            <Button className="gap-2" onClick={() => setCreateParent(tree.data!.root!)}>
+              <Plus className="size-4" />
+              Nova organização
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <div className="relative mt-6">
-        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por nome, CNPJ ou slug"
-          className="pl-9"
-          aria-label="Buscar organização"
-        />
-      </div>
-
-      <div className="mt-4 space-y-1 rounded-xl border border-border bg-surface p-2">
-        {tree.isLoading ? (
-          <div className="space-y-2 p-2">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-3/4" />
-            <Skeleton className="h-10 w-2/3" />
+      <Rise index={1}>
+        <Panel bodyClassName="p-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar por nome, CNPJ ou slug"
+              className="pl-9"
+              aria-label="Buscar organização"
+            />
           </div>
-        ) : tree.data?.root ? (
-          <TenantRow
-            node={tree.data.root}
-            depth={0}
-            expanded={expanded}
-            onToggle={(id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))}
-            matches={matches}
-            isPlatform={isPlatform}
-            impersonatingId={impersonation.data?.tenantId ?? null}
-            onCreateChild={setCreateParent}
-            onEdit={setEditTarget}
-            onImpersonate={async (node) => {
-              try {
-                await impersonationMutations.start.mutateAsync(node.id);
-                toast.success(`Impersonando ${node.name} por 30 minutos.`);
-              } catch (error) {
-                toast.error(authErrorMessage(error));
-              }
-            }}
-            impersonating={impersonationMutations.start.isPending}
-          />
-        ) : (
-          <p className="p-4 text-sm text-muted-foreground">Nenhuma organização no escopo.</p>
-        )}
-      </div>
+        </Panel>
+      </Rise>
+
+      <Rise index={2}>
+        <Panel bodyClassName="p-2">
+          <div className="overflow-x-auto">
+            <div className="min-w-[520px] space-y-1">
+              {tree.isLoading ? (
+                <div className="space-y-2 p-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-3/4" />
+                  <Skeleton className="h-10 w-2/3" />
+                </div>
+              ) : tree.data?.root ? (
+                <TenantRow
+                  node={tree.data.root}
+                  depth={0}
+                  expanded={expanded}
+                  onToggle={(id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))}
+                  matches={matches}
+                  isPlatform={isPlatform}
+                  impersonatingId={impersonation.data?.tenantId ?? null}
+                  onCreateChild={setCreateParent}
+                  onEdit={setEditTarget}
+                  onImpersonate={async (node) => {
+                    try {
+                      await impersonationMutations.start.mutateAsync(node.id);
+                      toast.success(`Impersonando ${node.name} por 30 minutos.`);
+                    } catch (error) {
+                      toast.error(authErrorMessage(error));
+                    }
+                  }}
+                  impersonating={impersonationMutations.start.isPending}
+                />
+              ) : (
+                <EmptyState title="Nenhuma organização no escopo" />
+              )}
+            </div>
+          </div>
+        </Panel>
+      </Rise>
 
       <CreateTenantDialog
         parent={createParent}
@@ -194,7 +210,7 @@ function TenantsPage() {
           }
         }}
       />
-    </div>
+    </Page>
   );
 }
 

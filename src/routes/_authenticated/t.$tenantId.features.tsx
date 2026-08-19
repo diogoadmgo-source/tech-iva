@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { CnpjText } from "@/components/techiva/money";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,28 +173,43 @@ function FeaturesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Módulo de crédito</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          O módulo de crédito está construído, porém desligado por padrão: ele só faz sentido com
-          fundo ou banco parceiro contratado. Habilite empresa por empresa (ou um canal inteiro,
-          que a liberação é herdada pelos descendentes) informando o contrato de funding.
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {enabledCount} de {rows.length} tenants com o módulo habilitado.
-        </p>
-      </header>
-
-      <DataTable
-        columns={columns}
-        data={rows}
-        loading={features.isLoading}
-        searchPlaceholder="Buscar tenant ou CNPJ…"
-        emptyTitle="Nenhum tenant ativo"
-        emptyHint="Canais e empresas ativos aparecem aqui."
-        exportName="modulo-credito"
+    <Page>
+      <PageHeader
+        eyebrow="administração"
+        title="Módulo de crédito"
+        helpTitle="Sobre este módulo"
+        help={
+          <>
+            <p>
+              O módulo de crédito está construído, porém desligado por padrão: ele só faz sentido
+              com fundo ou banco parceiro contratado.
+            </p>
+            <p>
+              Habilite empresa por empresa (ou um canal inteiro, que a liberação é herdada pelos
+              descendentes) informando o contrato de funding.
+            </p>
+          </>
+        }
       />
+
+      <Rise index={1}>
+        <Panel
+          title="Tenants"
+          help={<p>{enabledCount} de {rows.length} tenants com o módulo habilitado.</p>}
+        >
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={rows}
+              loading={features.isLoading}
+              searchPlaceholder="Buscar tenant ou CNPJ…"
+              emptyTitle="Nenhum tenant ativo"
+              emptyHint="Canais e empresas ativos aparecem aqui."
+              exportName="modulo-credito"
+            />
+          </div>
+        </Panel>
+      </Rise>
 
       <Dialog open={Boolean(pending)} onOpenChange={(open) => !open && setPending(null)}>
         <DialogContent>
@@ -260,6 +276,6 @@ function FeaturesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   );
 }

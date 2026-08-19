@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
-import { RefreshCw, RotateCcw } from "lucide-react";
+import { Activity, AlertOctagon, Cable, Clock, RefreshCw, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Semaphore } from "@/components/techiva/badges";
@@ -9,6 +9,7 @@ import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
 import { CnpjText } from "@/components/techiva/money";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -186,21 +187,21 @@ function OpsPage() {
   const totalFailed = data?.queues.reduce((acc, q) => acc + q.failed, 0) ?? 0;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Operações</h1>
-          <p className="text-sm text-muted-foreground">
-            Atualiza automaticamente a cada 30 s · leitura em {formatDateTime(data?.generated_at)}
-          </p>
-        </div>
-        <Button type="button" variant="outline" className="gap-2" onClick={() => void overview.refetch()}>
-          <RefreshCw className="size-4" aria-hidden />
-          Atualizar
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="plataforma"
+        title="Operações"
+        helpTitle="Sobre este painel"
+        help={<p>Atualiza automaticamente a cada 30 s · leitura em {formatDateTime(data?.generated_at)}</p>}
+        actions={
+          <Button type="button" variant="outline" className="gap-2" onClick={() => void overview.refetch()}>
+            <RefreshCw className="size-4" aria-hidden />
+            Atualizar
+          </Button>
+        }
+      />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Rise index={1} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Jobs na fila" value={String(totalQueued)} loading={overview.isLoading} />
         <KpiCard label="Jobs com falha" value={String(totalFailed)} loading={overview.isLoading} />
         <KpiCard
@@ -215,42 +216,54 @@ function OpsPage() {
           hint={data?.rule_current ? `desde ${formatDate(data.rule_current.valid_from)}` : undefined}
           loading={overview.isLoading}
         />
-      </div>
+      </Rise>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">Filas</h2>
-        <DataTable columns={queueColumns} data={data?.queues ?? []} loading={overview.isLoading} density="compact" emptyTitle="Nenhuma fila com histórico" />
-      </section>
+      <Rise index={2}>
+        <Panel title="Filas" icon={Activity}>
+          <div className="overflow-x-auto">
+            <DataTable columns={queueColumns} data={data?.queues ?? []} loading={overview.isLoading} density="compact" emptyTitle="Nenhuma fila com histórico" />
+          </div>
+        </Panel>
+      </Rise>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">Jobs com falha</h2>
-        <DataTable
-          columns={failedColumns}
-          data={data?.failed_jobs ?? []}
-          loading={overview.isLoading}
-          density="compact"
-          emptyTitle="Nenhuma falha"
-          emptyHint="Todas as execuções recentes concluíram."
-          exportName="jobs-com-falha"
-        />
-      </section>
+      <Rise index={3}>
+        <Panel title="Jobs com falha" icon={AlertOctagon}>
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={failedColumns}
+              data={data?.failed_jobs ?? []}
+              loading={overview.isLoading}
+              density="compact"
+              emptyTitle="Nenhuma falha"
+              emptyHint="Todas as execuções recentes concluíram."
+              exportName="jobs-com-falha"
+            />
+          </div>
+        </Panel>
+      </Rise>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">Integrações</h2>
-        <DataTable columns={integrationColumns} data={data?.integrations_health ?? []} loading={overview.isLoading} density="compact" emptyTitle="Nenhuma integração cadastrada" />
-      </section>
+      <Rise index={4}>
+        <Panel title="Integrações" icon={Cable}>
+          <div className="overflow-x-auto">
+            <DataTable columns={integrationColumns} data={data?.integrations_health ?? []} loading={overview.isLoading} density="compact" emptyTitle="Nenhuma integração cadastrada" />
+          </div>
+        </Panel>
+      </Rise>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">Leitura fiscal atrasada</h2>
-        <DataTable
-          columns={staleColumns}
-          data={data?.stale_ingest ?? []}
-          loading={overview.isLoading}
-          density="compact"
-          emptyTitle="Nenhuma empresa atrasada"
-          exportName="empresas-atrasadas"
-        />
-      </section>
+      <Rise index={5}>
+        <Panel title="Leitura fiscal atrasada" icon={Clock}>
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={staleColumns}
+              data={data?.stale_ingest ?? []}
+              loading={overview.isLoading}
+              density="compact"
+              emptyTitle="Nenhuma empresa atrasada"
+              exportName="empresas-atrasadas"
+            />
+          </div>
+        </Panel>
+      </Rise>
 
       <SideSheet
         open={Boolean(job)}
@@ -283,6 +296,6 @@ function OpsPage() {
           </div>
         )}
       </SideSheet>
-    </div>
+    </Page>
   );
 }

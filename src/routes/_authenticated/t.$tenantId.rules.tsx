@@ -5,6 +5,7 @@ import { AlertTriangle, CheckCircle2, FlaskConical, Plus, ShieldAlert } from "lu
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/techiva/data-table";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
 import { MoneyText, formatPct } from "@/components/techiva/money";
@@ -174,47 +175,60 @@ function RulesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Versões de regra</h1>
-          <p className="text-sm text-muted-foreground">
-            Toda publicação exige simulação de impacto e MFA; o reprocessamento é enfileirado por empresa.
+    <Page>
+      <PageHeader
+        eyebrow="plataforma"
+        title="Versões de regra"
+        helpTitle="Governança de regras"
+        help={
+          <p>
+            Toda publicação exige simulação de impacto e MFA; o reprocessamento é enfileirado por
+            empresa.
           </p>
-        </div>
-        <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" aria-hidden />
-          Nova versão
-        </Button>
-      </header>
+        }
+        actions={
+          <Button type="button" className="gap-2" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" aria-hidden />
+            Nova versão
+          </Button>
+        }
+      />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <Rise index={1} className="grid gap-3 sm:grid-cols-3">
         <KpiCard label="Versão vigente" value={current?.calc_version ?? "—"} hint={current ? `desde ${formatDate(current.valid_from)}` : "nenhuma publicada"} />
         <KpiCard label="cClassTrib vigente" value={current?.cclasstrib_version ?? "—"} />
         <KpiCard label="Rascunhos" value={String(versions.data?.filter((v) => !v.published_at).length ?? 0)} />
-      </div>
+      </Rise>
 
       {publishedId && progress.data && (
-        <section className="rounded-xl border border-border bg-surface-1 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">Reprocessamento em andamento</p>
-            <span className="font-mono text-xs text-muted-foreground">
-              {progress.data.done}/{progress.data.total} concluídos · {progress.data.failed} com falha
-            </span>
-          </div>
-          <Progress value={progress.data.progress_pct} className="mt-3" />
-        </section>
+        <Rise index={2}>
+          <Panel title="Reprocessamento em andamento">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium">Progresso</p>
+              <span className="font-mono text-xs text-muted-foreground">
+                {progress.data.done}/{progress.data.total} concluídos · {progress.data.failed} com falha
+              </span>
+            </div>
+            <Progress value={progress.data.progress_pct} className="mt-3" />
+          </Panel>
+        </Rise>
       )}
 
-      <DataTable
-        columns={columns}
-        data={versions.data ?? []}
-        loading={versions.isLoading}
-        emptyTitle="Nenhuma versão de regra"
-        emptyHint="Crie a primeira versão para começar a governança fiscal."
-        exportName="versoes-de-regra"
-        searchPlaceholder="Buscar versão…"
-      />
+      <Rise index={3}>
+        <Panel title="Versões">
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={versions.data ?? []}
+              loading={versions.isLoading}
+              emptyTitle="Nenhuma versão de regra"
+              emptyHint="Crie a primeira versão para começar a governança fiscal."
+              exportName="versoes-de-regra"
+              searchPlaceholder="Buscar versão…"
+            />
+          </div>
+        </Panel>
+      </Rise>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="bg-surface-1">
@@ -352,6 +366,6 @@ function RulesPage() {
           </div>
         )}
       </SideSheet>
-    </div>
+    </Page>
   );
 }
