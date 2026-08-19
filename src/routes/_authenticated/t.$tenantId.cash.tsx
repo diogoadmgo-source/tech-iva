@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BadgeCheck, Banknote, Landmark, TriangleAlert } from "lucide-react";
+import { BadgeCheck, Banknote, Bell, Landmark, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 
 import { AlertList } from "@/components/techiva/alerts";
 import { CashTimelineChart } from "@/components/techiva/cash-timeline-chart";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { HeroMetric, KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import { ComparadorModalidades, ModalidadeSelector } from "@/components/techiva/modalidade";
 import { NoticeBoard } from "@/components/techiva/notices";
 import { formatCents, MoneyText } from "@/components/techiva/money";
@@ -127,74 +128,88 @@ function CashScreen() {
 
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Caixa do Imposto</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Quanto o imposto tira do seu caixa nas próximas semanas — e quando aperta. Em 2027 o
-            padrão é a apuração mensal: a guia vence no dia 20 do mês seguinte.
-          </p>
-        </div>
-        <div
-          className="inline-flex rounded-lg border border-border bg-surface-1 p-1"
-          role="group"
-          aria-label="Horizonte da projeção"
-        >
-          {CASH_HORIZONS.map((h) => (
-            <button
-              key={h}
-              type="button"
-              onClick={() => setHorizon(h)}
-              aria-pressed={horizon === h}
-              className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                horizon === h
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {h}d
-            </button>
-          ))}
-        </div>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="caixa · ibs e cbs"
+        title="Caixa do Imposto"
+        helpTitle="Como ler esta tela"
+        help={
+          <>
+            <p>
+              Mostramos <strong>quanto o imposto tira do seu caixa</strong> nas próximas semanas e
+              em que semana ele aperta.
+            </p>
+            <p>
+              Em 2027 o padrão é a <strong>apuração mensal</strong>: a guia vence no dia 20 do mês
+              seguinte. Split payment e RAD continuam opcionais.
+            </p>
+            <p>Clique numa semana do gráfico para abrir os eventos que a compõem.</p>
+          </>
+        }
+        actions={
+          <Segmented
+            label="Horizonte da projeção"
+            value={horizon}
+            onChange={(h) => setHorizon(h as CashHorizon)}
+            options={CASH_HORIZONS.map((h) => ({ value: h, label: `${h}d` }))}
+          />
+        }
+      />
 
       {/* avisos mantidos pela plataforma — inclui o adiamento do split payment */}
-      <NoticeBoard scope="caixa" highlightKeys={["split_adiado"]} />
+      <Rise index={1}>
+        <NoticeBoard scope="caixa" highlightKeys={["split_adiado"]} />
+      </Rise>
 
-      <ModalidadeSelector
-        tenantId={tenantId}
-        canEdit={["platform_admin", "platform_ops", "channel_admin", "owner", "finance"].includes(
-          shell.data?.role ?? "",
-        )}
-      />
+      <Rise index={2}>
+        <ModalidadeSelector
+          tenantId={tenantId}
+          canEdit={["platform_admin", "platform_ops", "channel_admin", "owner", "finance"].includes(
+            shell.data?.role ?? "",
+          )}
+        />
+      </Rise>
 
-      <HeroMetric
-        label={`Buraco líquido — próximos ${horizon} dias`}
-        valueCents={heroValue ?? 0}
-        sub={heroSub || undefined}
+      <Rise index={3}>
+        <HeroMetric
+          label={`Buraco líquido — próximos ${horizon} dias`}
+          valueCents={heroValue ?? 0}
+          sub={heroSub || undefined}
+          trend={hero?.trend}
+          loading={cash.isLoading}
+          help={
+            <p>
+              Diferença entre o imposto que sai e o crédito que volta no período. Negativo é caixa
+              que falta; positivo é caixa que sobra.
+            </p>
+          }
+        />
+      </Rise>
 
-        trend={hero?.trend}
-        loading={cash.isLoading}
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <Rise index={4} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Imposto retido no mês"
           valueCents={kpis?.tax_out_month_cents ?? 0}
           loading={cash.isLoading}
+          help={<p>Soma do IBS e da CBS devidos nas notas do mês corrente.</p>}
         />
         <KpiCard
           label="Crédito a recuperar no mês"
           valueCents={kpis?.credit_in_month_cents ?? 0}
           loading={cash.isLoading}
+          help={<p>Crédito das compras do mês que abate o imposto a pagar.</p>}
         />
         <KpiCard
           label="Crédito acumulado"
           valueCents={kpis?.credit_backlog_cents ?? 0}
           hint={kpis ? `${kpis.credit_avg_days} dias médios de espera` : undefined}
           loading={cash.isLoading}
+          help={
+            <p>
+              Crédito reconhecido que ainda não voltou ao caixa. A espera média indica quanto tempo
+              o dinheiro fica parado.
+            </p>
+          }
         />
         <KpiCard
           label="Provisão sugerida"
@@ -205,40 +220,53 @@ function CashScreen() {
               : "Reserva sugerida do mês"
           }
           loading={cash.isLoading}
+          help={
+            <p>
+              Quanto separar agora para não ser pego pela guia. É sugestão de reserva — não sai do
+              caixa hoje.
+            </p>
+          }
         />
+      </Rise>
 
+      <Rise index={5}>
+        <ComparadorModalidades tenantId={tenantId} horizonDays={horizon} />
+      </Rise>
 
-      </div>
-
-      <ComparadorModalidades tenantId={tenantId} horizonDays={horizon} />
-
-      <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold">Projeção semanal</h2>
-          <p className="text-xs text-muted-foreground">Clique numa semana para ver os eventos</p>
-        </div>
-        {cash.isLoading ? (
-          <Skeleton className="h-72 w-full" />
-        ) : timeline.length === 0 ? (
-          <EmptyState
-            title="Sem projeção ainda"
-            hint="Autorize a leitura das suas notas no onboarding para que o caixa seja projetado."
-          />
-        ) : (
-          <CashTimelineChart data={timeline} onSelectWeek={setWeek} />
-        )}
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <TriangleAlert className="size-4 text-warn" aria-hidden /> Próximo aperto
-          </h2>
+      <Rise index={6}>
+        <Panel
+          title="Projeção semanal"
+          help={<p>Cada barra é uma semana. Clique para ver os eventos que formam o valor.</p>}
+          actions={
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              clique numa semana
+            </span>
+          }
+        >
           {cash.isLoading ? (
-            <Skeleton className="mt-3 h-20 w-full" />
+            <Skeleton className="h-72 w-full" />
+          ) : timeline.length === 0 ? (
+            <EmptyState
+              title="Sem projeção ainda"
+              hint="Autorize a leitura das suas notas no onboarding para que o caixa seja projetado."
+            />
+          ) : (
+            <CashTimelineChart data={timeline} onSelectWeek={setWeek} />
+          )}
+        </Panel>
+      </Rise>
+
+      <Rise index={7} className="grid gap-4 lg:grid-cols-3">
+        <Panel
+          title="Próximo aperto"
+          icon={TriangleAlert}
+          help={<p>A primeira semana do horizonte em que falta caixa para pagar o imposto.</p>}
+        >
+          {cash.isLoading ? (
+            <Skeleton className="h-20 w-full" />
           ) : nextGap ? (
             <>
-              <p className="mt-3 text-lg font-semibold">
+              <p className="text-lg font-semibold">
                 <MoneyText cents={nextGap.amount_cents} />
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -257,21 +285,28 @@ function CashScreen() {
                     <Banknote className="size-4" aria-hidden /> Cobrir este buraco
                   </Button>
                 ) : null}
-                <Button type="button" size="sm" variant="outline" onClick={() => setWeek(nextGap.week)}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setWeek(nextGap.week)}
+                >
                   Ver provisão sugerida
                 </Button>
               </div>
             </>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               Nenhum aperto previsto no horizonte selecionado.
             </p>
           )}
-        </section>
+        </Panel>
 
-        <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Alertas recentes</h2>
+        <Panel
+          title="Alertas recentes"
+          icon={Bell}
+          help={<p>Inconsistências e prazos detectados nas suas notas e na apuração.</p>}
+          actions={
             <Link
               to="/t/$tenantId/audit"
               params={{ tenantId }}
@@ -279,7 +314,8 @@ function CashScreen() {
             >
               Auditoria
             </Link>
-          </div>
+          }
+        >
           {alerts.isLoading ? (
             <Skeleton className="h-28 w-full" />
           ) : (
@@ -289,13 +325,19 @@ function CashScreen() {
               onResolve={(a) => resolve.mutate({ alertId: a.id })}
             />
           )}
-        </section>
+        </Panel>
 
-        <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <BadgeCheck className="size-4 text-primary" aria-hidden /> Confiança da projeção
-          </h2>
-          <ul className="mt-3 space-y-3 text-sm">
+        <Panel
+          title="Confiança da projeção"
+          icon={BadgeCheck}
+          help={
+            <p>
+              Quanto mais fontes conectadas (notas, banco, histórico de recebimento), mais firme
+              fica a projeção.
+            </p>
+          }
+        >
+          <ul className="space-y-3 text-sm">
             <li className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Banco conectado</span>
               {conf?.bank_connected ? (
@@ -319,8 +361,8 @@ function CashScreen() {
               </span>
             </li>
           </ul>
-        </section>
-      </div>
+        </Panel>
+      </Rise>
 
       <SideSheet
         open={Boolean(week)}
@@ -357,7 +399,7 @@ function CashScreen() {
         )}
 
       </SideSheet>
-    </div>
+    </Page>
   );
 }
 

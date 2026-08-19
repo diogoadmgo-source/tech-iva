@@ -92,6 +92,80 @@ const AUDITORS: MemberRole[] = [
 const OVERVIEW: NavItem = { label: "Visão geral", block: "1.7.2", icon: Gauge, to: "/t/$tenantId" };
 
 /**
+ * Empresa e unidade compartilham as mesmas sessões; a unidade não tem
+ * onboarding, integrações nem assinatura (isso vive na empresa).
+ */
+function companyGroups(isCompany: boolean): NavGroup[] {
+  const admin: NavItem[] = isCompany
+    ? [
+        { label: "Onboarding", block: "3.2", icon: Rocket, to: "/t/$tenantId/onboarding", roles: MANAGERS },
+        {
+          label: "Integrações",
+          block: "1.7.3",
+          icon: PlugZap,
+          to: "/t/$tenantId/settings/integrations",
+          roles: MANAGERS,
+        },
+        { label: "Assinatura", block: "1.7.5", icon: Layers, to: "/t/$tenantId/plans", roles: BILLING },
+      ]
+    : [];
+  return [
+    {
+      label: "Caixa do imposto",
+      items: [
+        OVERVIEW,
+        { label: "Projeção de caixa", block: "3.4", icon: Banknote, to: "/t/$tenantId/cash" },
+        { label: "Apuração", block: "3.12", icon: FileText, to: "/t/$tenantId/apuracao" },
+        { label: "Preço de venda", block: "3.7", icon: Tag, to: "/t/$tenantId/price" },
+        {
+          label: "Financiamento",
+          block: "3.8",
+          icon: Banknote,
+          to: "/t/$tenantId/finance",
+          feature: "credit",
+          roles: BILLING,
+        },
+      ],
+    },
+    {
+      label: "Ferramentas",
+      items: [
+        { label: "Simulador", block: "3.13", icon: Calculator, to: "/t/$tenantId/simulador" },
+        { label: "Validador de XML", block: "3.13", icon: ShieldCheck, to: "/t/$tenantId/validador" },
+        { label: "Carteira de parceiros", block: "3.3", icon: Network, to: "/t/$tenantId/chain" },
+        { label: "Regime tributário", block: "3.5", icon: Scale, to: "/t/$tenantId/regime" },
+      ],
+    },
+    {
+      label: "Monitoramento",
+      items: [
+        { label: "Alertas", block: "3.10", icon: Bell, to: "/t/$tenantId/alerts", badge: "alerts" },
+        {
+          label: "Auditoria",
+          block: "1.7.6",
+          icon: ScrollText,
+          to: "/t/$tenantId/audit",
+          roles: AUDITORS,
+        },
+      ],
+    },
+    {
+      label: "Administração",
+      items: [
+        ...admin,
+        {
+          label: "Usuários",
+          block: "1.7.3",
+          icon: Users,
+          to: "/t/$tenantId/settings/users",
+          roles: MANAGERS,
+        },
+      ],
+    },
+  ];
+}
+
+/**
  * Sidebar em grupos rotulados por tipo de tenant (documento 01 §1.7.2).
  * A composição segue o KIND do tenant aberto; a visibilidade de cada item
  * segue o PAPEL EFETIVO do usuário nesse tenant.
@@ -195,13 +269,27 @@ export const NAV_GROUPS_BY_KIND: Record<TenantKind, NavGroup[]> = {
           to: "/t/$tenantId/commissions",
           roles: BILLING,
         },
-        { label: "Assinaturas", block: "1.7.5", icon: Layers, to: "/t/$tenantId/plans", roles: BILLING },
-      ],
-    },
-    {
-      label: "Configuração",
-      items: [
+        {
+          label: "Assinaturas",
+          block: "1.7.5",
+          icon: Layers,
+          to: "/t/$tenantId/plans",
+          roles: BILLING,
+        },
         { label: "Marca", block: "3.6", icon: Palette, to: "/t/$tenantId/brand", roles: MANAGERS },
+      ],
+    },
+    {
+      label: "Monitoramento",
+      items: [
+        { label: "Alertas", block: "3.10", icon: Bell, to: "/t/$tenantId/alerts", badge: "alerts" },
+        {
+          label: "Auditoria",
+          block: "1.7.6",
+          icon: ScrollText,
+          to: "/t/$tenantId/audit",
+          roles: AUDITORS,
+        },
         {
           label: "Usuários",
           block: "1.7.3",
@@ -211,123 +299,9 @@ export const NAV_GROUPS_BY_KIND: Record<TenantKind, NavGroup[]> = {
         },
       ],
     },
-    {
-      label: "Gestão",
-      items: [
-        { label: "Alertas", block: "3.10", icon: Bell, to: "/t/$tenantId/alerts", badge: "alerts" },
-        { label: "Auditoria", block: "1.7.6", icon: ScrollText, to: "/t/$tenantId/audit", roles: AUDITORS },
-      ],
-    },
   ],
-  company: [
-    {
-      label: "Caixa e tributo",
-      items: [
-        OVERVIEW,
-        { label: "Caixa do imposto", block: "3.4", icon: Banknote, to: "/t/$tenantId/cash" },
-        { label: "Apuração", block: "3.12", icon: FileText, to: "/t/$tenantId/apuracao" },
-        { label: "Preço", block: "3.7", icon: Tag, to: "/t/$tenantId/price" },
-        {
-          label: "Financiamento",
-          block: "3.8",
-          icon: Banknote,
-          to: "/t/$tenantId/finance",
-          feature: "credit",
-          roles: BILLING,
-        },
-      ],
-    },
-    {
-      label: "Cadeia",
-      items: [
-        { label: "Carteira", block: "3.3", icon: Network, to: "/t/$tenantId/chain" },
-        { label: "Regime", block: "3.5", icon: Scale, to: "/t/$tenantId/regime" },
-      ],
-    },
-    {
-      label: "Ferramentas",
-      items: [
-        { label: "Simulador", block: "3.13", icon: Calculator, to: "/t/$tenantId/simulador" },
-        { label: "Validador", block: "3.13", icon: ShieldCheck, to: "/t/$tenantId/validador" },
-      ],
-    },
-    {
-      label: "Gestão",
-      items: [
-        { label: "Alertas", block: "3.10", icon: Bell, to: "/t/$tenantId/alerts", badge: "alerts" },
-        {
-          label: "Onboarding",
-          block: "3.2",
-          icon: Rocket,
-          to: "/t/$tenantId/onboarding",
-          roles: MANAGERS,
-        },
-        {
-          label: "Integrações",
-          block: "1.7.3",
-          icon: PlugZap,
-          to: "/t/$tenantId/settings/integrations",
-          roles: MANAGERS,
-        },
-        {
-          label: "Usuários",
-          block: "1.7.3",
-          icon: Users,
-          to: "/t/$tenantId/settings/users",
-          roles: MANAGERS,
-        },
-        { label: "Assinatura", block: "1.7.5", icon: Layers, to: "/t/$tenantId/plans", roles: BILLING },
-        { label: "Auditoria", block: "1.7.6", icon: ScrollText, to: "/t/$tenantId/audit", roles: AUDITORS },
-      ],
-    },
-  ],
-  unit: [
-    {
-      label: "Caixa e tributo",
-      items: [
-        OVERVIEW,
-        { label: "Caixa do imposto", block: "3.4", icon: Banknote, to: "/t/$tenantId/cash" },
-        { label: "Apuração", block: "3.12", icon: FileText, to: "/t/$tenantId/apuracao" },
-        { label: "Preço", block: "3.7", icon: Tag, to: "/t/$tenantId/price" },
-        {
-          label: "Financiamento",
-          block: "3.8",
-          icon: Banknote,
-          to: "/t/$tenantId/finance",
-          feature: "credit",
-          roles: BILLING,
-        },
-      ],
-    },
-    {
-      label: "Cadeia",
-      items: [
-        { label: "Carteira", block: "3.3", icon: Network, to: "/t/$tenantId/chain" },
-        { label: "Regime", block: "3.5", icon: Scale, to: "/t/$tenantId/regime" },
-      ],
-    },
-    {
-      label: "Ferramentas",
-      items: [
-        { label: "Simulador", block: "3.13", icon: Calculator, to: "/t/$tenantId/simulador" },
-        { label: "Validador", block: "3.13", icon: ShieldCheck, to: "/t/$tenantId/validador" },
-      ],
-    },
-    {
-      label: "Gestão",
-      items: [
-        { label: "Alertas", block: "3.10", icon: Bell, to: "/t/$tenantId/alerts", badge: "alerts" },
-        {
-          label: "Usuários",
-          block: "1.7.3",
-          icon: Users,
-          to: "/t/$tenantId/settings/users",
-          roles: MANAGERS,
-        },
-        { label: "Auditoria", block: "1.7.6", icon: ScrollText, to: "/t/$tenantId/audit", roles: AUDITORS },
-      ],
-    },
-  ],
+  company: companyGroups(true),
+  unit: companyGroups(false),
 };
 
 /** Rótulo do tipo de tenant usado no cabeçalho de contexto da sidebar. */

@@ -4427,6 +4427,7 @@ export type Database = {
       platform_ops_overview: { Args: never; Returns: Json }
       premissa_credito_dias: { Args: never; Returns: number }
       premissa_dia_vencimento: { Args: never; Returns: number }
+      premissa_inicio_vigencia: { Args: never; Returns: string }
       price_credit_factor: {
         Args: { p_regime: Database["public"]["Enums"]["regime_kind"] }
         Returns: number
