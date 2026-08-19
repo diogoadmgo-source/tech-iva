@@ -115,9 +115,9 @@ export function ComparadorModalidades({
 
   if (comparison.isLoading) {
     return (
-      <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
+      <Panel title="Compare as modalidades" icon={Scale}>
         <Skeleton className="h-40 w-full" />
-      </section>
+      </Panel>
     );
   }
   if (comparison.isError || !comparison.data) return null;
@@ -129,16 +129,24 @@ export function ComparadorModalidades({
     base && c.modalidade !== "apuracao" ? c.gap_30_cents - base.gap_30_cents : null;
 
   return (
-    <section className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Compare as modalidades</h2>
-        <p className="text-xs text-muted-foreground">Horizonte de {horizonDays} dias</p>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Mesmo imposto, ritmos diferentes de saída. A escolha muda o seu caixa nos próximos meses.
-      </p>
+    <Panel
+      title="Compare as modalidades"
+      icon={Scale}
+      help={
+        <>
+          <p>
+            Mesmo imposto, ritmos diferentes de saída. A escolha muda o seu caixa nos próximos
+            meses.
+          </p>
+          <p>{observacao}</p>
+        </>
+      }
+      actions={
+        <span className="text-xs text-muted-foreground">Horizonte de {horizonDays} dias</span>
+      }
+    >
+      <div className="grid gap-3 lg:grid-cols-3">
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {cenarios.map((c) => {
           const d = diff(c);
           return (
