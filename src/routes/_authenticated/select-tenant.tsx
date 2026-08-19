@@ -4,10 +4,12 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { AuthShell, FormError } from "@/components/auth/auth-shell";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { KIND_LABELS, ROLE_LABELS, authErrorMessage, signOutAndRedirect } from "@/lib/auth";
+import { EmptyState } from "@/components/techiva/empty-state";
 import { filterScopeTree, useMyTenants, type ScopeTreeNode } from "@/lib/tenant-scope";
 
 export const Route = createFileRoute("/_authenticated/select-tenant")({
@@ -98,7 +100,7 @@ function SelectTenantPage() {
     <AuthShell
       wide
       title="Selecionar organização"
-      subtitle="Todo o seu escopo em árvore: você abre também os níveis abaixo do seu vínculo."
+      subtitle="Escolha onde operar."
       footer={
         <button
           type="button"
@@ -122,25 +124,29 @@ function SelectTenantPage() {
         <div className="space-y-4">
           <FormError message={error ?? (queryError ? authErrorMessage(queryError) : null)} />
 
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nome, slug ou CNPJ…"
-            aria-label="Buscar organização"
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar por nome, slug ou CNPJ…"
+              aria-label="Buscar organização"
+            />
+            <InfoHint title="Sobre o escopo">
+              <p>
+                Todo o seu escopo em árvore: você abre também os níveis abaixo do seu vínculo.
+              </p>
+              <p>
+                "Por hierarquia" significa acesso de visita: as ações ficam registradas na
+                auditoria e o seu papel efetivo continua valendo.
+              </p>
+            </InfoHint>
+          </div>
 
           {tree.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma organização encontrada no seu escopo.
-            </p>
+            <EmptyState title="Nenhuma organização encontrada no seu escopo." />
           ) : (
             <div className="space-y-1">{tree.map(renderNode)}</div>
           )}
-
-          <p className="text-xs text-muted-foreground">
-            "Por hierarquia" significa acesso de visita: as ações ficam registradas na auditoria e o
-            seu papel efetivo continua valendo.
-          </p>
         </div>
       )}
     </AuthShell>
