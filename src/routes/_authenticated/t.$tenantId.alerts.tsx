@@ -4,6 +4,7 @@ import { BellRing, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AlertList, type AlertSeverity } from "@/components/techiva/alerts";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { ErrorState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
 import { MoneyText } from "@/components/techiva/money";
@@ -92,27 +93,29 @@ function AlertsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold">Central de alertas</h1>
-          <p className="text-sm text-muted-foreground">
-            Atualiza em tempo real. Resolver registra autor e nota na auditoria.
-          </p>
-        </div>
-        <Button type="button" variant="outline" className="gap-2" onClick={() => setPrefsOpen(true)}>
-          <Settings2 className="size-4" aria-hidden />
-          Preferências
-        </Button>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="monitoramento"
+        title="Central de alertas"
+        helpTitle="Como funciona"
+        help={<p>Atualiza em tempo real. Resolver registra autor e nota na auditoria.</p>}
+        actions={
+          <Button type="button" variant="outline" className="gap-2" onClick={() => setPrefsOpen(true)}>
+            <Settings2 className="size-4" aria-hidden />
+            Preferências
+          </Button>
+        }
+      />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <Rise index={1} className="grid gap-3 sm:grid-cols-3">
         <KpiCard label="Alertas listados" value={String(rows.length)} loading={alerts.isLoading} />
         <KpiCard label="Não lidos" value={String(unread)} loading={alerts.isLoading} />
         <KpiCard label="Críticos abertos" value={String(critical)} loading={alerts.isLoading} />
-      </div>
+      </Rise>
 
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface-1 p-3">
+      <Rise index={2}>
+      <Panel title="Filtros" bodyClassName="p-3">
+      <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Situação</Label>
           <Select value={status} onValueChange={(v) => { setPage(0); setStatus(v as AlertStatusFilter); }}>
@@ -157,7 +160,10 @@ function AlertsPage() {
           </Select>
         </div>
       </div>
+      </Panel>
+      </Rise>
 
+      <Rise index={3}>
       <AlertList
         alerts={rows}
         onOpen={(a) => {
@@ -175,7 +181,9 @@ function AlertsPage() {
           )
         }
       />
+      </Rise>
 
+      <Rise index={4}>
       <Pager
         page={page}
         pageSize={pageSize}
@@ -189,6 +197,7 @@ function AlertsPage() {
         }}
         className="rounded-xl border border-border bg-surface-1"
       />
+      </Rise>
 
       <SideSheet
         open={Boolean(detail)}
@@ -349,6 +358,6 @@ function AlertsPage() {
           </div>
         )}
       </SideSheet>
-    </div>
+    </Page>
   );
 }

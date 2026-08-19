@@ -4,6 +4,7 @@ import { Loader2, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,27 +61,33 @@ function NoticesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-lg font-medium">Avisos da plataforma</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          Estes textos aparecem no topo das telas dos clientes (apuração, simulador, validador,
-          integrações e caixa). Eles mudam conforme a Receita evolui — edite aqui, sem deploy.
-        </p>
-      </header>
+    <Page>
+      <PageHeader
+        eyebrow="administração"
+        title="Avisos da plataforma"
+        helpTitle="Sobre esta tela"
+        help={
+          <p>
+            Estes textos aparecem no topo das telas dos clientes (apuração, simulador, validador,
+            integrações e caixa). Eles mudam conforme a Receita evolui — edite aqui, sem deploy.
+          </p>
+        }
+      />
 
-      {notices.isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : (notices.data?.length ?? 0) === 0 ? (
-        <EmptyState title="Nenhum aviso cadastrado" />
-      ) : (
-        <div className="space-y-4">
-          {notices.data?.map((row) => (
-            <NoticeEditor key={row.key} row={row} />
-          ))}
-        </div>
-      )}
-    </div>
+      <Rise index={1}>
+        {notices.isLoading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : (notices.data?.length ?? 0) === 0 ? (
+          <EmptyState title="Nenhum aviso cadastrado" />
+        ) : (
+          <div className="space-y-4">
+            {notices.data?.map((row) => (
+              <NoticeEditor key={row.key} row={row} />
+            ))}
+          </div>
+        )}
+      </Rise>
+    </Page>
   );
 }
 
@@ -112,7 +119,7 @@ function NoticeEditor({ row }: { row: NoticeRow }) {
   }
 
   return (
-    <section className="rounded-xl border border-border bg-surface-1 p-5">
+    <Panel bodyClassName="p-5" interactive={false}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Megaphone className="size-4 text-primary" aria-hidden />
@@ -175,6 +182,6 @@ function NoticeEditor({ row }: { row: NoticeRow }) {
           Atualizado em {new Date(row.updated_at).toLocaleString("pt-BR")}
         </span>
       </div>
-    </section>
+    </Panel>
   );
 }

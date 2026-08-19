@@ -7,6 +7,7 @@ import { Semaphore } from "@/components/techiva/badges";
 import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { KpiCard } from "@/components/techiva/metrics";
+import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { CnpjText, MoneyText } from "@/components/techiva/money";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -169,22 +170,22 @@ function PortfolioScreen() {
 
   if (shell.data && shell.data.tenant.kind !== "channel" && shell.data.tenant.kind !== "platform") {
     return (
-      <div className="p-6">
+      <Page>
         <NoPermissionState hint="A carteira é uma tela de canal contábil." />
-      </div>
+      </Page>
     );
   }
 
   if (portfolio.error) {
     return (
-      <div className="p-6">
+      <Page>
         <ErrorState
           message={portfolio.error.message}
           onRetry={() => {
             void portfolio.refetch();
           }}
         />
-      </div>
+      </Page>
     );
   }
 
@@ -199,22 +200,27 @@ function PortfolioScreen() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Carteira</h1>
-          <p className="text-sm text-muted-foreground">
-            Todas as empresas sob {shell.data?.tenant.name ?? "este canal"}, ordenadas pelo buraco de 30 dias.
+    <Page>
+      <PageHeader
+        eyebrow="canal · carteira"
+        title="Carteira"
+        help={
+          <p>
+            Todas as empresas sob {shell.data?.tenant.name ?? "este canal"}, ordenadas pelo buraco
+            de caixa de 30 dias. Selecione empresas na tabela para gerar relatórios de regime em
+            lote.
           </p>
-        </div>
-        <Button asChild variant="outline">
-          <Link to="/t/$tenantId/tenants" params={{ tenantId }}>
-            Empresas e convites
-          </Link>
-        </Button>
-      </header>
+        }
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/t/$tenantId/tenants" params={{ tenantId }}>
+              Empresas e convites
+            </Link>
+          </Button>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Rise index={1} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="CNPJs ativos"
           value={<span className="font-mono tabular">{kpis.active}</span>}
@@ -237,30 +243,36 @@ function PortfolioScreen() {
           value={<span className="font-mono tabular">{kpis.criticalAlerts}</span>}
           loading={portfolio.isLoading}
         />
-      </div>
+      </Rise>
 
       {selectedIds.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 text-sm shadow-e1">
-          <span className="font-medium">{selectedIds.length} selecionadas</span>
-          <Button size="sm" onClick={() => void runBatch()} disabled={batch.isPending}>
-            {batch.isPending ? "Enfileirando…" : "Gerar relatórios de regime"}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelected({})}>
-            Limpar seleção
-          </Button>
-        </div>
+        <Rise index={2}>
+          <Panel interactive={false} bodyClassName="p-0">
+            <div className="flex flex-wrap items-center gap-3 p-4 text-sm">
+              <span className="font-medium">{selectedIds.length} selecionadas</span>
+              <Button size="sm" onClick={() => void runBatch()} disabled={batch.isPending}>
+                {batch.isPending ? "Enfileirando…" : "Gerar relatórios de regime"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected({})}>
+                Limpar seleção
+              </Button>
+            </div>
+          </Panel>
+        </Rise>
       )}
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        loading={portfolio.isLoading}
-        searchPlaceholder="Buscar por empresa ou CNPJ…"
-        emptyTitle="Nenhuma empresa na carteira"
-        emptyHint="Crie empresas em Empresas e convide o dono para iniciar o onboarding."
-        exportName="carteira-canal"
-        density="compact"
-      />
-    </div>
+      <Rise index={3} className="overflow-x-auto">
+        <DataTable
+          columns={columns}
+          data={rows}
+          loading={portfolio.isLoading}
+          searchPlaceholder="Buscar por empresa ou CNPJ…"
+          emptyTitle="Nenhuma empresa na carteira"
+          emptyHint="Crie empresas em Empresas e convide o dono para iniciar o onboarding."
+          exportName="carteira-canal"
+          density="compact"
+        />
+      </Rise>
+    </Page>
   );
 }
