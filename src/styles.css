@@ -826,45 +826,8 @@ select:-webkit-autofill {
   }
 }
 
-/* título com luz que passa devagar pelas letras */
-@keyframes text-sheen {
-  0% {
-    background-position: 120% 50%;
-  }
-  100% {
-    background-position: -20% 50%;
-  }
-}
 
-@utility text-sheen {
-  background-image: linear-gradient(
-    100deg,
-    var(--foreground) 38%,
-    oklch(0.93 0.05 264) 50%,
-    var(--foreground) 62%
-  );
-  background-size: 220% 100%;
-  background-position: 120% 50%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: text-sheen 9s ease-in-out 700ms infinite;
-}
 
-/* flutuação quase imperceptível do bloco do herói */
-@keyframes float-soft {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -8px, 0);
-  }
-}
-
-@utility float-soft {
-  animation: float-soft 11s ease-in-out infinite;
-}
 
 /* botão primário com elevação e brilho */
 @utility cta-lift {
