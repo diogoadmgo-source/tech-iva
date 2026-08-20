@@ -245,16 +245,18 @@ export function TenantSidebar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-1 w-full justify-start text-muted-foreground"
-            onClick={onToggle}
-            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-            {!collapsed ? <span className="ml-2">Recolher</span> : null}
-          </Button>
+          {!isSheet ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 w-full justify-start text-muted-foreground"
+              onClick={onToggle}
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            >
+              {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+              {!collapsed ? <span className="ml-2">Recolher</span> : null}
+            </Button>
+          ) : null}
         </div>
       </aside>
     </TooltipProvider>
