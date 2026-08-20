@@ -213,6 +213,7 @@ function PlansPage() {
             value={tab}
             onChange={setTab}
             options={[
+              { value: "plan", label: "Meu plano" },
               { value: "catalog", label: "Catálogo" },
               { value: "subscription", label: "Assinatura" },
             ]}
@@ -220,7 +221,12 @@ function PlansPage() {
         }
       />
 
-      {tab === "catalog" ? (
+      {tab === "plan" ? (
+        <PlanEntitlementSection
+          tenantId={tenantId}
+          showScope={shell.data?.tenant.kind === "channel" || shell.data?.tenant.kind === "platform"}
+        />
+      ) : tab === "catalog" ? (
         <Rise index={1}>
           <Panel
             title="Catálogo de planos"
