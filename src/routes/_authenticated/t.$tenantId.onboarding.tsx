@@ -708,10 +708,12 @@ function StepReading({ tenantId, onBack }: { tenantId: string; onBack: () => voi
 
       {allDone && (
         <div className="mt-4 rounded-lg border border-flow-in/30 bg-flow-in/10 p-4">
-          <p className="text-sm font-medium">Sua operação foi lida.</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            A projeção do caixa do imposto já está disponível, com clientes e fornecedores
-            classificados por regime.
+          <p className="flex items-center gap-1.5 text-sm font-medium">
+            Sua operação foi lida.
+            <InfoHint title="O que já está pronto">
+              A projeção do caixa do imposto já está disponível, com clientes e fornecedores
+              classificados por regime.
+            </InfoHint>
           </p>
           <Button asChild size="sm" className="mt-3">
             <Link to="/t/$tenantId/cash" params={{ tenantId }}>

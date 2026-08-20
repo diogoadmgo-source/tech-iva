@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { NoticeBoard } from "@/components/techiva/notices";
 import { MoneyText, formatCents } from "@/components/techiva/money";
@@ -218,8 +219,10 @@ function ApuracaoPage() {
                   {d.diferenca_cents > 0
                     ? "A Receita apurou mais do que calculamos: pode haver documento emitido que não chegou até nós."
                     : "Calculamos mais do que a Receita apurou: pode haver documento que a Receita ainda não processou, ou cancelamento/devolução."}{" "}
-                  Confira os documentos da competência mais abaixo — cada item abre a memória de
-                  cálculo com a base legal aplicada.
+                  <InfoHint title="Como conferir">
+                    Confira os documentos da competência mais abaixo — cada item abre a memória de
+                    cálculo com a base legal aplicada.
+                  </InfoHint>
                 </p>
               )}
 

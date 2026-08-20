@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Loader2, Mail, ShieldAlert, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -418,9 +419,12 @@ function InviteLinkCard({ link, onDismiss }: { link: string; onDismiss: () => vo
         <Mail className="size-4" />
         Link de aceite do convite
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        O token aparece uma única vez. Envie este link para a pessoa convidada — o e-mail automático
-        entra com o serviço de envio do bloco 02.
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        O token aparece uma única vez.
+        <InfoHint title="Link de convite">
+          Envie este link para a pessoa convidada — o e-mail automático entra com o serviço de envio
+          do bloco 02.
+        </InfoHint>
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <code className="min-w-0 flex-1 truncate rounded-md bg-background px-3 py-2 font-mono text-xs text-foreground">

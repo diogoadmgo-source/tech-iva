@@ -4,6 +4,7 @@ import { AlertTriangle, Check, Download, Loader2, Plus, RefreshCw } from "lucide
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { FormError } from "@/components/auth/auth-shell";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
@@ -540,9 +541,12 @@ function PricePage() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
-                O cenário por cliente calcula um cliente por vez (não a combinação produto ×
-                cliente inteira). Busque o cliente que você quer negociar.
+              <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                Um cliente por vez.
+                <InfoHint title="Cenário por cliente">
+                  O cenário por cliente calcula um cliente por vez (não a combinação produto ×
+                  cliente inteira). Busque o cliente que você quer negociar.
+                </InfoHint>
               </p>
               {draftCustomer !== "all" ? (
                 <div className="pt-1">
