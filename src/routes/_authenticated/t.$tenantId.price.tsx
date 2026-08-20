@@ -8,7 +8,7 @@ import { InfoHint } from "@/components/techiva/info-hint";
 import { FormError } from "@/components/auth/auth-shell";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
-import { KpiCard } from "@/components/techiva/metrics";
+import { Kpi } from "@/components/techiva/kpi";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { formatCents, formatPct, MoneyText } from "@/components/techiva/money";
 import { RegimeBadge } from "@/components/techiva/badges";
@@ -296,7 +296,7 @@ function PricePage() {
             <div className="min-w-56 flex-1 space-y-2">
               <Label>Cenário</Label>
               <Select value={scenarioId} onValueChange={setScenarioId}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue placeholder="Nenhum cenário" />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,7 +312,7 @@ function PricePage() {
             <div className="min-w-56 flex-1 space-y-2">
               <Label>Comparar com</Label>
               <Select value={compareId || "none"} onValueChange={(v) => setCompareId(v === "none" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue placeholder="Sem comparação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,7 +339,7 @@ function PricePage() {
                 <Plus className="mr-2 size-4" /> Novo cenário
               </Button>
               <Button
-                variant="outline"
+                className="cta-lift"
                 disabled={!scenarioId || !editable || recompute.isPending}
                 onClick={async () => {
                   try {
@@ -393,24 +393,24 @@ function PricePage() {
       {scenarioId ? (
         <>
           <Rise index={2} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
+            <Kpi
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
               loading={detail.isLoading}
               hint="Soma dos preços atuais das linhas"
             />
-            <KpiCard
+            <Kpi
               label="Receita a preço-alvo"
               valueCents={totals?.revenue_target_cents ?? 0}
               loading={detail.isLoading}
               hint={`Δ médio ${formatPct(totals?.avg_delta_pct ?? 0)}`}
             />
-            <KpiCard
+            <Kpi
               label="Margem média no alvo"
               value={formatPct(totals?.avg_margin_pct ?? 0)}
               loading={detail.isLoading}
             />
-            <KpiCard
+            <Kpi
               label="Itens abaixo do piso"
               value={String(totals?.below_floor ?? 0)}
               loading={detail.isLoading}
@@ -477,6 +477,7 @@ function PricePage() {
                 id="scenario-name"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
+                className="field focus-glow"
                 placeholder="Ex.: Tabela 2027 — atacado"
               />
             </div>
@@ -484,7 +485,7 @@ function PricePage() {
               <div className="space-y-2">
                 <Label>Ano fiscal</Label>
                 <Select value={draftYear} onValueChange={setDraftYear}>
-                  <SelectTrigger>
+                  <SelectTrigger className="field focus-glow">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -502,7 +503,7 @@ function PricePage() {
                   id="margin"
                   value={draftMargin}
                   onChange={(e) => setDraftMargin(e.target.value)}
-                  className="font-mono"
+                  className="field focus-glow font-mono tabular"
                 />
               </div>
               <div className="space-y-2">
@@ -511,7 +512,7 @@ function PricePage() {
                   id="var-exp"
                   value={draftVar}
                   onChange={(e) => setDraftVar(e.target.value)}
-                  className="font-mono"
+                  className="field focus-glow font-mono tabular"
                 />
               </div>
             </div>
@@ -520,7 +521,7 @@ function PricePage() {
                 <Label>Escopo</Label>
               </div>
               <Select value={draftCustomer} onValueChange={setDraftCustomer}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -529,7 +530,7 @@ function PricePage() {
                       value={customerSearch}
                       onChange={(e) => setCustomerSearch(e.target.value)}
                       placeholder="Buscar cliente por nome ou CNPJ…"
-                      className="h-8 text-sm"
+                      className="field focus-glow h-8 text-sm"
                       aria-label="Buscar cliente"
                     />
                   </div>
@@ -566,7 +567,11 @@ function PricePage() {
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => void submitCreate()} disabled={createScenario.isPending}>
+            <Button
+              className="cta-lift"
+              onClick={() => void submitCreate()}
+              disabled={createScenario.isPending}
+            >
               {createScenario.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
               Calcular cenário
             </Button>
@@ -646,7 +651,7 @@ function InlineMoney({ cents, onCommit }: { cents: number; onCommit: (value: str
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
-      className="h-7 w-24 px-2 font-mono text-xs tabular"
+      className="field focus-glow h-7 w-24 px-2 font-mono text-xs tabular"
       aria-label="Valor em reais"
     />
   );
