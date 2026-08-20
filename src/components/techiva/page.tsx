@@ -84,7 +84,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
-  interactive = true,
+  interactive = false,
 }: {
   title?: string | undefined;
   icon?: ElementType | undefined;
