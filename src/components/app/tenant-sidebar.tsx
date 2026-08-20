@@ -271,11 +271,13 @@ function SidebarItem({
   tenantId,
   collapsed,
   count,
+  onNavigate,
 }: {
   item: NavItem;
   tenantId: string;
   collapsed: boolean;
   count: number;
+  onNavigate?: () => void;
 }) {
   const Icon = item.icon;
   const queryClient = useQueryClient();
