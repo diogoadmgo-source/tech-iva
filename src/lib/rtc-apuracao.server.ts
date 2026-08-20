@@ -35,10 +35,25 @@ export class ApuracaoGatewayError extends Error {
   }
 }
 
+function validHttpBaseUrl(raw: string | undefined): string | null {
+  if (!raw?.trim()) return null;
+  try {
+    const parsed = new URL(raw.trim());
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    return raw.trim().replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
 function baseUrl(): string | null {
-  const raw = process.env["RTC_APURACAO_URL"] ?? process.env["RTC_CALC_URL"];
-  if (!raw || !raw.trim()) return null;
-  return raw.trim().replace(/\/+$/, "");
+  // Uma variável antiga ou preenchida incorretamente não pode bloquear o
+  // gateway compartilhado válido. A URL dedicada continua tendo prioridade
+  // quando é uma URL HTTP(S) real; caso contrário, usamos RTC_CALC_URL.
+  return (
+    validHttpBaseUrl(process.env["RTC_APURACAO_URL"]) ??
+    validHttpBaseUrl(process.env["RTC_CALC_URL"])
+  );
 }
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
@@ -113,7 +128,14 @@ async function callGateway(
         signal,
       }),
     );
-  } catch {
+  } catch (error) {
+    const category =
+      error instanceof DOMException && error.name === "AbortError"
+        ? "timeout"
+        : error instanceof TypeError
+          ? "network"
+          : "unknown";
+    console.error("[rtc-apuracao] falha de transporte", { path, category });
     throw new ApuracaoGatewayError(
       "unreachable",
       "Não foi possível falar com o serviço de apuração da Receita.",
