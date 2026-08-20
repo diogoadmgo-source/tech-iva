@@ -432,7 +432,44 @@ function PricePage() {
         </Rise>
       ) : null}
 
-      {scenarioId ? (
+      {emptyScenario ? (
+        <Rise index={2}>
+          <EmptyState
+            title="Cenário sem linhas calculadas"
+            hint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo. Sem produtos não há número para aprovar nem exportar."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button asChild className="cta-lift">
+                  <Link to="/t/$tenantId/onboarding" params={{ tenantId }}>
+                    <Plus className="mr-2 size-4" /> Cadastrar ou importar produtos
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!editable || recompute.isPending}
+                  onClick={async () => {
+                    try {
+                      await recompute.mutateAsync(scenarioId);
+                      toast.success("Cenário recalculado.");
+                    } catch (err) {
+                      toast.error(authErrorMessage(err));
+                    }
+                  }}
+                >
+                  {recompute.isPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 size-4" />
+                  )}
+                  Recalcular cenário
+                </Button>
+              </div>
+            }
+          />
+        </Rise>
+      ) : null}
+
+      {scenarioId && !emptyScenario ? (
         <>
           {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
           <Rise index={2}>
