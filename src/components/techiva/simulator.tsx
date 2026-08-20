@@ -132,27 +132,36 @@ export function CalcResultPanel({ result }: { result: CalcResult }) {
           Valores zerados de propósito: este ambiente não tem o motor oficial.
         </p>
       )}
-      <div className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-        <TributeRow label="CBS" tribute={result.cbs} />
-        <TributeRow label="IBS estadual" tribute={result.ibs_estadual} />
-        <TributeRow label="IBS municipal" tribute={result.ibs_municipal} />
-        <TributeRow label="Imposto Seletivo (IS)" tribute={result.imposto_seletivo} />
-        <dl className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Base de cálculo</dt>
-            <dd className="font-mono tabular-nums">{formatCents(result.base_cents)}</dd>
+      {/* mesmo padrão do Preço de venda: número principal no herói, memória logo abaixo */}
+      <Panel className="panel-hero" title="Resultado do cálculo">
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Total da operação</p>
+            <p className="mt-1 font-mono text-3xl font-semibold tabular-nums tracking-[-0.02em] sm:text-4xl">
+              {formatCents(result.total_operacao_cents)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Base{" "}
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCents(result.base_cents)}
+              </span>{" "}
+              · tributos{" "}
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCents(result.tributo_total_cents)}
+              </span>
+            </p>
           </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-muted-foreground">Total de tributos</dt>
-            <dd className="font-mono tabular-nums">{formatCents(result.tributo_total_cents)}</dd>
+
+          <div className="rounded-xl border border-border/60 bg-surface-1/60 p-4">
+            <TributeRow label="CBS" tribute={result.cbs} />
+            <TributeRow label="IBS estadual" tribute={result.ibs_estadual} />
+            <TributeRow label="IBS municipal" tribute={result.ibs_municipal} />
+            <TributeRow label="Imposto Seletivo (IS)" tribute={result.imposto_seletivo} />
           </div>
-          <div className="flex justify-between gap-3 text-base font-semibold">
-            <dt>Total da operação</dt>
-            <dd className="font-mono tabular-nums">{formatCents(result.total_operacao_cents)}</dd>
-          </div>
-        </dl>
-      </div>
-      <CalcMemoryPanel memory={result.memory} version={result.calc_version} />
+
+          <CalcMemoryPanel memory={result.memory} version={result.calc_version} />
+        </div>
+      </Panel>
     </div>
   );
 }
