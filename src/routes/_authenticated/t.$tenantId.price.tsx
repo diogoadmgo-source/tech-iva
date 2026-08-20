@@ -469,6 +469,17 @@ function PricePage() {
         </Rise>
       ) : null}
 
+      {scenarioId && detail.isError ? (
+        <Rise index={2}>
+          <ErrorState
+            message={authErrorMessage(detail.error)}
+            onRetry={() => void detail.refetch()}
+          />
+        </Rise>
+      ) : null}
+
+
+
       {scenarioId && !emptyScenario && !detail.isError ? (
         <>
           {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
