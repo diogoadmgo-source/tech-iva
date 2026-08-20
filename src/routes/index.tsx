@@ -1,11 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FileCheck2, Lock, Scale, TrendingDown } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Check, FileCheck2, Lock, Scale, TrendingDown } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CashPreview } from "@/components/marketing/cash-preview";
+import { Reveal } from "@/components/marketing/reveal";
+import { formatCents } from "@/components/techiva/money";
+import { Segmented } from "@/components/techiva/page";
 import { AmbientBackdrop } from "@/components/visual/ambient-backdrop";
 import { SpotlightCard } from "@/components/visual/spotlight-card";
-import { Reveal } from "@/components/marketing/reveal";
+import { BILLING_CATALOG, type BillingCycle } from "@/lib/billing";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +56,7 @@ const BENEFITS = [
 ];
 
 function Index() {
+  const [cycle, setCycle] = useState<BillingCycle>("month");
   return (
     <main className="ambient min-h-screen overflow-hidden">
       <AmbientBackdrop />
