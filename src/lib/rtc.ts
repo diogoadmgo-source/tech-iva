@@ -547,6 +547,122 @@ export function useConciliacaoDocumentos(
   });
 }
 
+/* ------------------ conciliação paginada e ordenada no servidor (0211) */
+
+/**
+ * Uma competência de empresa grande tem centenas de milhares de documentos: a
+ * conciliação inteira no navegador é lenta e, pior, o PostgREST cortaria em
+ * 1000 linhas sem avisar. A RPC conciliacao_documentos_page devolve UMA página
+ * já ordenada no banco (com desempate por id, senão a mesma nota aparece em
+ * duas páginas) e o total contado no servidor, na mesma varredura.
+ */
+export type ConciliacaoOrder = "diferenca" | "receita" | "nosso" | "nao_extinto" | "numero";
+
+export type ConciliacaoDocRow = ConciliacaoDoc & { debito_id: number };
+
+export const CONCILIACAO_ORDER_LABEL: Record<ConciliacaoOrder, string> = {
+  diferenca: "Diferença",
+  receita: "Valor da Receita",
+  nosso: "Nosso cálculo",
+  nao_extinto: "Ainda devido",
+  numero: "Número do documento",
+};
+
+export type ConciliacaoQuery = {
+  soDivergentes: boolean;
+  order: ConciliacaoOrder;
+  dir: "asc" | "desc";
+  page: number;
+  pageSize: number;
+  search: string;
+};
+
+type ConciliacaoPageRow = ConciliacaoDocRow & { total_count: number };
+
+async function fetchConciliacaoPage(
+  tenantId: string,
+  competencia: string,
+  q: Omit<ConciliacaoQuery, "page" | "pageSize"> & { limit: number; offset: number },
+): Promise<{ rows: ConciliacaoDocRow[]; total: number }> {
+  const { data, error } = await rpc("conciliacao_documentos_page", {
+    p_tenant: tenantId,
+    p_competencia: competencia,
+    p_so_divergentes: q.soDivergentes,
+    p_order: q.order,
+    p_dir: q.dir,
+    p_limit: q.limit,
+    p_offset: q.offset,
+    p_search: q.search || null,
+  });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as ConciliacaoPageRow[];
+  return {
+    rows: rows.map(({ total_count: _ignored, ...r }) => r),
+    total: rows[0]?.total_count ?? 0,
+  };
+}
+
+export function useConciliacaoPage(
+  tenantId: string,
+  competencia: string,
+  q: ConciliacaoQuery,
+) {
+  return useQuery({
+    queryKey: [
+      "conciliacao-page",
+      tenantId,
+      competencia,
+      q.soDivergentes,
+      q.order,
+      q.dir,
+      q.page,
+      q.pageSize,
+      q.search,
+    ],
+    enabled: Boolean(tenantId && competencia),
+    placeholderData: (prev) => prev,
+    staleTime: 30_000,
+    queryFn: () =>
+      fetchConciliacaoPage(tenantId, competencia, {
+        soDivergentes: q.soDivergentes,
+        order: q.order,
+        dir: q.dir,
+        search: q.search,
+        limit: q.pageSize,
+        offset: q.page * q.pageSize,
+      }),
+  });
+}
+
+/**
+ * Exportação do CSV: o arquivo tem que sair COMPLETO, não a página na tela.
+ * Varre em blocos de 1000 pelo mesmo caminho ordenado do servidor.
+ */
+export async function fetchConciliacaoAll(
+  tenantId: string,
+  competencia: string,
+  q: Pick<ConciliacaoQuery, "soDivergentes" | "order" | "dir" | "search">,
+  hardCap = 200_000,
+): Promise<ConciliacaoDocRow[]> {
+  const out: ConciliacaoDocRow[] = [];
+  const step = 500;
+  for (let offset = 0; ; offset += step) {
+    const { rows } = await fetchConciliacaoPage(tenantId, competencia, {
+      ...q,
+      limit: step,
+      offset,
+    });
+    out.push(...rows);
+    if (rows.length < step) return out;
+    if (out.length >= hardCap) {
+      throw new Error(
+        `Conciliação acima de ${hardCap.toLocaleString("pt-BR")} documentos. Refine o filtro antes de exportar.`,
+      );
+    }
+  }
+}
+
+
 /** Resumo por forma de extinção — quanto saiu em dinheiro e quanto virou crédito. */
 export type ExtincaoResumo = {
   competencia: string;
