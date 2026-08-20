@@ -126,6 +126,17 @@ function CashScreen() {
         .join(" · ")
     : "";
 
+  // "número real": há evento na linha do tempo ou algum agregado diferente de zero.
+  const hasCashData =
+    cash.isLoading ||
+    timeline.length > 0 ||
+    (heroValue ?? 0) !== 0 ||
+    (kpis?.tax_out_month_cents ?? 0) !== 0 ||
+    (kpis?.credit_in_month_cents ?? 0) !== 0 ||
+    (kpis?.credit_backlog_cents ?? 0) !== 0 ||
+    (kpis?.provision_month_cents ?? 0) !== 0;
+
+
 
   return (
     <Page>
