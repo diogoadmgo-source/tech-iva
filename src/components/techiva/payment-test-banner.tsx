@@ -8,7 +8,7 @@ export function PaymentTestBadge() {
   if (getPaddleEnvironment() !== "sandbox") return null;
 
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-2.5 py-1 text-[11px] font-medium text-warning">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-warn/40 bg-warn/10 px-2.5 py-1 text-[11px] font-medium text-warn">
       <FlaskConical className="size-3.5" aria-hidden />
       Modo de teste
       <InfoHint title="Modo de teste" className="size-4">
