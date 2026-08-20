@@ -258,6 +258,33 @@ export type Database = {
           },
         ]
       }
+      billing_webhook_events: {
+        Row: {
+          environment: string
+          event_id: string
+          event_type: string
+          received_at: string
+          subscription_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          environment: string
+          event_id: string
+          event_type: string
+          received_at?: string
+          subscription_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          environment?: string
+          event_id?: string
+          event_type?: string
+          received_at?: string
+          subscription_id?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       calc_rule_cache: {
         Row: {
           aliq_cbs: number
@@ -4391,6 +4418,16 @@ export type Database = {
           p_entity: string
           p_entity_id: string
           p_rule?: string
+          p_tenant: string
+        }
+        Returns: undefined
+      }
+      log_billing_event: {
+        Args: {
+          p_action: string
+          p_after?: Json
+          p_before?: Json
+          p_entity_id: string
           p_tenant: string
         }
         Returns: undefined
