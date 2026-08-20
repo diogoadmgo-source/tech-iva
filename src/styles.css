@@ -258,6 +258,8 @@
 
   --flow-in: oklch(0.72 0.17 152);
   --flow-out: oklch(0.72 0.17 55);
+  --brand-glow: oklch(0.72 0.14 250);
+
   --warn: oklch(0.78 0.15 78);
   --warn-foreground: oklch(0.2 0.05 78);
 
