@@ -1668,6 +1668,7 @@ export type Database = {
           competencia: string
           creditos_cents: number | null
           debitos_cents: number | null
+          download_diag: Json | null
           download_em: string | null
           erro: string | null
           id: string
@@ -1699,6 +1700,7 @@ export type Database = {
           competencia: string
           creditos_cents?: number | null
           debitos_cents?: number | null
+          download_diag?: Json | null
           download_em?: string | null
           erro?: string | null
           id?: string
@@ -1730,6 +1732,7 @@ export type Database = {
           competencia?: string
           creditos_cents?: number | null
           debitos_cents?: number | null
+          download_diag?: Json | null
           download_em?: string | null
           erro?: string | null
           id?: string
