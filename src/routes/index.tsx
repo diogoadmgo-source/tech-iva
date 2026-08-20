@@ -1,11 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, FileCheck2, Lock, Scale, TrendingDown } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Check, FileCheck2, Lock, Scale, TrendingDown } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { CashPreview } from "@/components/marketing/cash-preview";
+import { Reveal } from "@/components/marketing/reveal";
+import { formatCents } from "@/components/techiva/money";
+import { Segmented } from "@/components/techiva/page";
 import { AmbientBackdrop } from "@/components/visual/ambient-backdrop";
 import { SpotlightCard } from "@/components/visual/spotlight-card";
-import { Reveal } from "@/components/marketing/reveal";
+import { BILLING_CATALOG, type BillingCycle } from "@/lib/billing";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +56,7 @@ const BENEFITS = [
 ];
 
 function Index() {
+  const [cycle, setCycle] = useState<BillingCycle>("month");
   return (
     <main className="ambient min-h-screen overflow-hidden">
       <AmbientBackdrop />
@@ -195,6 +201,93 @@ function Index() {
             </Link>
           </SpotlightCard>
         </Reveal>
+      </section>
+
+      <section id="planos" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
+        <Reveal as="h2" className="text-[2rem] leading-tight font-semibold tracking-[-0.015em] text-foreground sm:text-4xl">
+          Planos para cada fase da empresa
+        </Reveal>
+        <Reveal
+          index={1}
+          as="p"
+          className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base"
+        >
+          Comece pelo que precisa hoje e suba de plano quando o volume de notas crescer. Sem
+          fidelidade — cancele quando quiser.
+        </Reveal>
+
+        <Reveal index={2} className="mt-6">
+          <Segmented
+            label="Ciclo de cobrança"
+            value={cycle}
+            onChange={setCycle}
+            options={[
+              { value: "month", label: "Mensal" },
+              { value: "year", label: "Anual · 2 meses grátis" },
+            ]}
+          />
+        </Reveal>
+
+        <div className="mt-8 grid gap-4 lg:grid-cols-3">
+          {BILLING_CATALOG.map((plan, i) => {
+            const isPro = plan.code === "pro";
+            const monthlyEquiv = plan.price.year / 12;
+            const savePct = Math.round((1 - monthlyEquiv / plan.price.month) * 100);
+            return (
+              <Reveal key={plan.code} index={i + 1}>
+                <SpotlightCard
+                  className={cn(
+                    "panel-hover sheen h-full rounded-xl border bg-surface p-6 transition-[transform,border-color,box-shadow] duration-200 ease-out",
+                    isPro ? "border-primary shadow-e2" : "border-border",
+                  )}
+                >
+                  {isPro ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                      <Check className="size-3" aria-hidden /> Recomendado
+                    </span>
+                  ) : null}
+                  <p className="mt-1 font-display text-[10px] tracking-[0.28em] text-primary uppercase">
+                    {plan.name}
+                  </p>
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="font-mono tabular text-3xl font-semibold tracking-tight text-foreground">
+                      {formatCents(plan.price[cycle])}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      /{cycle === "month" ? "mês" : "ano"}
+                    </span>
+                  </div>
+                  {cycle === "year" ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      equivale a {formatCents(monthlyEquiv)}/mês · {savePct}% de economia
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-sm text-muted-foreground">{plan.resumo}</p>
+                  <ul className="mt-4 space-y-2 text-sm">
+                    {plan.itens.map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-foreground">
+                        <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/signup"
+                    className={cn(
+                      "focus-glow cta-lift mt-6 inline-flex w-full items-center justify-center rounded-md px-5 py-2.5 text-sm font-medium",
+                      isPro
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-foreground transition-colors hover:bg-accent",
+                    )}
+                  >
+                    Criar conta
+                    <ArrowRight className="ml-1.5 size-4" />
+                  </Link>
+                </SpotlightCard>
+              </Reveal>
+            );
+          })}
+        </div>
       </section>
 
       <footer className="mx-auto max-w-6xl px-6 pb-12">
