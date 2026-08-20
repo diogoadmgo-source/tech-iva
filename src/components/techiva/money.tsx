@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import { cn } from "@/lib/utils";
 
 const brl = new Intl.NumberFormat("pt-BR", {
