@@ -46,6 +46,10 @@ type Props = {
   collapsed: boolean;
   onToggle: () => void;
   onOpenScopePicker: () => void;
+  /** "sheet" = dentro da gaveta do celular (sem sticky/hidden, sempre expandida). */
+  variant?: "desktop" | "sheet";
+  /** Fecha a gaveta ao navegar (só no celular). */
+  onNavigate?: (() => void) | undefined;
 };
 
 export function TenantSidebar({
@@ -55,10 +59,14 @@ export function TenantSidebar({
   role,
   email,
   fullName,
-  collapsed,
+  collapsed: collapsedProp,
   onToggle,
   onOpenScopePicker,
+  variant = "desktop",
+  onNavigate,
 }: Props) {
+  const isSheet = variant === "sheet";
+  const collapsed = isSheet ? false : collapsedProp;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const credit = useFeature(tenant.id, "credit");
@@ -87,9 +95,13 @@ export function TenantSidebar({
   return (
     <TooltipProvider delayDuration={120}>
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
-          collapsed ? "w-16" : "w-64"
-        }`}
+        className={
+          isSheet
+            ? "flex h-full w-full shrink-0 flex-col bg-surface"
+            : `sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
+                collapsed ? "w-16" : "w-64"
+              }`
+        }
         aria-label="Navegação"
       >
         {/* Marca: lockup TECH-IVA centralizado (ou o símbolo, quando recolhida) */}
@@ -177,6 +189,7 @@ export function TenantSidebar({
                       tenantId={tenant.id}
                       collapsed={collapsed}
                       count={item.badge ? counts[item.badge] : 0}
+                      onNavigate={onNavigate}
                     />
                   </li>
                 ))}
@@ -232,16 +245,18 @@ export function TenantSidebar({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-1 w-full justify-start text-muted-foreground"
-            onClick={onToggle}
-            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
-            {!collapsed ? <span className="ml-2">Recolher</span> : null}
-          </Button>
+          {!isSheet ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-1 w-full justify-start text-muted-foreground"
+              onClick={onToggle}
+              aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+            >
+              {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+              {!collapsed ? <span className="ml-2">Recolher</span> : null}
+            </Button>
+          ) : null}
         </div>
       </aside>
     </TooltipProvider>
@@ -256,11 +271,13 @@ function SidebarItem({
   tenantId,
   collapsed,
   count,
+  onNavigate,
 }: {
   item: NavItem;
   tenantId: string;
   collapsed: boolean;
   count: number;
+  onNavigate?: (() => void) | undefined;
 }) {
   const Icon = item.icon;
   const queryClient = useQueryClient();
@@ -274,6 +291,7 @@ function SidebarItem({
       onMouseEnter={warm}
       onFocus={warm}
       onTouchStart={warm}
+      onClick={onNavigate}
       activeOptions={{ exact: item.to === "/t/$tenantId" }}
       activeProps={{
         className:
