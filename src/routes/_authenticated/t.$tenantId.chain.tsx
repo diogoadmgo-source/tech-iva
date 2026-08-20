@@ -508,9 +508,56 @@ function ChainScreen() {
         row={openParty}
         onClose={() => setOpenParty(null)}
       />
-    </div>
+    </Page>
   );
 }
+
+/**
+ * Célula do treemap pintada com a cor do regime (tokens --regime-* do styles.css).
+ */
+function RegimeCell(props: unknown) {
+  const p = props as {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    regime?: RegimeKind;
+    name?: string;
+    depth?: number;
+    root?: { regime?: RegimeKind };
+  };
+  const colors = useRegimeColors();
+  const regime = p.regime ?? p.root?.regime ?? "desconhecido";
+  const fill = colors[regime] ?? colors["desconhecido"];
+  const w = p.width ?? 0;
+  const h = p.height ?? 0;
+  return (
+    <g>
+      <rect
+        x={p.x}
+        y={p.y}
+        width={w}
+        height={h}
+        fill={fill}
+        fillOpacity={p.depth === 1 ? 0.22 : 0.72}
+        stroke="var(--border)"
+        style={{ cursor: "pointer" }}
+      />
+      {p.depth === 2 && w > 60 && h > 22 ? (
+        <text
+          x={(p.x ?? 0) + 6}
+          y={(p.y ?? 0) + 15}
+          fill="var(--foreground)"
+          fontSize={10}
+          pointerEvents="none"
+        >
+          {String(p.name ?? "").slice(0, Math.floor(w / 6))}
+        </text>
+      ) : null}
+    </g>
+  );
+}
+
 
 function PartySheet({
   tenantId,
