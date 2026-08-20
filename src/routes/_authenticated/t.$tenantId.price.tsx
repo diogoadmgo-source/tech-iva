@@ -469,7 +469,7 @@ function PricePage() {
         </Rise>
       ) : null}
 
-      {scenarioId && !emptyScenario ? (
+      {scenarioId && !emptyScenario && !detail.isError ? (
         <>
           {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
           <Rise index={2}>
