@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 /**
  * Miniatura do gráfico de caixa do produto: imposto que sai, crédito que volta
  * e a linha de saldo. O ciclo de animação roda UMA vez, quando o gráfico entra
- * na viewport, e para no estado final. Só transform/opacity e stroke-dashoffset.
+ * na viewport e, depois, mantém um movimento contínuo discreto. Só transform/opacity e stroke-dashoffset.
  * Valores ilustrativos, marcados como tal.
  */
 
@@ -89,7 +89,7 @@ export function CashPreview() {
             <g key={w.label}>
               <rect
                 className="cash-bar"
-                style={{ animationDelay: delay }}
+                style={{ "--d": delay } as React.CSSProperties}
                 x={x - 12}
                 y={BASE_Y - w.out}
                 width="11"
@@ -100,7 +100,7 @@ export function CashPreview() {
               />
               <rect
                 className="cash-bar"
-                style={{ animationDelay: `calc(${delay} + 70ms)` }}
+                style={{ "--d": `calc(${delay} + 70ms)` } as React.CSSProperties}
                 x={x + 2}
                 y={BASE_Y - w.in}
                 width="11"
@@ -136,7 +136,7 @@ export function CashPreview() {
           <circle
             key={`p-${w.label}`}
             className="cash-fade"
-            style={{ animationDelay: `calc(1200ms + ${i * 60}ms)` }}
+            style={{ "--d": `calc(1200ms + ${i * 60}ms)` } as React.CSSProperties}
             cx={X0 + i * STEP + 9}
             cy={BASE_Y - w.saldo}
             r="2.5"
