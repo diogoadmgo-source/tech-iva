@@ -487,9 +487,7 @@
   }
 }
 
-/* varredura de luz que percorre a borda superior do cartão, uma vez a cada ciclo.
-   Anima background-position (não translateX): o brilho fica CONTIDO no cartão.
-   Com translate a linha vazava para fora e aparecia como risco azul sobre o menu. */
+/* varredura de luz que percorre a borda superior do cartão, uma vez a cada ciclo */
 @keyframes sheen-sweep {
   0%,
   55% {
@@ -505,7 +503,6 @@
     opacity: 0;
   }
 }
-
 
 .ambient::after {
   content: "";
@@ -551,13 +548,12 @@
     height: 1px;
     z-index: 2;
     pointer-events: none;
-    background: linear-gradient(to right, transparent, oklch(0.85 0.12 264 / 90%), transparent);
-    background-size: 200% 100%;
+    background-image: linear-gradient(to right, transparent, oklch(0.85 0.12 264 / 90%), transparent);
+    background-size: 60% 100%;
     background-repeat: no-repeat;
     background-position: -100% 0;
     animation: sheen-sweep 11s ease-in-out infinite;
     will-change: background-position, opacity;
-
   }
 }
 
@@ -808,8 +804,7 @@ select:-webkit-autofill {
   }
 }
 
-/* varredura de luz na borda superior, no hover.
-   Corre por background-position para não vazar 100% da largura para fora do cartão. */
+/* varredura de luz na borda superior, no hover */
 @utility sheen {
   &::after {
     content: "";
@@ -818,27 +813,22 @@ select:-webkit-autofill {
     top: 0;
     height: 1px;
     pointer-events: none;
-    opacity: 0;
-    background: linear-gradient(
+    background-image: linear-gradient(
       to right,
       transparent,
       oklch(0.78 0.14 264 / 85%),
       transparent
     );
-    background-size: 200% 100%;
+    background-size: 60% 100%;
     background-repeat: no-repeat;
     background-position: -100% 0;
-    transition:
-      background-position 700ms cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 200ms ease-out;
+    transition: background-position 700ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   &:hover::after {
-    opacity: 1;
     background-position: 200% 0;
   }
 }
-
 
 /* título com luz que passa devagar pelas letras */
 @keyframes text-sheen {
