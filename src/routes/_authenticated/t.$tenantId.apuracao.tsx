@@ -544,7 +544,7 @@ function ApuracaoPage() {
           )}
         </Panel>
       </Rise>
-      ) : null}
+
 
       {/* minhas apurações da CBS — só quando já houve retorno */}
       {lista.isLoading || (lista.data?.length ?? 0) > 0 ? (
