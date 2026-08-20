@@ -400,5 +400,6 @@ export async function processarPendentes(): Promise<ProcessarResult[]> {
 }
 
 export function gatewayConfigured(): boolean {
-  return baseUrl() !== null;
+  return apiBase() !== null;
 }
+
