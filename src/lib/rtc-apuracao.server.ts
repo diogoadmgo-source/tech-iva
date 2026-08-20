@@ -345,11 +345,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
-  const { data: tenant } = await table(admin, "tenants")
-    .select("cnpj")
-    .eq("id", row.tenant_id)
-    .maybeSingle();
-  const cnpj = String(tenant?.cnpj ?? "").replace(/\D/g, "");
+  // O download é identificado só pelo tíquete (um acesso por tíquete).
+
 
   let credential: Credential;
   try {
