@@ -204,7 +204,7 @@ function SimuladorPage() {
                   id="ncm"
                   value={ncm}
                   maxLength={8}
-                  className="font-mono"
+                  className="field focus-glow font-mono"
                   onChange={(e) => setNcm(e.target.value.replace(/\D/g, ""))}
                 />
               </div>
@@ -233,7 +233,7 @@ function SimuladorPage() {
                 <Input
                   id="base"
                   value={base}
-                  className="font-mono"
+                  className="field focus-glow font-mono"
                   onChange={(e) => setBase(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">{formatCents(baseCents)}</p>
@@ -243,6 +243,7 @@ function SimuladorPage() {
                 <Input
                   id="data"
                   type="date"
+                  className="field focus-glow"
                   value={data}
                   onChange={(e) => setData(e.target.value)}
                 />
@@ -250,7 +251,7 @@ function SimuladorPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="uf-origem">UF de origem</Label>
                 <Select value={ufOrigem} onValueChange={setUfOrigem}>
-                  <SelectTrigger id="uf-origem">
+                  <SelectTrigger id="uf-origem" className="field focus-glow">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -265,7 +266,7 @@ function SimuladorPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="uf-destino">UF de destino</Label>
                 <Select value={ufDestino} onValueChange={setUfDestino}>
-                  <SelectTrigger id="uf-destino">
+                  <SelectTrigger id="uf-destino" className="field focus-glow">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -307,7 +308,11 @@ function SimuladorPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Button onClick={onCalculate} disabled={calculate.isPending || !engineReady}>
+              <Button
+                className="cta-lift"
+                onClick={onCalculate}
+                disabled={calculate.isPending || !engineReady}
+              >
                 {calculate.isPending ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
                 ) : (
@@ -335,6 +340,7 @@ function SimuladorPage() {
                   <Input
                     id="nome"
                     value={nome}
+                    className="field focus-glow"
                     placeholder="Venda interestadual — item X"
                     onChange={(e) => setNome(e.target.value)}
                   />
