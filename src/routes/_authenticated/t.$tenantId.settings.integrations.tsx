@@ -509,10 +509,7 @@ function CredentialsList({
                   <div>
 
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`size-2 rounded-full ${DOT[semaphore]}`}
-                        aria-hidden
-                      />
+                      <Semaphore level={semaphore} showLabel={false} />
                       <span className="text-sm font-medium">{KIND_LABEL[row.kind]}</span>
                       <Badge variant="outline" className="text-xs uppercase">
                         {row.provider}
