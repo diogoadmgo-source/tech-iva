@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { BillingHistorySection } from "@/components/techiva/billing-history";
 import { SubscriptionCheckoutSection } from "@/components/techiva/subscription-checkout";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -104,7 +105,7 @@ function PlansPage() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"plan" | "checkout" | "catalog" | "subscription">("plan");
+  const [tab, setTab] = useState<"plan" | "checkout" | "history" | "catalog" | "subscription">("plan");
   // Retorno do checkout cai direto na aba de assinatura (só após hidratar).
   useEffect(() => {
     if (window.location.search.includes("checkout=success")) setTab("checkout");
