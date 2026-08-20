@@ -551,19 +551,13 @@ function PricePage() {
             </Panel>
           </Rise>
 
-          <Rise index={3} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
+          {/* KPIs não repetem o número do herói (receita a preço-alvo e Δ ficam lá) */}
+          <Rise index={3} className="grid gap-4 sm:grid-cols-3">
             <Kpi
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
               loading={detail.isLoading}
               hint="Soma dos preços atuais das linhas"
-            />
-            <Kpi
-              label="Receita a preço-alvo"
-              valueCents={totals?.revenue_target_cents ?? 0}
-              loading={detail.isLoading}
-              hint={`Δ médio ${formatPct(totals?.avg_delta_pct ?? 0)}`}
             />
             <Kpi
               label="Margem média no alvo"
