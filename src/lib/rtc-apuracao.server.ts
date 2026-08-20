@@ -7,12 +7,11 @@
  *      -> src/routes/api/public/rtc.apuracao.$ref.tsx
  *   3. GET/POST download do JSON usando o tíquete e ingestão -> este arquivo
  *
- * Por que o app e não um worker externo: os passos 1 e 3 são HTTP + JSON e não
- * precisam guardar estado. O único motivo para existir máquina fora era o TLS
- * mútuo com certificado — que continua no componente oficial hospedado na nossa
- * infra (RTC_APURACAO_URL / RTC_CALC_URL), usado aqui como PROXY de transporte.
- * O aplicativo passou a ser o orquestrador: nada fica pendurado esperando um
- * processo externo rodar.
+ * Falamos DIRETO com a API da Receita (apuracao-cbs v1), sem proxy no meio:
+ * OAuth client_credentials no /token e Bearer nas duas chamadas. O endereço vem
+ * de RTC_API_URL (produção por padrão) e o prefixo de RTC_API_PREFIX (`rtc` ou
+ * `prr-rtc` na produção restrita).
+
  *
  * REGRA DO PROJETO PRESERVADA: nenhum valor fiscal é produzido aqui. Este módulo
  * só transporta e grava o que a Receita devolveu. Motor fora do ar => erro
@@ -46,15 +45,36 @@ function validHttpBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-function baseUrl(): string | null {
-  // Uma variável antiga ou preenchida incorretamente não pode bloquear o
-  // gateway compartilhado válido. A URL dedicada continua tendo prioridade
-  // quando é uma URL HTTP(S) real; caso contrário, usamos RTC_CALC_URL.
+/**
+ * Endereço da API da Receita. Produção por padrão; a variável de ambiente
+ * permite apontar para Produção Restrita (/prr-rtc) ou Homologação
+ * (h-gateway.receitaintegra.serpro.gov.br). Valores que não são URL HTTP(S)
+ * são ignorados — já bloquearam a integração uma vez.
+ */
+const RECEITA_PROD = "https://api.receitafederal.gov.br";
+
+function apiBase(): string | null {
   return (
+    validHttpBaseUrl(process.env["RTC_API_URL"]) ??
     validHttpBaseUrl(process.env["RTC_APURACAO_URL"]) ??
-    validHttpBaseUrl(process.env["RTC_CALC_URL"])
+    RECEITA_PROD
   );
 }
+
+function tokenUrl(): string | null {
+  const explicito = validHttpBaseUrl(process.env["RTC_TOKEN_URL"]);
+  if (explicito) return explicito;
+  const base = apiBase();
+  return base ? `${base}/token` : null;
+}
+
+/** `rtc` em produção/homologação; `prr-rtc` na produção restrita. */
+function apiPrefix(): string {
+  const raw = (process.env["RTC_API_PREFIX"] ?? "rtc").trim().replace(/^\/+|\/+$/g, "");
+  return /^[a-z0-9-]+$/.test(raw) ? raw : "rtc";
+}
+
+
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
@@ -102,89 +122,168 @@ async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credent
   return { id: data.id as string, apiKey: plain.trim() };
 }
 
-async function callGateway(
-  path: string,
-  body: Record<string, unknown>,
-  apiKey: string,
-): Promise<Record<string, unknown>> {
-  const url = baseUrl();
+/**
+ * Fluxo oficial (Manual RTC / apuracao-cbs v1):
+ *   POST {base}/token                              -> access_token (client_credentials)
+ *   POST {base}/rtc/apuracao-cbs/v1/{cnpj8}        -> 201 { tiquete }   (2 chamadas/dia)
+ *   GET  {base}/rtc/download/v1/{tiqueteDownload}  -> 200 JSON do extrato (1 acesso por tíquete)
+ * A credencial do contribuinte é <CLIENT_ID>:<CLIENT_SECRET> e vira Basic no
+ * endpoint de token. Nem a credencial nem o token vão para log.
+ */
+
+function basicAuth(credential: string): string {
+  const bytes = new TextEncoder().encode(credential);
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+function transporte(error: unknown, etapa: string): ApuracaoGatewayError {
+  const category =
+    error instanceof DOMException && error.name === "AbortError"
+      ? "timeout"
+      : error instanceof TypeError
+        ? "network"
+        : "unknown";
+  console.error("[rtc-apuracao] falha de transporte", { etapa, category });
+  return new ApuracaoGatewayError(
+    "unreachable",
+    "Não foi possível falar com o serviço de apuração da Receita.",
+  );
+}
+
+/** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
+async function accessToken(credential: string): Promise<string> {
+  const url = tokenUrl();
   if (!url) {
     throw new ApuracaoGatewayError(
       "not_configured",
-      "Integração de apuração não configurada neste ambiente (RTC_APURACAO_URL).",
+      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
     );
   }
-  // Dois segredos DIFERENTES e não intercambiáveis:
-  //  - X-Api-Key: chave do proxy que protege o serviço na nossa infra
-  //    (RTC_APURACAO_API_KEY, caindo para RTC_CALC_API_KEY no gateway compartilhado).
-  //    Mandar a credencial do contribuinte aqui devolvia HTTP 401 do proxy.
-  //  - X-Rtc-Credential: credencial do contribuinte (<CLIENT_ID>:<CLIENT_SECRET>)
-  //    que o serviço usa para falar com a Receita. Nenhuma das duas vai para log.
-  const proxyKey = process.env["RTC_APURACAO_API_KEY"] ?? process.env["RTC_CALC_API_KEY"] ?? "";
   let res: Response;
   try {
     res = await withTimeout((signal) =>
-      fetch(`${url}${path}`, {
+      fetch(url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(proxyKey ? { "X-Api-Key": proxyKey } : {}),
-          "X-Rtc-Credential": apiKey,
+          Authorization: `Basic ${basicAuth(credential)}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: JSON.stringify(body),
+        body: "grant_type=client_credentials",
         signal,
       }),
     );
   } catch (error) {
-    const category =
-      error instanceof DOMException && error.name === "AbortError"
-        ? "timeout"
-        : error instanceof TypeError
-          ? "network"
-          : "unknown";
-    console.error("[rtc-apuracao] falha de transporte", { path, category });
-    throw new ApuracaoGatewayError(
-      "unreachable",
-      "Não foi possível falar com o serviço de apuração da Receita.",
-    );
+    throw transporte(error, "token");
   }
   const text = await res.text();
-  let parsed: unknown = null;
-  try {
-    parsed = text ? JSON.parse(text) : null;
-  } catch {
-    parsed = null;
-  }
   if (!res.ok) {
-    // 404/501: o destino configurado não expõe apuração (é só a calculadora).
-    // Isso é falha de configuração nossa — a Receita nem foi consultada, então
-    // não pode ser tratado como erro dela nem consumir cota.
-    if (res.status === 404 || res.status === 501) {
-      console.error("[rtc-apuracao] endpoint ausente no destino configurado", { path, status: res.status });
-      throw new ApuracaoGatewayError(
-        "not_configured",
-        "O serviço configurado neste ambiente não expõe a apuração da Receita (RTC_APURACAO_URL aponta para a calculadora). Consulta não realizada.",
-      );
-    }
-    if (res.status === 401 || res.status === 403) {
-      console.error("[rtc-apuracao] destino recusou a autenticação", { path, status: res.status });
-      throw new ApuracaoGatewayError(
-        "not_configured",
-        "O serviço de apuração recusou a autenticação do ambiente (chave do proxy inválida). Consulta não realizada.",
-      );
-    }
-    const detail =
-      (parsed as { mensagem?: string; message?: string } | null)?.mensagem ??
-      (parsed as { message?: string } | null)?.message ??
-      `HTTP ${res.status}`;
-    throw new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detail}`);
+    console.error("[rtc-apuracao] token recusado", { status: res.status });
+    throw new ApuracaoGatewayError(
+      "no_credential",
+      res.status === 401 || res.status === 403
+        ? "A Receita recusou a credencial cadastrada (client_id/client_secret). Consulta não realizada."
+        : `Não foi possível obter o token de acesso da Receita (HTTP ${res.status}).`,
+    );
   }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
+  let token: string | undefined;
+  try {
+    token = (JSON.parse(text) as { access_token?: string }).access_token;
+  } catch {
+    token = undefined;
   }
-
-  return parsed as Record<string, unknown>;
+  if (!token) {
+    throw new ApuracaoGatewayError("error", "A Receita devolveu um token inesperado.");
+  }
+  return token;
 }
+
+function corpoJson(text: string): Record<string, unknown> | null {
+  try {
+    const parsed = text ? JSON.parse(text) : null;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function erroDaReceita(status: number, body: Record<string, unknown> | null): ApuracaoGatewayError {
+  const detalhe =
+    (body?.["mensagemErro"] as string | undefined) ??
+    (body?.["mensagem"] as string | undefined) ??
+    (body?.["message"] as string | undefined) ??
+    `HTTP ${status}`;
+  return new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detalhe}`);
+}
+
+/** Passo 1: solicita a apuração de débitos da CBS informando o webhook de retorno. */
+async function solicitarNaReceita(
+  cnpj: string,
+  urlRetorno: string,
+  credential: string,
+): Promise<Record<string, unknown>> {
+  const base = apiBase();
+  if (!base) {
+    throw new ApuracaoGatewayError(
+      "not_configured",
+      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
+    );
+  }
+  const token = await accessToken(credential);
+  // O endpoint filtra pelo CNPJ básico (8 dígitos, com zeros à esquerda).
+  const cnpj8 = cnpj.replace(/\D/g, "").slice(0, 8).padStart(8, "0");
+  let res: Response;
+  try {
+    res = await withTimeout((signal) =>
+      fetch(`${base}/${apiPrefix()}/apuracao-cbs/v1/${cnpj8}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ urlRetorno }),
+        signal,
+      }),
+    );
+  } catch (error) {
+    throw transporte(error, "solicitar");
+  }
+  const body = corpoJson(await res.text());
+  if (res.status !== 201 && !res.ok) throw erroDaReceita(res.status, body);
+  return body ?? {};
+}
+
+/** Passo 3: baixa o JSON do extrato. Um único acesso por tíquete. */
+async function baixarNaReceita(
+  tiquete: string,
+  credential: string,
+): Promise<Record<string, unknown>> {
+  const base = apiBase();
+  if (!base) {
+    throw new ApuracaoGatewayError(
+      "not_configured",
+      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
+    );
+  }
+  const token = await accessToken(credential);
+  let res: Response;
+  try {
+    res = await withTimeout((signal) =>
+      fetch(`${base}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        signal,
+      }),
+    );
+  } catch (error) {
+    throw transporte(error, "download");
+  }
+  const text = await res.text();
+  const body = corpoJson(text);
+  if (!res.ok) throw erroDaReceita(res.status, body);
+  if (!body) throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
+  return body;
+}
+
 
 async function logUse(
   admin: AdminClient,
@@ -292,15 +391,8 @@ export async function solicitarApuracao(
   const urlRetorno = `${origin.replace(/\/+$/, "")}/api/public/rtc/apuracao/${row.webhook_ref}`;
 
   try {
-    const resposta = await callGateway(
-      "/api/apuracao/solicitar",
-      {
-        cnpj,
-        competencia: competencia.slice(0, 7).replace("-", ""),
-        urlRetorno,
-      },
-      credential.apiKey,
-    );
+    const resposta = await solicitarNaReceita(cnpj, urlRetorno, credential.apiKey);
+
     await logUse(admin, credential.id, "apuracao.solicitar", true);
 
     // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
@@ -345,11 +437,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
-  const { data: tenant } = await table(admin, "tenants")
-    .select("cnpj")
-    .eq("id", row.tenant_id)
-    .maybeSingle();
-  const cnpj = String(tenant?.cnpj ?? "").replace(/\D/g, "");
+  // O download é identificado só pelo tíquete (um acesso por tíquete).
+
 
   let credential: Credential;
   try {
@@ -362,12 +451,9 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 
   let payload: Record<string, unknown>;
   try {
-    payload = await callGateway(
-      "/api/apuracao/download",
-      { cnpj, tiquete: row.tiquete_download, competencia: String(row.competencia).slice(0, 7).replace("-", "") },
-      credential.apiKey,
-    );
+    payload = await baixarNaReceita(String(row.tiquete_download), credential.apiKey);
     await logUse(admin, credential.id, "apuracao.download", true);
+
   } catch (e) {
     const err = e as ApuracaoGatewayError;
     await logUse(admin, credential.id, "apuracao.download", false, err.message);
@@ -400,5 +486,6 @@ export async function processarPendentes(): Promise<ProcessarResult[]> {
 }
 
 export function gatewayConfigured(): boolean {
-  return baseUrl() !== null;
+  return apiBase() !== null;
 }
+
