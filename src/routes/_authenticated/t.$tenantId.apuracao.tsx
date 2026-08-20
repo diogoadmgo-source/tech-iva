@@ -237,6 +237,10 @@ function ApuracaoPage() {
         </Panel>
       </Rise>
 
+      {/* 1b — CONCILIAÇÃO: aponta a nota, não só o total */}
+      <ConciliacaoPanel tenantId={tenantId} competencia={competencia} index={2} />
+      <ExtincaoPanel tenantId={tenantId} competencia={competencia} index={3} />
+
       {/* 2 — PROJEÇÃO: o portal mostra o passado */}
       <Rise index={3}>
         <Panel
