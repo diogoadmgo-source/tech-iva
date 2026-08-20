@@ -222,6 +222,7 @@ function PlansPage() {
             options={[
               { value: "plan", label: "Meu plano" },
               { value: "checkout", label: "Assinar" },
+              { value: "history", label: "Histórico" },
               { value: "catalog", label: "Catálogo" },
               { value: "subscription", label: "Troca manual" },
             ]}
