@@ -19,6 +19,7 @@ import { NoticeBoard } from "@/components/techiva/notices";
 import { MoneyText, formatCents } from "@/components/techiva/money";
 import { ClassTribValidator, ItemsList } from "@/components/techiva/rtc";
 import { NaturezaMoney, SituacaoStepper, TotalCard, VisoesTabs } from "@/components/techiva/apuracao";
+import { ConciliacaoPanel, ExtincaoPanel } from "@/components/techiva/conciliacao";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
@@ -235,6 +236,10 @@ function ApuracaoPage() {
           )}
         </Panel>
       </Rise>
+
+      {/* 1b — CONCILIAÇÃO: aponta a nota, não só o total */}
+      <ConciliacaoPanel tenantId={tenantId} competencia={competencia} index={2} />
+      <ExtincaoPanel tenantId={tenantId} competencia={competencia} index={3} />
 
       {/* 2 — PROJEÇÃO: o portal mostra o passado */}
       <Rise index={3}>

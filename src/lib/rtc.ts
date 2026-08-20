@@ -507,3 +507,132 @@ export function creditoAcumulado(detalhe: ApuracaoDetalhe | undefined): Apuracao
 export const CREDITO_ACUMULADO_COPY =
   "Isso é dinheiro seu parado. Esse crédito não é uma conta contábil: ele reduz o que você vai " +
   "pagar quando houver débito de CBS, e enquanto não houver débito ele fica retido.";
+
+/* ---------------------------------------- conciliação nota a nota (0154) */
+
+/**
+ * Reconciliação no nível do DOCUMENTO. A RPC conciliacao_documentos casa o
+ * débito que a Receita apurou por chave de DF-e com a nossa nota, então em vez
+ * de "há divergência de R$ 3 mil" a tela aponta a nota exata.
+ */
+export type ConciliacaoDoc = {
+  chave_dfe: string | null;
+  numero_dfe: string | null;
+  contraparte: string | null;
+  receita_cents: number | null;
+  nosso_cents: number | null;
+  diferenca_cents: number | null;
+  nao_extinto_cents: number | null;
+  situacao: string | null;
+  grupo: "corrente" | "ajuste" | "extemporaneo" | null;
+};
+
+export function useConciliacaoDocumentos(
+  tenantId: string,
+  competencia: string,
+  soDivergentes = true,
+) {
+  return useQuery({
+    queryKey: ["conciliacao-documentos", tenantId, competencia, soDivergentes],
+    enabled: Boolean(tenantId && competencia),
+    queryFn: async (): Promise<ConciliacaoDoc[]> => {
+      const { data, error } = await rpc("conciliacao_documentos", {
+        p_tenant: tenantId,
+        p_competencia: competencia,
+        p_so_divergentes: soDivergentes,
+      });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ConciliacaoDoc[];
+    },
+  });
+}
+
+/** Resumo por forma de extinção — quanto saiu em dinheiro e quanto virou crédito. */
+export type ExtincaoResumo = {
+  competencia: string;
+  debito_total_cents: number;
+  extinto_cents: number;
+  ainda_devido_cents: number;
+  por_credito_cbs_cents: number;
+  por_credito_piscofins_cents: number;
+  por_pagamento_cents: number;
+  por_prescricao_cents: number;
+  documentos: number;
+  documentos_em_aberto: number;
+  extemporaneos_cents: number;
+};
+
+export function useExtincaoResumo(tenantId: string, competencia: string) {
+  return useQuery({
+    queryKey: ["extincao-resumo", tenantId, competencia],
+    enabled: Boolean(tenantId && competencia),
+    queryFn: async (): Promise<ExtincaoResumo> => {
+      const { data, error } = await rpc("extincao_resumo", {
+        p_tenant: tenantId,
+        p_competencia: competencia,
+      });
+      if (error) throw new Error(error.message);
+      return data as ExtincaoResumo;
+    },
+  });
+}
+
+export const DEBITO_SITUACAO_LABEL: Record<string, string> = {
+  aguardando_processamento: "Aguardando processamento",
+  nao_extinto: "Em aberto",
+  extinto_parcial: "Pago em parte",
+  extinto_total: "Quitado",
+  cancelado: "Cancelado",
+};
+
+export const GRUPO_LABEL: Record<string, string> = {
+  corrente: "Competência",
+  ajuste: "Ajuste",
+  extemporaneo: "Extemporâneo",
+};
+
+/** Motivo provável da divergência, em linguagem de quem confere nota. */
+export function motivoDivergencia(doc: ConciliacaoDoc): string {
+  const nosso = doc.nosso_cents ?? 0;
+  const diff = doc.diferenca_cents ?? 0;
+  if (nosso === 0) return "Nota na Receita sem correspondente aqui";
+  if (doc.situacao === "cancelado") return "Documento cancelado na Receita";
+  if (diff > 0) return "Receita apurou mais do que calculamos";
+  if (diff < 0) return "Calculamos mais do que a Receita apurou";
+  return "Valores iguais";
+}
+
+/** CSV da conciliação — ponto-e-vírgula e valores em reais, pronto para o ERP. */
+export function conciliacaoCsv(rows: ConciliacaoDoc[]): string {
+  const head = [
+    "chave_dfe",
+    "numero",
+    "contraparte",
+    "receita",
+    "nosso_calculo",
+    "diferenca",
+    "ainda_devido",
+    "situacao",
+    "grupo",
+    "motivo",
+  ].join(";");
+  const money = (c: number | null) => ((c ?? 0) / 100).toFixed(2).replace(".", ",");
+  const txt = (v: string | null | undefined) => (v ?? "").replace(/;/g, ",");
+  const body = rows
+    .map((r) =>
+      [
+        txt(r.chave_dfe),
+        txt(r.numero_dfe),
+        txt(r.contraparte),
+        money(r.receita_cents),
+        money(r.nosso_cents),
+        money(r.diferenca_cents),
+        money(r.nao_extinto_cents),
+        txt(r.situacao ? (DEBITO_SITUACAO_LABEL[r.situacao] ?? r.situacao) : ""),
+        txt(r.grupo ? (GRUPO_LABEL[r.grupo] ?? r.grupo) : ""),
+        txt(motivoDivergencia(r)),
+      ].join(";"),
+    )
+    .join("\n");
+  return `${head}\n${body}`;
+}
