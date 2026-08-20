@@ -174,6 +174,20 @@ async function marcarErro(admin: AdminClient, id: string, motivo: string) {
     .eq("id", id);
 }
 
+/**
+ * Só existe consulta quando a Receita responde — erro ou sucesso. Se a tentativa
+ * morreu antes disso (sem credencial, ambiente não configurado, serviço fora do
+ * ar), a cota diária é devolvida: o contador da Receita também não contou.
+ */
+function consumiuCotaDaReceita(reason: GatewayUnavailableReason | undefined): boolean {
+  return reason === "error";
+}
+
+async function estornarCota(admin: AdminClient, cnpj: string, reason?: GatewayUnavailableReason) {
+  if (consumiuCotaDaReceita(reason)) return;
+  await rpc(admin)("rtc_quota_estornar", { p_cnpj: cnpj, p_kind: "solicitacao" });
+}
+
 /* ------------------------------------------------------------ passo 1 */
 
 export type SolicitarResult =
@@ -223,6 +237,8 @@ export async function solicitarApuracao(
   } catch (e) {
     const err = e as ApuracaoGatewayError;
     await marcarErro(admin, row.id, err.message);
+    // Falha de credencial: a Receita nem foi chamada — devolve a cota.
+    await estornarCota(admin, cnpj, err.reason ?? "no_credential");
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 
@@ -256,6 +272,7 @@ export async function solicitarApuracao(
     const err = e as ApuracaoGatewayError;
     await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
     await marcarErro(admin, row.id, err.message);
+    await estornarCota(admin, cnpj, err.reason);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 }

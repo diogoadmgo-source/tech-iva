@@ -4787,6 +4787,10 @@ export type Database = {
       }
       rtc_class_trib_upsert: { Args: { p: Json }; Returns: number }
       rtc_credential_state: { Args: { p_tenant: string }; Returns: Json }
+      rtc_quota_estornar: {
+        Args: { p_cnpj: string; p_kind: string }
+        Returns: Json
+      }
       rtc_quota_status: { Args: { p_tenant: string }; Returns: Json }
       rtc_quota_take: {
         Args: { p_cnpj: string; p_kind: string; p_origem?: string }
