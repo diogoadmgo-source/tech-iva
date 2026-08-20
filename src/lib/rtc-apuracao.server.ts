@@ -18,7 +18,7 @@
  * explícito, nunca número estimado.
  */
 
-import { unsealSecret } from "@/lib/credentials.server";
+import { sealSecret, unsealSecret } from "@/lib/credentials.server";
 
 const TIMEOUT_MS = 45_000;
 
@@ -28,6 +28,7 @@ export class ApuracaoGatewayError extends Error {
   constructor(
     public readonly reason: GatewayUnavailableReason,
     message: string,
+    public readonly status?: number,
   ) {
     super(message);
     this.name = "ApuracaoGatewayError";
@@ -215,14 +216,14 @@ function erroDaReceita(status: number, body: Record<string, unknown> | null): Ap
     (body?.["mensagem"] as string | undefined) ??
     (body?.["message"] as string | undefined) ??
     `HTTP ${status}`;
-  return new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detalhe}`);
+  return new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detalhe}`, status);
 }
 
 /** Passo 1: solicita a apuração de débitos da CBS informando o webhook de retorno. */
 async function solicitarNaReceita(
   cnpj: string,
   urlRetorno: string,
-  credential: string,
+  token: string,
 ): Promise<Record<string, unknown>> {
   const base = apiBase();
   if (!base) {
@@ -231,7 +232,6 @@ async function solicitarNaReceita(
       "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
     );
   }
-  const token = await accessToken(credential);
   // O endpoint filtra pelo CNPJ básico (8 dígitos, com zeros à esquerda).
   const cnpj8 = cnpj.replace(/\D/g, "").slice(0, 8).padStart(8, "0");
   let res: Response;
@@ -255,7 +255,7 @@ async function solicitarNaReceita(
 /** Passo 3: baixa o JSON do extrato. Um único acesso por tíquete. */
 async function baixarNaReceita(
   tiquete: string,
-  credential: string,
+  token: string,
 ): Promise<Record<string, unknown>> {
   const base = apiBase();
   if (!base) {
@@ -264,7 +264,6 @@ async function baixarNaReceita(
       "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
     );
   }
-  const token = await accessToken(credential);
   let res: Response;
   try {
     res = await withTimeout((signal) =>
@@ -318,6 +317,47 @@ async function marcarErro(admin: AdminClient, id: string, motivo: string) {
   await table(admin, "rtc_apuracao")
     .update({ status: "erro", erro: motivo.slice(0, 400) })
     .eq("id", id);
+}
+
+function tokenPath(tenantId: string, apuracaoId: string): string {
+  return `secrets/${tenantId}/rtc-session/${apuracaoId}.enc`;
+}
+
+async function guardarToken(
+  admin: AdminClient,
+  tenantId: string,
+  apuracaoId: string,
+  token: string,
+): Promise<string> {
+  const { SECRETS_BUCKET } = await import("@/lib/credentials.server");
+  const ref = tokenPath(tenantId, apuracaoId);
+  const blob = await sealSecret(token);
+  const stored = await admin.storage.from(SECRETS_BUCKET).upload(ref, blob, {
+    contentType: "application/octet-stream",
+    upsert: true,
+  });
+  if (stored.error) throw new Error(stored.error.message);
+  const saved = await table(admin, "rtc_apuracao").update({ access_token_ref: ref }).eq("id", apuracaoId);
+  if (saved.error) {
+    await admin.storage.from(SECRETS_BUCKET).remove([ref]);
+    throw new Error(saved.error.message);
+  }
+  return ref;
+}
+
+async function lerToken(admin: AdminClient, ref: string): Promise<string> {
+  const { SECRETS_BUCKET } = await import("@/lib/credentials.server");
+  const file = await admin.storage.from(SECRETS_BUCKET).download(ref);
+  if (file.error || !file.data) throw new Error("Token temporário da solicitação não encontrado.");
+  const raw = new Uint8Array(await file.data.arrayBuffer());
+  return new TextDecoder().decode(await unsealSecret(raw));
+}
+
+async function apagarToken(admin: AdminClient, apuracaoId: string, ref: string | null | undefined) {
+  if (!ref) return;
+  const { SECRETS_BUCKET } = await import("@/lib/credentials.server");
+  await admin.storage.from(SECRETS_BUCKET).remove([ref]);
+  await table(admin, "rtc_apuracao").update({ access_token_ref: null }).eq("id", apuracaoId);
 }
 
 /**
@@ -389,9 +429,14 @@ export async function solicitarApuracao(
   }
 
   const urlRetorno = `${origin.replace(/\/+$/, "")}/api/public/rtc/apuracao/${row.webhook_ref}`;
+  let tokenRef: string | null = null;
 
   try {
-    const resposta = await solicitarNaReceita(cnpj, urlRetorno, credential.apiKey);
+    // O download pertence à mesma solicitação OAuth. Guardamos o access token
+    // cifrado antes do POST para o webhook nunca chegar antes desse vínculo.
+    const token = await accessToken(credential.apiKey);
+    tokenRef = await guardarToken(admin, tenantId, row.id, token);
+    const resposta = await solicitarNaReceita(cnpj, urlRetorno, token);
 
     await logUse(admin, credential.id, "apuracao.solicitar", true);
 
@@ -411,6 +456,7 @@ export async function solicitarApuracao(
     const err = e as ApuracaoGatewayError;
     await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
     await marcarErro(admin, row.id, err.message);
+    await apagarToken(admin, row.id, tokenRef);
     await estornarCota(admin, cnpj, err.reason);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
@@ -427,38 +473,53 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
   const { data: row, error } = await table(admin, "rtc_apuracao")
-    .select("id, tenant_id, competencia, status, tiquete_download")
+    .select("id, tenant_id, competencia, status, tiquete_download, access_token_ref, payload")
     .eq("id", apuracaoId)
     .maybeSingle();
   if (error) return { ok: false, id: apuracaoId, motivo: error.message };
   if (!row) return { ok: false, id: apuracaoId, motivo: "Apuração inexistente." };
   if (row.status === "disponivel") return { ok: true, id: apuracaoId, debitos: 0 };
-  if (!row.tiquete_download) {
+  if (!row.tiquete_download && !row.payload) {
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
   // O download é identificado só pelo tíquete (um acesso por tíquete).
 
 
-  let credential: Credential;
-  try {
-    credential = await loadApiKey(admin, row.tenant_id as string);
-  } catch (e) {
-    const err = e as ApuracaoGatewayError;
-    await marcarErro(admin, apuracaoId, err.message);
-    return { ok: false, id: apuracaoId, motivo: err.message };
-  }
+  let payload = row.payload as Record<string, unknown> | null;
+  if (!payload) {
+    let credential: Credential;
+    try {
+      credential = await loadApiKey(admin, row.tenant_id as string);
+    } catch (e) {
+      const err = e as ApuracaoGatewayError;
+      await marcarErro(admin, apuracaoId, err.message);
+      return { ok: false, id: apuracaoId, motivo: err.message };
+    }
 
-  let payload: Record<string, unknown>;
-  try {
-    payload = await baixarNaReceita(String(row.tiquete_download), credential.apiKey);
-    await logUse(admin, credential.id, "apuracao.download", true);
-
-  } catch (e) {
-    const err = e as ApuracaoGatewayError;
-    await logUse(admin, credential.id, "apuracao.download", false, err.message);
-    await marcarErro(admin, apuracaoId, err.message);
-    return { ok: false, id: apuracaoId, motivo: err.message };
+    try {
+      let token = row.access_token_ref ? await lerToken(admin, row.access_token_ref as string) : await accessToken(credential.apiKey);
+      try {
+        payload = await baixarNaReceita(String(row.tiquete_download), token);
+      } catch (firstError) {
+        const first = firstError as ApuracaoGatewayError;
+        if (first.status !== 401) throw first;
+        token = await accessToken(credential.apiKey);
+        payload = await baixarNaReceita(String(row.tiquete_download), token);
+      }
+      await logUse(admin, credential.id, "apuracao.download", true);
+      // O tíquete só permite um download: persiste o JSON bruto ANTES de parsear.
+      const saved = await table(admin, "rtc_apuracao")
+        .update({ payload, download_em: new Date().toISOString() })
+        .eq("id", apuracaoId);
+      if (saved.error) throw new Error(saved.error.message);
+      await apagarToken(admin, apuracaoId, row.access_token_ref as string | null);
+    } catch (e) {
+      const err = e as ApuracaoGatewayError;
+      await logUse(admin, credential.id, "apuracao.download", false, err.message);
+      await marcarErro(admin, apuracaoId, `Download da apuração: ${err.message}`);
+      return { ok: false, id: apuracaoId, motivo: err.message };
+    }
   }
 
   const { data: ingested, error: ingestError } = await rpc(admin)("rtc_apuracao_ingest_json", {
