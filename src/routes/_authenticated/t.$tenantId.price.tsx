@@ -8,7 +8,7 @@ import { InfoHint } from "@/components/techiva/info-hint";
 import { FormError } from "@/components/auth/auth-shell";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
-import { KpiCard } from "@/components/techiva/metrics";
+import { Kpi } from "@/components/techiva/kpi";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { formatCents, formatPct, MoneyText } from "@/components/techiva/money";
 import { RegimeBadge } from "@/components/techiva/badges";
@@ -296,7 +296,7 @@ function PricePage() {
             <div className="min-w-56 flex-1 space-y-2">
               <Label>Cenário</Label>
               <Select value={scenarioId} onValueChange={setScenarioId}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue placeholder="Nenhum cenário" />
                 </SelectTrigger>
                 <SelectContent>
@@ -312,7 +312,7 @@ function PricePage() {
             <div className="min-w-56 flex-1 space-y-2">
               <Label>Comparar com</Label>
               <Select value={compareId || "none"} onValueChange={(v) => setCompareId(v === "none" ? "" : v)}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue placeholder="Sem comparação" />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,7 +339,7 @@ function PricePage() {
                 <Plus className="mr-2 size-4" /> Novo cenário
               </Button>
               <Button
-                variant="outline"
+                className="cta-lift"
                 disabled={!scenarioId || !editable || recompute.isPending}
                 onClick={async () => {
                   try {
@@ -392,25 +392,106 @@ function PricePage() {
 
       {scenarioId ? (
         <>
-          <Rise index={2} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiCard
+          {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
+          <Rise index={2}>
+            <Panel
+              className="panel-hero"
+              title="Resultado do cenário"
+              help={
+                <p>
+                  O número grande é a receita do cenário no preço-alvo. A memória de cálculo abaixo
+                  mostra as premissas que produziram piso e alvo — ano fiscal, margem, despesas
+                  variáveis e crédito na entrada.
+                </p>
+              }
+            >
+              {detail.isLoading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Receita a preço-alvo</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-[-0.02em] sm:text-4xl">
+                      <MoneyText cents={totals?.revenue_target_cents ?? 0} />
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Δ médio{" "}
+                      <span className="font-mono tabular text-foreground">
+                        {formatPct(totals?.avg_delta_pct ?? 0)}
+                      </span>{" "}
+                      sobre o preço atual ·{" "}
+                      <span className="font-mono tabular text-foreground">
+                        {totals?.lines ?? 0}
+                      </span>{" "}
+                      linha(s) no cenário
+                    </p>
+                  </div>
+
+                  <details className="rounded-xl border border-border/60 bg-surface-1/60 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      Memória de cálculo e premissas
+                    </summary>
+                    <dl className="mt-3 space-y-2 text-xs">
+                      <Row label="Ano fiscal" value={String(scenario?.fiscal_year ?? "—")} />
+                      <Row
+                        label="Alíquota efetiva IBS+CBS do ano"
+                        value={formatPct((scenario?.iva_rate ?? 0) * 100)}
+                      />
+                      <Row label="Margem alvo" value={formatPct(scenario?.target_margin ?? 0)} />
+                      <Row
+                        label="Despesas variáveis"
+                        value={formatPct(
+                          Number(scenario?.assumptions["var_exp_pct"] ?? 0) * 100,
+                        )}
+                      />
+                      <Row
+                        label="Escopo"
+                        value={
+                          scenario?.assumptions["counterparty_id"]
+                            ? (lines[0]?.counterparty_name ?? "cliente selecionado")
+                            : "Geral (crédito integral na entrada)"
+                        }
+                      />
+                      <Row
+                        label="Receita a preço atual"
+                        value={formatCents(totals?.revenue_current_cents ?? 0)}
+                      />
+                      <Row
+                        label="Margem média no alvo"
+                        value={formatPct(totals?.avg_margin_pct ?? 0)}
+                      />
+                      <Row label="Itens abaixo do piso" value={String(totals?.below_floor ?? 0)} />
+                    </dl>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Piso = custo líquido do crédito na entrada, recomposto pela alíquota do ano e
+                      pelas despesas variáveis. O alvo aplica a margem sobre esse piso.
+                    </p>
+                  </details>
+                </div>
+              )}
+            </Panel>
+          </Rise>
+
+          <Rise index={3} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            <Kpi
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
               loading={detail.isLoading}
               hint="Soma dos preços atuais das linhas"
             />
-            <KpiCard
+            <Kpi
               label="Receita a preço-alvo"
               valueCents={totals?.revenue_target_cents ?? 0}
               loading={detail.isLoading}
               hint={`Δ médio ${formatPct(totals?.avg_delta_pct ?? 0)}`}
             />
-            <KpiCard
+            <Kpi
               label="Margem média no alvo"
               value={formatPct(totals?.avg_margin_pct ?? 0)}
               loading={detail.isLoading}
             />
-            <KpiCard
+            <Kpi
               label="Itens abaixo do piso"
               value={String(totals?.below_floor ?? 0)}
               loading={detail.isLoading}
@@ -422,7 +503,7 @@ function PricePage() {
             />
           </Rise>
 
-          <Rise index={3} className="overflow-x-auto">
+          <Rise index={4} className="overflow-x-auto">
             {detail.isError ? (
               <ErrorState
                 message={authErrorMessage(detail.error)}
@@ -441,7 +522,7 @@ function PricePage() {
             )}
           </Rise>
 
-          <Rise index={4}>
+          <Rise index={5}>
             <p className="text-xs text-muted-foreground">
               {scenario?.assumptions["counterparty_id"] ? (
                 <>
@@ -477,6 +558,7 @@ function PricePage() {
                 id="scenario-name"
                 value={draftName}
                 onChange={(e) => setDraftName(e.target.value)}
+                className="field focus-glow"
                 placeholder="Ex.: Tabela 2027 — atacado"
               />
             </div>
@@ -484,7 +566,7 @@ function PricePage() {
               <div className="space-y-2">
                 <Label>Ano fiscal</Label>
                 <Select value={draftYear} onValueChange={setDraftYear}>
-                  <SelectTrigger>
+                  <SelectTrigger className="field focus-glow">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -502,7 +584,7 @@ function PricePage() {
                   id="margin"
                   value={draftMargin}
                   onChange={(e) => setDraftMargin(e.target.value)}
-                  className="font-mono"
+                  className="field focus-glow font-mono tabular"
                 />
               </div>
               <div className="space-y-2">
@@ -511,7 +593,7 @@ function PricePage() {
                   id="var-exp"
                   value={draftVar}
                   onChange={(e) => setDraftVar(e.target.value)}
-                  className="font-mono"
+                  className="field focus-glow font-mono tabular"
                 />
               </div>
             </div>
@@ -520,7 +602,7 @@ function PricePage() {
                 <Label>Escopo</Label>
               </div>
               <Select value={draftCustomer} onValueChange={setDraftCustomer}>
-                <SelectTrigger>
+                <SelectTrigger className="field focus-glow">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -529,7 +611,7 @@ function PricePage() {
                       value={customerSearch}
                       onChange={(e) => setCustomerSearch(e.target.value)}
                       placeholder="Buscar cliente por nome ou CNPJ…"
-                      className="h-8 text-sm"
+                      className="field focus-glow h-8 text-sm"
                       aria-label="Buscar cliente"
                     />
                   </div>
@@ -566,7 +648,11 @@ function PricePage() {
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => void submitCreate()} disabled={createScenario.isPending}>
+            <Button
+              className="cta-lift"
+              onClick={() => void submitCreate()}
+              disabled={createScenario.isPending}
+            >
               {createScenario.isPending ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
               Calcular cenário
             </Button>
@@ -646,7 +732,7 @@ function InlineMoney({ cents, onCommit }: { cents: number; onCommit: (value: str
       onKeyDown={(e) => {
         if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
-      className="h-7 w-24 px-2 font-mono text-xs tabular"
+      className="field focus-glow h-7 w-24 px-2 font-mono text-xs tabular"
       aria-label="Valor em reais"
     />
   );
