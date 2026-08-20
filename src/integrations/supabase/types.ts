@@ -1861,27 +1861,54 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          buyer_id: string | null
+          cancel_at_period_end: boolean
+          current_period_end: string | null
+          current_period_start: string | null
           ends_at: string | null
+          environment: string
           id: string
           meta: Json
+          paddle_customer_id: string | null
+          paddle_price_id: string | null
+          paddle_product_id: string | null
+          paddle_subscription_id: string | null
           plan_id: string
           started_at: string
           status: string
           tenant_id: string
         }
         Insert: {
+          buyer_id?: string | null
+          cancel_at_period_end?: boolean
+          current_period_end?: string | null
+          current_period_start?: string | null
           ends_at?: string | null
+          environment?: string
           id?: string
           meta?: Json
+          paddle_customer_id?: string | null
+          paddle_price_id?: string | null
+          paddle_product_id?: string | null
+          paddle_subscription_id?: string | null
           plan_id: string
           started_at?: string
           status?: string
           tenant_id: string
         }
         Update: {
+          buyer_id?: string | null
+          cancel_at_period_end?: boolean
+          current_period_end?: string | null
+          current_period_start?: string | null
           ends_at?: string | null
+          environment?: string
           id?: string
           meta?: Json
+          paddle_customer_id?: string | null
+          paddle_price_id?: string | null
+          paddle_product_id?: string | null
+          paddle_subscription_id?: string | null
           plan_id?: string
           started_at?: string
           status?: string
@@ -4436,6 +4463,7 @@ export type Database = {
           uf_origem: string
         }[]
       }
+      plan_for_price: { Args: { p_price_id: string }; Returns: string }
       platform_features: {
         Args: { p_feature?: string }
         Returns: {
