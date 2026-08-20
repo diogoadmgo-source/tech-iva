@@ -247,8 +247,8 @@ function Index() {
                       <Check className="size-3" aria-hidden /> Recomendado
                     </span>
                   ) : null}
-                  <div className="mt-1 flex items-center gap-3">
-                    <PlanGem code={plan.code} size={44} />
+                  <div className="mt-2 flex flex-col items-center text-center">
+                    <PlanGem code={plan.code} size={72} className="mb-2" />
                     <p className="font-display text-[10px] tracking-[0.28em] text-primary uppercase">
                       {plan.name}
                     </p>
