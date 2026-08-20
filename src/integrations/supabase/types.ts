@@ -655,6 +655,111 @@ export type Database = {
           },
         ]
       }
+      dfe_events: {
+        Row: {
+          id: number
+          nsu: string
+          received_at: string
+          schema: string
+          tenant_id: string
+          xml: string
+        }
+        Insert: {
+          id?: never
+          nsu: string
+          received_at?: string
+          schema: string
+          tenant_id: string
+          xml: string
+        }
+        Update: {
+          id?: never
+          nsu?: string
+          received_at?: string
+          schema?: string
+          tenant_id?: string
+          xml?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dfe_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dfe_pending_manifest: {
+        Row: {
+          chave: string
+          cstat: number | null
+          detectado_em: string
+          emitente: string | null
+          manifestado_em: string | null
+          tenant_id: string
+          valor_cents: number | null
+        }
+        Insert: {
+          chave: string
+          cstat?: number | null
+          detectado_em?: string
+          emitente?: string | null
+          manifestado_em?: string | null
+          tenant_id: string
+          valor_cents?: number | null
+        }
+        Update: {
+          chave?: string
+          cstat?: number | null
+          detectado_em?: string
+          emitente?: string | null
+          manifestado_em?: string | null
+          tenant_id?: string
+          valor_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dfe_pending_manifest_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dfe_sync_state: {
+        Row: {
+          last_stat: number | null
+          max_nsu: string
+          synced_at: string | null
+          tenant_id: string
+          ult_nsu: string
+        }
+        Insert: {
+          last_stat?: number | null
+          max_nsu?: string
+          synced_at?: string | null
+          tenant_id: string
+          ult_nsu?: string
+        }
+        Update: {
+          last_stat?: number | null
+          max_nsu?: string
+          synced_at?: string | null
+          tenant_id?: string
+          ult_nsu?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dfe_sync_state_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_credentials: {
         Row: {
           created_at: string
