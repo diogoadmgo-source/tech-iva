@@ -189,6 +189,7 @@ export function TenantSidebar({
                       tenantId={tenant.id}
                       collapsed={collapsed}
                       count={item.badge ? counts[item.badge] : 0}
+                      onNavigate={onNavigate}
                     />
                   </li>
                 ))}
