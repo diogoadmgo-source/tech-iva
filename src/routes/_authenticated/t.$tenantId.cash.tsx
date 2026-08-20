@@ -260,6 +260,8 @@ function CashScreen() {
           }
         />
       </Rise>
+      )}
+
 
       <Rise index={5}>
         <ComparadorModalidades tenantId={tenantId} horizonDays={horizon} />
