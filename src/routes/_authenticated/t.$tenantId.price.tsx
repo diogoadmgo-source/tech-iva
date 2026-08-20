@@ -392,7 +392,88 @@ function PricePage() {
 
       {scenarioId ? (
         <>
-          <Rise index={2} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
+          <Rise index={2}>
+            <Panel
+              className="panel-hero"
+              title="Resultado do cenário"
+              help={
+                <p>
+                  O número grande é a receita do cenário no preço-alvo. A memória de cálculo abaixo
+                  mostra as premissas que produziram piso e alvo — ano fiscal, margem, despesas
+                  variáveis e crédito na entrada.
+                </p>
+              }
+            >
+              {detail.isLoading ? (
+                <Skeleton className="h-24 w-full" />
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Receita a preço-alvo</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-[-0.02em] sm:text-4xl">
+                      <MoneyText cents={totals?.revenue_target_cents ?? 0} />
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Δ médio{" "}
+                      <span className="font-mono tabular text-foreground">
+                        {formatPct(totals?.avg_delta_pct ?? 0)}
+                      </span>{" "}
+                      sobre o preço atual ·{" "}
+                      <span className="font-mono tabular text-foreground">
+                        {totals?.lines ?? 0}
+                      </span>{" "}
+                      linha(s) no cenário
+                    </p>
+                  </div>
+
+                  <details className="rounded-xl border border-border/60 bg-surface-1/60 p-4">
+                    <summary className="cursor-pointer text-sm font-semibold">
+                      Memória de cálculo e premissas
+                    </summary>
+                    <dl className="mt-3 space-y-2 text-xs">
+                      <Row label="Ano fiscal" value={String(scenario?.fiscal_year ?? "—")} />
+                      <Row
+                        label="Alíquota efetiva IBS+CBS do ano"
+                        value={formatPct((scenario?.iva_rate ?? 0) * 100)}
+                      />
+                      <Row label="Margem alvo" value={formatPct(scenario?.target_margin ?? 0)} />
+                      <Row
+                        label="Despesas variáveis"
+                        value={formatPct(
+                          Number(scenario?.assumptions["var_exp_pct"] ?? 0) * 100,
+                        )}
+                      />
+                      <Row
+                        label="Escopo"
+                        value={
+                          scenario?.assumptions["counterparty_id"]
+                            ? (lines[0]?.counterparty_name ?? "cliente selecionado")
+                            : "Geral (crédito integral na entrada)"
+                        }
+                      />
+                      <Row
+                        label="Receita a preço atual"
+                        value={formatCents(totals?.revenue_current_cents ?? 0)}
+                      />
+                      <Row
+                        label="Margem média no alvo"
+                        value={formatPct(totals?.avg_margin_pct ?? 0)}
+                      />
+                      <Row label="Itens abaixo do piso" value={String(totals?.below_floor ?? 0)} />
+                    </dl>
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Piso = custo líquido do crédito na entrada, recomposto pela alíquota do ano e
+                      pelas despesas variáveis. O alvo aplica a margem sobre esse piso.
+                    </p>
+                  </details>
+                </div>
+              )}
+            </Panel>
+          </Rise>
+
+          <Rise index={3} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
             <Kpi
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
