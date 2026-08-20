@@ -3,10 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BellRing, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AlertList, type AlertSeverity } from "@/components/techiva/alerts";
+import { type AlertSeverity } from "@/components/techiva/alerts";
+import { Semaphore, type SemaphoreLevel } from "@/components/techiva/badges";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
-import { ErrorState } from "@/components/techiva/empty-state";
-import { KpiCard } from "@/components/techiva/metrics";
+import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { Kpi } from "@/components/techiva/kpi";
 import { MoneyText } from "@/components/techiva/money";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAckAlert, useResolveAlert } from "@/lib/cash";
@@ -32,6 +34,17 @@ import { Pager } from "@/components/techiva/pager";
 import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { useFeature } from "@/lib/features";
+
+const SEVERITY_LEVEL: Record<AlertSeverity, SemaphoreLevel> = {
+  info: "info",
+  warning: "warn",
+  critical: "crit",
+};
+const SEVERITY_LABEL: Record<AlertSeverity, string> = {
+  info: "Info",
+  warning: "Atenção",
+  critical: "Crítico",
+};
 
 const ADMIN_ROLES = ["platform_admin", "channel_admin", "owner"];
 
