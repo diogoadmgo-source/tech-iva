@@ -49,7 +49,7 @@ type Props = {
   /** "sheet" = dentro da gaveta do celular (sem sticky/hidden, sempre expandida). */
   variant?: "desktop" | "sheet";
   /** Fecha a gaveta ao navegar (só no celular). */
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
 };
 
 export function TenantSidebar({
@@ -277,7 +277,7 @@ function SidebarItem({
   tenantId: string;
   collapsed: boolean;
   count: number;
-  onNavigate?: () => void;
+  onNavigate?: (() => void) | undefined;
 }) {
   const Icon = item.icon;
   const queryClient = useQueryClient();
