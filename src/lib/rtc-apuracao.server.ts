@@ -272,6 +272,7 @@ export async function solicitarApuracao(
     const err = e as ApuracaoGatewayError;
     await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
     await marcarErro(admin, row.id, err.message);
+    await estornarCota(admin, cnpj, err.reason);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 }
