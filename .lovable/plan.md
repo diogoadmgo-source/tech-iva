@@ -13,6 +13,13 @@ Ressalva do estado atual: hoje **não há nenhuma apuração com `payload` grava
 
 ## Plano em blocos
 
+### Bloco 0 — Fazer uma consulta concluir (pré-requisito, antes de qualquer UI)
+Nenhum payload real existe ainda, então o schema nunca foi confrontado com a resposta da Receita. Nada de UI antes disto.
+- Limpar `RTC_APURACAO_URL` (hoje contém `077057`, não é URL) e declarar explicitamente `RTC_API_URL`, `RTC_TOKEN_URL` e `RTC_API_PREFIX` do ambiente em uso, para o endereço deixar de vir de fallback.
+- Corrigir a persistência do `access_token_ref`: nas duas tentativas em que o webhook chegou, a linha ficou sem token gravado — o download sem o token da mesma solicitação OAuth é a causa mais provável do 401 e do rate limit em seguida.
+- Com a cota reaberta (0 restantes hoje), rodar UMA solicitação, capturar o payload bruto e conferir o JSON campo a campo contra o `rtc_apuracao_ingest_json`: nomes, tipos, `formasExtincao` como objeto vs array, `chaveDfe` como string (o caso `chNFe` virando número já nos custou uma rodada), escala dos valores e vocabulário de `situacaoDebito`.
+- Só depois: revisar os blocos 1 a 6 contra o JSON recebido, não contra o manual.
+
 ### Bloco 1 — Leitura (banco, sem consumir cota)
 - RPC de resumo por grupo (`corrente` / `ajuste` / `extemporaneo`): soma de `cbs_total`, `cbs_extinto`, `cbs_nao_extinto` e a parcela do extinto cujo `tipos_pagamento` contém `split`.
 - RPC de lista de débitos paginada por grupo (ORDER BY com desempate por id, count separado, busca por `chave_dfe`/número), devolvendo `formasExtincao` do `payload` do débito para o expandir.

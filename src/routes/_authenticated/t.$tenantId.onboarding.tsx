@@ -434,6 +434,7 @@ function StepDfe({
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               size="sm"
+              className="cta-lift"
               disabled={upload.isPending}
               onClick={() => void register({ kind: "procuracao" }, "Procuração registrada.")}
             >
@@ -602,7 +603,7 @@ function StepBank({
         ) : (
           <Button
             size="sm"
-            className="mt-3"
+            className="cta-lift mt-3"
             disabled={setIntegration.isPending}
             onClick={async () => {
               try {

@@ -452,6 +452,7 @@ function PlansPage() {
               Cancelar
             </Button>
             <Button
+              className="cta-lift"
               onClick={() => void submitPlan()}
               disabled={create.isPending || update.isPending}
             >

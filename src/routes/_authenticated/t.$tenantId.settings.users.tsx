@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Copy, Loader2, Mail, ShieldAlert, Trash2, UserPlus } from "lucide-react";
+import { Copy, Loader2, Mail, ShieldAlert, Trash2, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { InfoHint } from "@/components/techiva/info-hint";
+import { EmptyState } from "@/components/techiva/empty-state";
+import { Kpi } from "@/components/techiva/kpi";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
+import { Semaphore, type SemaphoreLevel } from "@/components/techiva/badges";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,15 +39,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FormError } from "@/components/auth/auth-shell";
 import { ROLE_LABELS, authErrorMessage, roleRequiresMfa, type MemberRole } from "@/lib/auth";
 import {
@@ -88,6 +83,15 @@ const INVITE_STATUS_LABELS: Record<string, string> = {
   revoked: "Revogado",
 };
 
+/** Status do convite no mesmo vocabulário visual do resto do produto. */
+const INVITE_LEVEL: Record<string, SemaphoreLevel> = {
+  pending: "warn",
+  accepted: "ok",
+  expired: "crit",
+  revoked: "crit",
+};
+
+
 function UsersPage() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
@@ -100,6 +104,7 @@ function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<TenantMember | null>(null);
   const [lastLink, setLastLink] = useState<string | null>(null);
+  const [tab, setTab] = useState<"members" | "invites">("members");
 
   const canAdmin = canAdminQuery.data === true;
   const kind = shell.data?.tenant.kind;
@@ -167,195 +172,260 @@ function UsersPage() {
     }
   }
 
+  const pendingInvites = (invitations.data ?? []).filter((i) => i.status === "pending").length;
+
   return (
-    <div className="mx-auto max-w-5xl">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Usuários</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Membros e convites de{" "}
-            <span className="font-medium text-foreground">{shell.data?.tenant.name ?? "—"}</span>.
-            Papéis e permissões são validados pelo banco.
-          </p>
-        </div>
-        {canAdmin ? (
-          <Button onClick={() => setInviteOpen(true)} className="gap-2">
-            <UserPlus className="size-4" />
-            Convidar
-          </Button>
-        ) : null}
-      </header>
+    <Page className="max-w-5xl">
+      <PageHeader
+        eyebrow="Administração"
+        title="Usuários"
+        help={
+          <>
+            Membros e convites de {shell.data?.tenant.name ?? "sua organização"}. Papéis e permissões
+            são validados no banco — o que aparece aqui é o que o banco permite, não o que a tela
+            esconde. Papéis administrativos exigem MFA.
+          </>
+        }
+        actions={
+          canAdmin ? (
+            <Button onClick={() => setInviteOpen(true)} className="cta-lift gap-2">
+              <UserPlus className="size-4" />
+              Convidar
+            </Button>
+          ) : null
+        }
+      />
 
       {canAdminQuery.data === false ? (
-        <p className="mt-4 flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-muted-foreground">
-          <ShieldAlert className="size-4 shrink-0" />
-          Você tem acesso somente de leitura nesta organização.
-        </p>
+        <Rise index={1}>
+          <p className="flex items-center gap-2 rounded-lg border border-border bg-surface-1/60 px-3 py-2 text-sm text-muted-foreground">
+            <ShieldAlert className="size-4 shrink-0" />
+            Você tem acesso somente de leitura nesta organização.
+          </p>
+        </Rise>
       ) : null}
 
-      {lastLink ? <InviteLinkCard link={lastLink} onDismiss={() => setLastLink(null)} /> : null}
+      {lastLink ? (
+        <Rise index={1}>
+          <InviteLinkCard link={lastLink} onDismiss={() => setLastLink(null)} />
+        </Rise>
+      ) : null}
 
-      <Tabs defaultValue="members" className="mt-6">
-        <TabsList>
-          <TabsTrigger value="members">Membros</TabsTrigger>
-          <TabsTrigger value="invites">Convites</TabsTrigger>
-        </TabsList>
+      <Rise index={2} className="grid gap-4 sm:grid-cols-3">
+        <Kpi label="Membros" value={String((members.data ?? []).length)} loading={members.isLoading} />
+        <Kpi
+          label="Administradores"
+          value={String(adminCount)}
+          hint="Papéis administrativos exigem MFA"
+          loading={members.isLoading}
+        />
+        <Kpi
+          label="Convites pendentes"
+          value={String(pendingInvites)}
+          loading={invitations.isLoading}
+        />
+      </Rise>
 
-        <TabsContent value="members" className="mt-4">
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pessoa</TableHead>
-                  <TableHead>Papel</TableHead>
-                  <TableHead className="hidden md:table-cell">Desde</TableHead>
-                  <TableHead className="w-16" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.isLoading ? (
-                  <LoadingRows columns={4} />
-                ) : (members.data ?? []).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
-                      Nenhum membro nesta organização.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  members.data!.map((member) => {
-                    const lastAdmin = isAdminRole(member.role) && adminCount <= 1;
-                    return (
-                      <TableRow key={member.user_id}>
-                        <TableCell>
-                          <span className="block text-sm text-foreground">
-                            {member.full_name ?? "Sem nome"}
-                          </span>
-                          <span className="block font-mono text-xs text-muted-foreground">
-                            {member.email ?? "—"}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {canAdmin ? (
-                            <Select
-                              value={member.role}
-                              onValueChange={(value) =>
-                                void handleRoleChange(member, value as MemberRole)
-                              }
-                              disabled={setRole.isPending || lastAdmin}
-                            >
-                              <SelectTrigger className="w-52">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {roleOptions.map((role) => (
-                                  <SelectItem key={role} value={role}>
-                                    {ROLE_LABELS[role]}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge variant="outline">{ROLE_LABELS[member.role]}</Badge>
-                          )}
-                          {lastAdmin ? (
-                            <span className="mt-1 block text-xs text-muted-foreground">
-                              Último administrador — papel protegido.
+      <Rise index={3}>
+        <Segmented
+          label="Seção de usuários"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "members", label: "Membros" },
+            { value: "invites", label: "Convites" },
+          ]}
+        />
+      </Rise>
+
+      {tab === "members" ? (
+        <Rise index={4}>
+          <Panel title="Membros da organização" bodyClassName="p-0">
+            {members.isLoading ? (
+              <div className="space-y-2 p-4">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : (members.data ?? []).length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={Users}
+                  title="Nenhum membro nesta organização"
+                  hint="Convide as pessoas que vão operar esta empresa. O papel define o que cada uma pode ver e fazer."
+                  {...(canAdmin
+                    ? {
+                        action: (
+                          <Button className="cta-lift gap-2" onClick={() => setInviteOpen(true)}>
+                            <UserPlus className="size-4" />
+                            Convidar pessoa
+                          </Button>
+                        ),
+                      }
+                    : {})}
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/60">
+                      <th className="th-label px-4 py-2 text-left">Pessoa</th>
+                      <th className="th-label px-4 py-2 text-left">Papel</th>
+                      <th className="th-label hidden px-4 py-2 text-left md:table-cell">Desde</th>
+                      <th className="th-label w-16 px-4 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.data!.map((member) => {
+                      const lastAdmin = isAdminRole(member.role) && adminCount <= 1;
+                      return (
+                        <tr key={member.user_id} className="row-hover border-b border-border/40">
+                          <td className="px-4 py-3">
+                            <span className="block text-sm text-foreground">
+                              {member.full_name ?? "Sem nome"}
                             </span>
+                            <span className="block font-mono text-xs tabular-nums text-muted-foreground">
+                              {member.email ?? "—"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {canAdmin ? (
+                              <Select
+                                value={member.role}
+                                onValueChange={(value) =>
+                                  void handleRoleChange(member, value as MemberRole)
+                                }
+                                disabled={setRole.isPending || lastAdmin}
+                              >
+                                <SelectTrigger className="focus-glow w-52">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {roleOptions.map((role) => (
+                                    <SelectItem key={role} value={role}>
+                                      {ROLE_LABELS[role]}
+                                      {roleRequiresMfa(role) ? " · MFA" : ""}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge variant="outline" className="rounded-full">
+                                {ROLE_LABELS[member.role]}
+                              </Badge>
+                            )}
+                            {lastAdmin ? (
+                              <span className="mt-1 block text-xs text-muted-foreground">
+                                Último administrador — papel protegido.
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="hidden px-4 py-3 font-mono text-xs tabular-nums text-muted-foreground md:table-cell">
+                            {new Date(member.created_at).toLocaleDateString("pt-BR")}
+                          </td>
+                          <td className="px-4 py-3">
+                            {canAdmin ? (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                aria-label={`Remover ${member.email ?? "membro"}`}
+                                disabled={remove.isPending || lastAdmin}
+                                onClick={() => setPendingRemoval(member)}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </Rise>
+      ) : (
+        <Rise index={4}>
+          <Panel title="Convites" bodyClassName="p-0">
+            {invitations.isLoading ? (
+              <div className="space-y-2 p-4">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </div>
+            ) : (invitations.data ?? []).length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={Mail}
+                  title="Nenhum convite registrado"
+                  hint="Convites pendentes expiram automaticamente. O link de aceite aparece uma única vez."
+                />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/60">
+                      <th className="th-label px-4 py-2 text-left">E-mail</th>
+                      <th className="th-label px-4 py-2 text-left">Papel</th>
+                      <th className="th-label px-4 py-2 text-left">Status</th>
+                      <th className="th-label hidden px-4 py-2 text-left md:table-cell">Expira</th>
+                      <th className="th-label w-40 px-4 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invitations.data!.map((invitation) => (
+                      <tr key={invitation.id} className="row-hover border-b border-border/40">
+                        <td className="px-4 py-3 font-mono text-xs text-foreground">
+                          {invitation.email}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className="rounded-full">
+                            {ROLE_LABELS[invitation.role]}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Semaphore
+                            level={INVITE_LEVEL[invitation.status] ?? "info"}
+                            label={INVITE_STATUS_LABELS[invitation.status] ?? invitation.status}
+                          />
+                        </td>
+                        <td className="hidden px-4 py-3 font-mono text-xs tabular-nums text-muted-foreground md:table-cell">
+                          {new Date(invitation.expires_at).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-4 py-3">
+                          {canAdmin && invitation.status === "pending" ? (
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={invite.isPending || revoke.isPending}
+                                onClick={() => void handleResend(invitation)}
+                              >
+                                Reenviar
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={revoke.isPending}
+                                onClick={() => void handleRevoke(invitation)}
+                              >
+                                Revogar
+                              </Button>
+                            </div>
                           ) : null}
-                        </TableCell>
-                        <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">
-                          {new Date(member.created_at).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell>
-                          {canAdmin ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={`Remover ${member.email ?? "membro"}`}
-                              disabled={remove.isPending || lastAdmin}
-                              onClick={() => setPendingRemoval(member)}
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          ) : null}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="invites" className="mt-4">
-          <div className="overflow-hidden rounded-xl border border-border bg-surface">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Papel</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Expira</TableHead>
-                  <TableHead className="w-40" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invitations.isLoading ? (
-                  <LoadingRows columns={5} />
-                ) : (invitations.data ?? []).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                      Nenhum convite registrado.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  invitations.data!.map((invitation) => (
-                    <TableRow key={invitation.id}>
-                      <TableCell className="font-mono text-xs text-foreground">
-                        {invitation.email}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {ROLE_LABELS[invitation.role]}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={invitation.status === "pending" ? "secondary" : "outline"}>
-                          {INVITE_STATUS_LABELS[invitation.status] ?? invitation.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden font-mono text-xs text-muted-foreground md:table-cell">
-                        {new Date(invitation.expires_at).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell>
-                        {canAdmin && invitation.status === "pending" ? (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={invite.isPending || revoke.isPending}
-                              onClick={() => void handleResend(invitation)}
-                            >
-                              Reenviar
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              disabled={revoke.isPending}
-                              onClick={() => void handleRevoke(invitation)}
-                            >
-                              Revogar
-                            </Button>
-                          </div>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </TabsContent>
-      </Tabs>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </Rise>
+      )}
 
       <InviteDialog
         open={inviteOpen}
@@ -392,25 +462,10 @@ function UsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Page>
   );
 }
 
-function LoadingRows({ columns }: { columns: number }) {
-  return (
-    <>
-      {[0, 1, 2].map((row) => (
-        <TableRow key={row}>
-          {Array.from({ length: columns }).map((_, cell) => (
-            <TableCell key={cell}>
-              <Skeleton className="h-4 w-full" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </>
-  );
-}
 
 function InviteLinkCard({ link, onDismiss }: { link: string; onDismiss: () => void }) {
   return (

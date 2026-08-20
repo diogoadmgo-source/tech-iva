@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { InfoHint } from "@/components/techiva/info-hint";
+import { Semaphore } from "@/components/techiva/badges";
 import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
@@ -438,12 +439,6 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
 
 /* ---------------------------------------------------------------- lista */
 
-const DOT: Record<string, string> = {
-  green: "bg-flow-in",
-  amber: "bg-amber-400",
-  red: "bg-flow-out",
-  neutral: "bg-muted-foreground",
-};
 
 function CredentialsList({
   tenantId,
@@ -515,10 +510,7 @@ function CredentialsList({
                   <div>
 
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`size-2 rounded-full ${DOT[semaphore]}`}
-                        aria-hidden
-                      />
+                      <Semaphore level={semaphore} showLabel={false} />
                       <span className="text-sm font-medium">{KIND_LABEL[row.kind]}</span>
                       <Badge variant="outline" className="text-xs uppercase">
                         {row.provider}
@@ -722,7 +714,7 @@ function ProcuracaoCard({ tenantId }: { tenantId: string }) {
       </div>
 
       <Button
-        className="mt-4 w-full"
+        className="cta-lift mt-4 w-full"
         disabled={upload.isPending}
         onClick={async () => {
           try {
@@ -865,7 +857,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
           </span>
         </label>
         <Button
-          className="w-full"
+          className="cta-lift w-full"
           disabled={!file || password.length === 0 || !ack || upload.isPending}
           onClick={async () => {
             if (!file) return;
