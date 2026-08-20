@@ -991,6 +991,75 @@ select:-webkit-autofill {
   }
 }
 
+/* aviso curto em forma de pílula: título na tela, texto no balão */
+@utility hint-pill {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid oklch(1 0 0 / 10%);
+  background: var(--surface-2, oklch(0.26 0.026 265));
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-align: left;
+  transition:
+    transform 200ms ease-out,
+    border-color 200ms ease-out,
+    color 200ms ease-out;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: oklch(0.62 0.2 264 / 50%);
+    color: var(--foreground);
+  }
+}
+
+/* mesma pílula, em tom de atenção */
+@utility hint-pill-warn {
+  border-color: oklch(0.78 0.15 78 / 40%);
+  background: oklch(0.78 0.15 78 / 10%);
+  color: oklch(0.88 0.08 78);
+
+  &:hover {
+    border-color: oklch(0.78 0.15 78 / 70%);
+    color: oklch(0.94 0.06 78);
+  }
+}
+
+/* cabeçalho de coluna das tabelas normativas */
+@utility th-label {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+
+/* linha de tabela que responde ao ponteiro */
+@utility row-hover {
+  transition: background-color 160ms ease-out;
+
+  &:hover {
+    background: oklch(1 0 0 / 3.5%);
+  }
+}
+
+/* célula numérica: mono, tabular, alinhada à direita */
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
 /* entrada em cascata das seções da página (sem depender de observer) */
 @keyframes rise-in {
   from {
