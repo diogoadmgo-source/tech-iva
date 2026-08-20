@@ -1,12 +1,19 @@
 import { useCallback, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileUp,
+  ListChecks,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
 import { NoticeBoard } from "@/components/techiva/notices";
 import { useValidateClassTrib } from "@/lib/rtc";
-import { KpiCard } from "@/components/techiva/metrics";
+import { Kpi } from "@/components/techiva/kpi";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import {
   EngineBanner,
@@ -16,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
 import {
   VALIDADOR_PITCH,
   engineUnavailableMessage,
@@ -24,6 +32,7 @@ import {
   useValidationSummary,
   useValidationTopIssues,
   useXmlValidations,
+  type EngineStatus,
   type XmlIssue,
 } from "@/lib/simulator";
 
@@ -139,7 +148,7 @@ function ValidadorPage() {
         title="Validador de XML"
         helpTitle="Como usar o validador"
         help={<p>{VALIDADOR_PITCH}</p>}
-        actions={<EngineBanner status={engine.data} loading={engine.isLoading} />}
+        actions={<EngineChip status={engine.data} loading={engine.isLoading} />}
       />
 
       {/* avisos mantidos pela plataforma (notices_for) */}
@@ -148,15 +157,27 @@ function ValidadorPage() {
       </Rise>
 
       <Rise index={2} className="grid gap-4 sm:grid-cols-3">
-        <KpiCard
+        <Kpi
           label="Documentos validados (30 dias)"
-          value={s ? String(s.total) : "—"}
-          hint={s?.ultima ? `Último em ${new Date(s.ultima).toLocaleDateString("pt-BR")}` : undefined}
+          value={<span className="font-mono tabular">{s ? String(s.total) : "—"}</span>}
+          loading={summary.isLoading}
+          hint={
+            s?.ultima ? `Último em ${new Date(s.ultima).toLocaleDateString("pt-BR")}` : undefined
+          }
         />
-        <KpiCard label="Válidos" value={s ? String(s.validos) : "—"} />
-        <KpiCard
+        <Kpi
+          label="Válidos"
+          value={<span className="font-mono tabular">{s ? String(s.validos) : "—"}</span>}
+          loading={summary.isLoading}
+        />
+        <Kpi
           label="Taxa de erro"
-          value={s ? `${Number(s.taxa_erro).toFixed(1).replace(".", ",")}%` : "—"}
+          value={
+            <span className="font-mono tabular">
+              {s ? `${Number(s.taxa_erro).toFixed(1).replace(".", ",")}%` : "—"}
+            </span>
+          }
+          loading={summary.isLoading}
           hint={s ? `${s.invalidos} documento(s) com inconsistência` : undefined}
         />
       </Rise>
@@ -166,7 +187,17 @@ function ValidadorPage() {
           title="Seus erros recorrentes"
           help={<p>Corrigir a parametrização do emissor resolve o erro em lote, não uma nota por vez.</p>}
         >
-          <TopIssuesPanel issues={topIssues.data} loading={topIssues.isLoading} />
+          {topIssues.isLoading ? (
+            <p className="text-xs text-muted-foreground">Carregando ranking…</p>
+          ) : (topIssues.data ?? []).length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="Nenhuma inconsistência registrada no período"
+              hint="Valide alguns XML para ver o padrão: aqui aparece o erro que mais se repete, com quantas notas ele atingiu."
+            />
+          ) : (
+            <TopIssuesPanel issues={topIssues.data} />
+          )}
         </Panel>
       </Rise>
 
@@ -177,7 +208,7 @@ function ValidadorPage() {
       )}
 
       <Rise index={5}>
-        <Panel bodyClassName="p-0">
+        <Panel bodyClassName="p-3">
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -190,8 +221,10 @@ function ValidadorPage() {
               void handleFiles(e.dataTransfer.files);
             }}
             className={cn(
-              "rounded-lg border-2 border-dashed p-8 text-center transition-colors",
-              dragging ? "border-primary bg-primary/5" : "border-border/70",
+              "rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200",
+              dragging
+                ? "border-primary bg-primary/5 shadow-[0_0_0_4px_oklch(0.62_0.2_264_/_18%),0_0_34px_-6px_oklch(0.62_0.2_264_/_55%)]"
+                : "border-border/70",
             )}
           >
             <FileUp className="mx-auto size-6 text-muted-foreground" aria-hidden />
@@ -209,9 +242,8 @@ function ValidadorPage() {
             />
             <Button
               type="button"
-              variant="outline"
               size="sm"
-              className="mt-3"
+              className="mt-4 cta-lift"
               disabled={!engineReady || validate.isPending}
               onClick={() => inputRef.current?.click()}
             >
@@ -230,6 +262,7 @@ function ValidadorPage() {
           </div>
         </Panel>
       </Rise>
+
 
       {results.length > 0 && (
         <Rise index={6}>
@@ -308,7 +341,11 @@ function ValidadorPage() {
           {recent.isLoading ? (
             <p className="text-xs text-muted-foreground">Carregando…</p>
           ) : (recent.data ?? []).length === 0 ? (
-            <EmptyState title="Nenhuma validação ainda" hint="Envie um XML para começar." />
+            <EmptyState
+              icon={FileUp}
+              title="Nenhuma validação ainda"
+              hint="Envie um XML de NF-e ou NFS-e acima — o histórico das últimas validações fica registrado aqui."
+            />
           ) : (
             <ul className="space-y-2 text-xs">
               {(recent.data ?? []).slice(0, 10).map((row) => (
@@ -346,5 +383,41 @@ function IssueSuggestion({ cst, cclasstrib }: { cst: string; cclasstrib: string 
         </code>
       ))}
     </p>
+  );
+}
+
+/** Chip de estado do motor, no canto direito do cabeçalho. */
+function EngineChip({
+  status,
+  loading,
+}: {
+  status: EngineStatus | undefined;
+  loading?: boolean | undefined;
+}) {
+  if (loading) {
+    return (
+      <span className="hint-pill">
+        <Loader2 className="size-3 animate-spin" aria-hidden />
+        Verificando a calculadora oficial…
+      </span>
+    );
+  }
+  if (!status) return null;
+  if (!status.available || status.dev_stub) {
+    return (
+      <span className="hint-pill hint-pill-warn">
+        <AlertTriangle className="size-3.5" aria-hidden />
+        {status.dev_stub ? "Modo de desenvolvimento — sem motor oficial" : "Calculadora não disponível"}
+      </span>
+    );
+  }
+  return (
+    <span className="hint-pill">
+      <CheckCircle2 className="size-3.5 text-flow-in" aria-hidden />
+      Calculadora oficial conectada
+      {status.calc_version ? (
+        <span className="font-mono tabular text-[11px] text-foreground">{status.calc_version}</span>
+      ) : null}
+    </span>
   );
 }
