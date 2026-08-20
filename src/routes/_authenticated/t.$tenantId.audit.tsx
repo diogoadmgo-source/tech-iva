@@ -10,14 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { authErrorMessage } from "@/lib/auth";
 import {
   AUDIT_PAGE_SIZE,
@@ -82,6 +74,7 @@ function AuditPage() {
               <Label htmlFor="action">Ação</Label>
               <Input
                 id="action"
+                className="field focus-glow"
                 placeholder="tenant.create"
                 value={filters.action}
                 onChange={(e) => setFilters({ ...filters, action: e.target.value })}
@@ -91,6 +84,7 @@ function AuditPage() {
               <Label htmlFor="entity">Entidade</Label>
               <Input
                 id="entity"
+                className="field focus-glow"
                 placeholder="membership"
                 value={filters.entity}
                 onChange={(e) => setFilters({ ...filters, entity: e.target.value })}
@@ -100,6 +94,7 @@ function AuditPage() {
               <Label htmlFor="actor">Autor (user id)</Label>
               <Input
                 id="actor"
+                className="field focus-glow"
                 placeholder="uuid"
                 value={filters.actor}
                 onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
@@ -109,6 +104,7 @@ function AuditPage() {
               <Label htmlFor="from">De</Label>
               <Input
                 id="from"
+                className="field focus-glow"
                 type="date"
                 value={filters.from}
                 onChange={(e) => setFilters({ ...filters, from: e.target.value })}
@@ -118,6 +114,7 @@ function AuditPage() {
               <Label htmlFor="to">Até</Label>
               <Input
                 id="to"
+                className="field focus-glow"
                 type="date"
                 value={filters.to}
                 onChange={(e) => setFilters({ ...filters, to: e.target.value })}
@@ -125,6 +122,7 @@ function AuditPage() {
             </div>
             <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
               <Button
+                className="cta-lift"
                 onClick={() => {
                   setPage(0);
                   setApplied(filters);
@@ -153,63 +151,77 @@ function AuditPage() {
         <Panel title="Registros" icon={ScrollText}>
           {audit.isLoading ? (
             <Skeleton className="h-64 w-full" />
+          ) : (audit.data?.rows ?? []).length === 0 ? (
+            <EmptyState
+              title="Nenhum registro para os filtros aplicados"
+              hint="Ajuste o período, a ação ou a entidade — a trilha guarda tudo, mas só mostra o que casa com o filtro."
+            />
           ) : (
             <div className="overflow-x-auto rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-10" />
-                    <TableHead>Quando</TableHead>
-                    <TableHead>Ação</TableHead>
-                    <TableHead>Entidade</TableHead>
-                    <TableHead>Papel</TableHead>
-                    <TableHead>Autor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th scope="col" className="th-label w-10" />
+                    <th scope="col" className="th-label">Quando</th>
+                    <th scope="col" className="th-label">Ação</th>
+                    <th scope="col" className="th-label">Entidade</th>
+                    <th scope="col" className="th-label">Papel</th>
+                    <th scope="col" className="th-label">Autor</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {(audit.data?.rows ?? []).map((row) => {
                     const open = expanded === row.id;
                     const diff = jsonDiff(row.before, row.after);
                     return (
                       <Fragment key={row.id}>
-                        <TableRow
-                          className="cursor-pointer"
+                        <tr
+                          className="row-hover cursor-pointer border-b border-border/60"
                           onClick={() => setExpanded(open ? null : row.id)}
                         >
-                          <TableCell>
+                          <td className="px-3 py-2">
                             {open ? (
                               <ChevronDown className="size-4 text-muted-foreground" />
                             ) : (
                               <ChevronRight className="size-4 text-muted-foreground" />
                             )}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
+                          </td>
+                          <td className="px-3 py-2 font-mono tabular text-xs text-muted-foreground">
                             {new Date(row.at).toLocaleString("pt-BR")}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">{row.action}</TableCell>
-                          <TableCell className="text-sm">
+                          </td>
+                          <td className="px-3 py-2 font-mono tabular text-xs">{row.action}</td>
+                          <td className="px-3 py-2 text-sm">
                             {row.entity}
                             {row.entity_id ? (
-                              <span className="ml-1 font-mono text-xs text-muted-foreground">
+                              <span className="ml-1 font-mono tabular text-xs text-muted-foreground">
                                 {row.entity_id.slice(0, 8)}
                               </span>
                             ) : null}
-                          </TableCell>
-                          <TableCell>
-                            {row.actor_role ? <Badge variant="outline">{row.actor_role}</Badge> : "—"}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
+                          </td>
+                          <td className="px-3 py-2">
+                            {row.actor_role ? (
+                              <Badge
+                                variant="outline"
+                                className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                              >
+                                {row.actor_role}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 font-mono tabular text-xs">
                             {row.actor_id ? row.actor_id.slice(0, 8) : "sistema"}
                             {row.impersonated_by ? (
-                              <Badge variant="destructive" className="ml-2">
+                              <Badge variant="destructive" className="ml-2 rounded-full">
                                 impersonado
                               </Badge>
                             ) : null}
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                         {open ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="bg-muted/30">
+                          <tr className="border-b border-border/60">
+                            <td colSpan={6} className="bg-surface-2/60 px-3 py-3">
                               {diff.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
                                   Sem payload de antes/depois neste registro.
@@ -219,7 +231,7 @@ function AuditPage() {
                                   {diff.map((line) => (
                                     <div
                                       key={line.key}
-                                      className="grid grid-cols-[10rem_1fr_1fr] gap-2 font-mono text-xs"
+                                      className="grid grid-cols-[10rem_1fr_1fr] gap-2 font-mono tabular text-xs"
                                     >
                                       <span className="text-muted-foreground">{line.key}</span>
                                       <span
@@ -237,30 +249,24 @@ function AuditPage() {
                                 </div>
                               )}
                               {row.ip || row.user_agent ? (
-                                <p className="mt-3 font-mono text-xs text-muted-foreground">
+                                <p className="mt-3 font-mono tabular text-xs text-muted-foreground">
                                   {row.ip ?? "sem ip"} · {row.user_agent ?? "sem user-agent"}
                                 </p>
                               ) : null}
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         ) : null}
                       </Fragment>
                     );
                   })}
-                  {(audit.data?.rows ?? []).length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6}>
-                        <EmptyState title="Nenhum registro para os filtros aplicados." />
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           )}
 
+
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="font-mono text-xs text-muted-foreground">
+            <p className="font-mono tabular text-xs text-muted-foreground">
               {total.toLocaleString("pt-BR")}
               {audit.data?.approx ? " (aprox.)" : ""} registro(s) · página {page + 1} de {lastPage + 1}
             </p>

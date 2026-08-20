@@ -3,10 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BellRing, Check, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AlertList, type AlertSeverity } from "@/components/techiva/alerts";
+import { type AlertSeverity } from "@/components/techiva/alerts";
+import { Semaphore, type SemaphoreLevel } from "@/components/techiva/badges";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
-import { ErrorState } from "@/components/techiva/empty-state";
-import { KpiCard } from "@/components/techiva/metrics";
+import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { Kpi } from "@/components/techiva/kpi";
 import { MoneyText } from "@/components/techiva/money";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useAckAlert, useResolveAlert } from "@/lib/cash";
@@ -32,6 +34,17 @@ import { Pager } from "@/components/techiva/pager";
 import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { useFeature } from "@/lib/features";
+
+const SEVERITY_LEVEL: Record<AlertSeverity, SemaphoreLevel> = {
+  info: "info",
+  warning: "warn",
+  critical: "crit",
+};
+const SEVERITY_LABEL: Record<AlertSeverity, string> = {
+  info: "Info",
+  warning: "Atenção",
+  critical: "Crítico",
+};
 
 const ADMIN_ROLES = ["platform_admin", "channel_admin", "owner"];
 
@@ -108,9 +121,9 @@ function AlertsPage() {
       />
 
       <Rise index={1} className="grid gap-3 sm:grid-cols-3">
-        <KpiCard label="Alertas listados" value={String(rows.length)} loading={alerts.isLoading} />
-        <KpiCard label="Não lidos" value={String(unread)} loading={alerts.isLoading} />
-        <KpiCard label="Críticos abertos" value={String(critical)} loading={alerts.isLoading} />
+        <Kpi label="Alertas no filtro" value={String(total)} loading={alerts.isLoading} />
+        <Kpi label="Não lidos" value={String(unread)} loading={alerts.isLoading} />
+        <Kpi label="Críticos abertos" value={String(critical)} loading={alerts.isLoading} />
       </Rise>
 
       <Rise index={2}>
@@ -119,7 +132,7 @@ function AlertsPage() {
         <div className="space-y-1.5">
           <Label className="text-xs">Situação</Label>
           <Select value={status} onValueChange={(v) => { setPage(0); setStatus(v as AlertStatusFilter); }}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="field focus-glow w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -132,7 +145,7 @@ function AlertsPage() {
         <div className="space-y-1.5">
           <Label className="text-xs">Severidade</Label>
           <Select value={severity} onValueChange={(v) => { setPage(0); setSeverity(v as AlertSeverity | "all"); }}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="field focus-glow w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -146,7 +159,7 @@ function AlertsPage() {
         <div className="space-y-1.5">
           <Label className="text-xs">Tipo</Label>
           <Select value={kind} onValueChange={(v) => { setPage(0); setKind(v); }}>
-            <SelectTrigger className="w-64">
+            <SelectTrigger className="field focus-glow w-64">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -164,24 +177,98 @@ function AlertsPage() {
       </Rise>
 
       <Rise index={3}>
-      <AlertList
-        alerts={rows}
-        onOpen={(a) => {
-          const row = rows.find((r) => r.id === a.id) ?? null;
-          setDetail(row);
-          if (row && !row.read_at) ack.mutate(row.id);
-        }}
-        onResolve={(a) =>
-          resolve.mutate(
-            { alertId: a.id },
-            {
-              onSuccess: () => toast.success("Alerta resolvido."),
-              onError: (error) => toast.error((error as Error).message),
-            },
-          )
-        }
-      />
+        <Panel title="Alertas" bodyClassName="p-0">
+          {alerts.isLoading ? (
+            <div className="space-y-2 p-4">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : rows.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                title="Nenhum alerta neste filtro"
+                hint="Ajuste situação, severidade ou tipo. Você será avisado assim que algo exigir atenção."
+              />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th scope="col" className="th-label">Severidade</th>
+                    <th scope="col" className="th-label">Alerta</th>
+                    <th scope="col" className="th-label">Tipo</th>
+                    <th scope="col" className="th-label">Situação</th>
+                    <th scope="col" className="th-label !text-right">Criado em</th>
+                    <th scope="col" className="th-label !text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((a) => (
+                    <tr key={a.id} className="row-hover border-b border-border/60 last:border-0">
+                      <td className="px-3 py-2">
+                        <Semaphore
+                          level={SEVERITY_LEVEL[a.severity]}
+                          label={SEVERITY_LABEL[a.severity]}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          className="text-left font-medium hover:underline"
+                          onClick={() => {
+                            setDetail(a);
+                            if (!a.read_at) ack.mutate(a.id);
+                          }}
+                        >
+                          {a.title}
+                        </button>
+                        {!a.read_at && !a.resolved_at && (
+                          <span className="ml-2 align-middle text-[10px] font-semibold uppercase tracking-wider text-primary">
+                            novo
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {alertKindLabel(a.kind)}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-muted-foreground">
+                        {a.resolved_at ? "Resolvido" : "Aberto"}
+                      </td>
+                      <td className="num px-3 py-2 text-xs text-muted-foreground">
+                        {new Date(a.created_at).toLocaleString("pt-BR")}
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        {!a.resolved_at && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={resolve.isPending}
+                            onClick={() =>
+                              resolve.mutate(
+                                { alertId: a.id },
+                                {
+                                  onSuccess: () => toast.success("Alerta resolvido."),
+                                  onError: (error) => toast.error((error as Error).message),
+                                },
+                              )
+                            }
+                          >
+                            Resolver
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
       </Rise>
+
 
       <Rise index={4}>
       <Pager
