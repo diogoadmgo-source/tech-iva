@@ -101,7 +101,7 @@ function PlansPage() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"catalog" | "subscription">("catalog");
+  const [tab, setTab] = useState<"plan" | "catalog" | "subscription">("plan");
   const [planId, setPlanId] = useState<string>("");
   const [status, setStatus] = useState<string>("active");
   const [subError, setSubError] = useState<string | null>(null);
