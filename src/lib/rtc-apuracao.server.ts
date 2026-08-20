@@ -237,6 +237,8 @@ export async function solicitarApuracao(
   } catch (e) {
     const err = e as ApuracaoGatewayError;
     await marcarErro(admin, row.id, err.message);
+    // Falha de credencial: a Receita nem foi chamada — devolve a cota.
+    await estornarCota(admin, cnpj, err.reason ?? "no_credential");
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 
