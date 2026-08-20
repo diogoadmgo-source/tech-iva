@@ -83,6 +83,15 @@ const INVITE_STATUS_LABELS: Record<string, string> = {
   revoked: "Revogado",
 };
 
+/** Status do convite no mesmo vocabulário visual do resto do produto. */
+const INVITE_LEVEL: Record<string, SemaphoreLevel> = {
+  pending: "warn",
+  accepted: "ok",
+  expired: "crit",
+  revoked: "crit",
+};
+
+
 function UsersPage() {
   const { tenantId } = Route.useParams();
   const shell = useShellData(tenantId);
