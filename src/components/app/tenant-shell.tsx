@@ -64,6 +64,13 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteTerm, setPaletteTerm] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Fecha a gaveta a cada navegação (inclusive troca de organização).
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
