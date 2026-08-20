@@ -333,7 +333,7 @@ function SimuladorPage() {
           )}
 
           {result && (
-            <div ref={resultRef} className="space-y-4 scroll-mt-24">
+            <div ref={resultRef} className="rise space-y-4 scroll-mt-24">
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-52 flex-1 space-y-1.5">
                   <Label htmlFor="nome">Nome da simulação</Label>
