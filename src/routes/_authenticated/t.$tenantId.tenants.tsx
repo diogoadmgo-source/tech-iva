@@ -273,7 +273,14 @@ function TenantRow({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">{node.name}</span>
+            <Link
+              to="/t/$tenantId"
+              params={{ tenantId: node.id }}
+              className="truncate text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+              title={`Abrir ${node.name}`}
+            >
+              {node.name}
+            </Link>
             <Badge variant="secondary">{KIND_LABELS[node.kind]}</Badge>
             <Badge variant={node.status === "active" ? "outline" : "destructive"}>
               {STATUS_LABELS[node.status]}
