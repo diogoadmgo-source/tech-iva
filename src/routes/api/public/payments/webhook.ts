@@ -17,12 +17,81 @@ type PaddleSubscription = {
   scheduled_change?: { action?: string } | null;
 };
 
+type PaddleTransaction = {
+  id: string;
+  status?: string;
+  subscription_id?: string | null;
+  custom_data?: { tenantId?: string; userId?: string } | null;
+  details?: { totals?: { grand_total?: string; currency_code?: string } | null } | null;
+};
+
+type SubscriptionRow = {
+  id: string;
+  tenant_id: string;
+  status: string;
+  plan_id: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
+};
+
 async function admin() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   return supabaseAdmin;
 }
 
-async function upsertSubscription(sub: PaddleSubscription, env: PaddleEnv) {
+/** Guarda o evento; devolve false quando já foi processado antes (reenvio do provedor). */
+async function claimEvent(
+  eventId: string,
+  eventType: string,
+  env: PaddleEnv,
+  subscriptionId: string | null,
+  tenantId: string | null,
+) {
+  const db = await admin();
+  const { error } = await db.from("billing_webhook_events").insert({
+    event_id: eventId,
+    event_type: eventType,
+    environment: env,
+    subscription_id: subscriptionId,
+    tenant_id: tenantId,
+  });
+  if (!error) return true;
+  if (error.code === "23505" || /duplicate key/i.test(error.message)) return false;
+  throw new Error(error.message);
+}
+
+async function audit(
+  tenantId: string | null,
+  action: string,
+  entityId: string,
+  before: unknown,
+  after: unknown,
+) {
+  const db = await admin();
+  const { error } = await db.rpc("log_billing_event", {
+    p_tenant: tenantId,
+    p_action: action,
+    p_entity_id: entityId,
+    p_before: (before ?? null) as never,
+    p_after: (after ?? null) as never,
+  });
+  // A auditoria é prova: se falhar, o evento precisa ser reenviado pelo provedor.
+  if (error) throw new Error(`auditoria falhou: ${error.message}`);
+}
+
+async function currentRow(subscriptionId: string, env: PaddleEnv) {
+  const db = await admin();
+  const { data, error } = await db
+    .from("subscriptions")
+    .select("id, tenant_id, status, plan_id, current_period_end, cancel_at_period_end")
+    .eq("paddle_subscription_id", subscriptionId)
+    .eq("environment", env)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data ?? null) as SubscriptionRow | null;
+}
+
+async function upsertSubscription(sub: PaddleSubscription, env: PaddleEnv, action: string) {
   const db = await admin();
   const item = sub.items?.[0];
   const priceId = item?.price?.import_meta?.external_id ?? null;
@@ -48,16 +117,12 @@ async function upsertSubscription(sub: PaddleSubscription, env: PaddleEnv) {
     environment: env,
   };
 
-  const { data: existing, error: findError } = await db
-    .from("subscriptions")
-    .select("id")
-    .eq("paddle_subscription_id", sub.id)
-    .maybeSingle();
-  if (findError) throw new Error(findError.message);
+  const existing = await currentRow(sub.id, env);
 
   if (existing) {
     const { error } = await db.from("subscriptions").update(patch).eq("id", existing.id);
     if (error) throw new Error(error.message);
+    await audit(existing.tenant_id, action, sub.id, existing, patch);
     return;
   }
 
@@ -91,16 +156,34 @@ async function upsertSubscription(sub: PaddleSubscription, env: PaddleEnv) {
     started_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);
+  await audit(tenantId, action, sub.id, null, { ...patch, tenant_id: tenantId, plan_id: planId });
 }
 
 async function markCanceled(sub: PaddleSubscription, env: PaddleEnv) {
   const db = await admin();
+  const existing = await currentRow(sub.id, env);
   const { error } = await db
     .from("subscriptions")
-    .update({ status: "canceled" })
+    .update({ status: "canceled", cancel_at_period_end: false })
     .eq("paddle_subscription_id", sub.id)
     .eq("environment", env);
   if (error) throw new Error(error.message);
+  await audit(existing?.tenant_id ?? sub.custom_data?.tenantId ?? null, "subscription.canceled", sub.id, existing, {
+    status: "canceled",
+  });
+}
+
+async function auditTransaction(tx: PaddleTransaction, env: PaddleEnv, action: string) {
+  const subscriptionId = tx.subscription_id ?? null;
+  const existing = subscriptionId ? await currentRow(subscriptionId, env) : null;
+  await audit(existing?.tenant_id ?? tx.custom_data?.tenantId ?? null, action, subscriptionId ?? tx.id, null, {
+    transaction_id: tx.id,
+    subscription_id: subscriptionId,
+    status: tx.status ?? null,
+    amount: tx.details?.totals?.grand_total ?? null,
+    currency: tx.details?.totals?.currency_code ?? null,
+    environment: env,
+  });
 }
 
 export const Route = createFileRoute("/api/public/payments/webhook")({
@@ -111,14 +194,37 @@ export const Route = createFileRoute("/api/public/payments/webhook")({
         const env: PaddleEnv = url.searchParams.get("env") === "live" ? "live" : "sandbox";
         try {
           const event = await verifyWebhook(request, env);
-          const data = event.data as PaddleSubscription;
+          const raw = event.data as Record<string, unknown>;
+          const eventId =
+            (event as unknown as { event_id?: string }).event_id ??
+            (event as unknown as { notification_id?: string }).notification_id ??
+            null;
+          const isTransaction = event.event_type.startsWith("transaction.");
+          const sub = raw as unknown as PaddleSubscription;
+          const tx = raw as unknown as PaddleTransaction;
+          const subscriptionId = isTransaction ? (tx.subscription_id ?? null) : (sub.id ?? null);
+          const tenantHint = (raw["custom_data"] as { tenantId?: string } | null)?.tenantId ?? null;
+
+          if (eventId) {
+            const fresh = await claimEvent(eventId, event.event_type, env, subscriptionId, tenantHint);
+            if (!fresh) return Response.json({ received: true, duplicate: true });
+          }
+
           switch (event.event_type) {
             case EventName.SubscriptionCreated:
+              await upsertSubscription(sub, env, "subscription.created");
+              break;
             case EventName.SubscriptionUpdated:
-              await upsertSubscription(data, env);
+              await upsertSubscription(sub, env, "subscription.updated");
               break;
             case EventName.SubscriptionCanceled:
-              await markCanceled(data, env);
+              await markCanceled(sub, env);
+              break;
+            case EventName.TransactionCompleted:
+              await auditTransaction(tx, env, "payment.completed");
+              break;
+            case EventName.TransactionPaymentFailed:
+              await auditTransaction(tx, env, "payment.failed");
               break;
             default:
               console.log("[payments] evento sem tratamento:", event.event_type);
