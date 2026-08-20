@@ -19,6 +19,7 @@ import { NoticeBoard } from "@/components/techiva/notices";
 import { MoneyText, formatCents } from "@/components/techiva/money";
 import { ClassTribValidator, ItemsList } from "@/components/techiva/rtc";
 import { NaturezaMoney, SituacaoStepper, TotalCard, VisoesTabs } from "@/components/techiva/apuracao";
+import { ConciliacaoPanel, ExtincaoPanel } from "@/components/techiva/conciliacao";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
