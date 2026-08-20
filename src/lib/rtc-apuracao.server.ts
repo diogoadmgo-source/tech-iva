@@ -63,7 +63,7 @@ async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credent
     .from("integration_credentials")
     .select("id, secret_ref, status")
     .eq("tenant_id", tenantId)
-    .eq("provider", "rtc")
+    .in("provider", ["rtc_cbs", "rtc"])
     .eq("kind", "api_key")
     .neq("status", "revogada")
     .order("created_at", { ascending: false })
