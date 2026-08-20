@@ -15,22 +15,19 @@ import {
 /** As três frases do manual da RFB — o posicionamento fica onde o usuário vê. */
 export function MotorOficialNote({ compact = false }: { compact?: boolean | undefined }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-1 p-4 shadow-e1">
-      <p className="flex items-center gap-2 text-sm font-semibold">
-        <ShieldCheck className="size-4 text-primary" aria-hidden />
-        Motor oficial da Receita Federal
-      </p>
-      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+    <Panel title="Motor oficial da Receita Federal" icon={ShieldCheck}>
+      <ul className="space-y-2 text-xs text-muted-foreground">
         {(compact ? MOTOR_OFICIAL.slice(0, 2) : MOTOR_OFICIAL).map((line) => (
-          <li key={line} className="flex gap-2">
-            <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-flow-in" aria-hidden />
+          <li key={line} className="flex items-start gap-2">
+            <Semaphore level="ok" showLabel={false} className="mt-1 shrink-0" />
             {line}
           </li>
         ))}
       </ul>
-    </div>
+    </Panel>
   );
 }
+
 
 /**
  * Estado do motor. Quando indisponível, esta é a ÚNICA coisa que a tela mostra
