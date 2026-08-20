@@ -1,0 +1,1 @@
+alter function public.premissa_inicio_vigencia() set search_path = public, extensions;

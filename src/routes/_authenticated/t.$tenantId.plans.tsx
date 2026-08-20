@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { SubscriptionCheckoutSection } from "@/components/techiva/subscription-checkout";
 import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,7 +104,11 @@ function PlansPage() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"plan" | "catalog" | "subscription">("plan");
+  const [tab, setTab] = useState<"plan" | "checkout" | "catalog" | "subscription">("plan");
+  // Retorno do checkout cai direto na aba de assinatura (só após hidratar).
+  useEffect(() => {
+    if (window.location.search.includes("checkout=success")) setTab("checkout");
+  }, []);
   const [planId, setPlanId] = useState<string>("");
   const [status, setStatus] = useState<string>("active");
   const [subError, setSubError] = useState<string | null>(null);
@@ -215,8 +221,9 @@ function PlansPage() {
             onChange={setTab}
             options={[
               { value: "plan", label: "Meu plano" },
+              { value: "checkout", label: "Assinar" },
               { value: "catalog", label: "Catálogo" },
-              { value: "subscription", label: "Assinatura" },
+              { value: "subscription", label: "Troca manual" },
             ]}
           />
         }
@@ -227,6 +234,8 @@ function PlansPage() {
           tenantId={tenantId}
           showScope={shell.data?.tenant.kind === "channel" || shell.data?.tenant.kind === "platform"}
         />
+      ) : tab === "checkout" ? (
+        <SubscriptionCheckoutSection tenantId={tenantId} />
       ) : tab === "catalog" ? (
         <Rise index={1}>
           <Panel

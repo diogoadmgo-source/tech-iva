@@ -47,6 +47,7 @@ import { Route as AuthenticatedTTenantIdSimuladorRouteImport } from './routes/_a
 import { Route as AuthenticatedTTenantIdTenantsRouteImport } from './routes/_authenticated/t.$tenantId.tenants'
 import { Route as AuthenticatedTTenantIdValidadorRouteImport } from './routes/_authenticated/t.$tenantId.validador'
 import { Route as ApiPublicCronWeeklyDigestRouteImport } from './routes/api/public/cron.weekly-digest'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as AuthenticatedTTenantIdSettingsIndexRouteImport } from './routes/_authenticated/t.$tenantId.settings.index'
 import { Route as AuthenticatedTTenantIdSettingsIntegrationsRouteImport } from './routes/_authenticated/t.$tenantId.settings.integrations'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
@@ -266,6 +267,12 @@ const ApiPublicCronWeeklyDigestRoute =
     path: '/api/public/cron/weekly-digest',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedTTenantIdSettingsIndexRoute =
   AuthenticatedTTenantIdSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -327,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
   '/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
@@ -369,6 +377,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
   '/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
@@ -414,6 +423,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/tenants': typeof AuthenticatedTTenantIdTenantsRoute
   '/_authenticated/t/$tenantId/validador': typeof AuthenticatedTTenantIdValidadorRoute
   '/api/public/cron/weekly-digest': typeof ApiPublicCronWeeklyDigestRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/tenants'
     | '/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
+    | '/api/public/payments/webhook'
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/tenants'
     | '/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
+    | '/api/public/payments/webhook'
     | '/t/$tenantId'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
@@ -545,6 +557,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/tenants'
     | '/_authenticated/t/$tenantId/validador'
     | '/api/public/cron/weekly-digest'
+    | '/api/public/payments/webhook'
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/integrations'
     | '/_authenticated/t/$tenantId/settings/users'
@@ -565,6 +578,7 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   STokenRoute: typeof STokenRoute
   ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicRtcApuracaoRefRoute: typeof ApiPublicRtcApuracaoRefRoute
 }
 
@@ -836,6 +850,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronWeeklyDigestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/t/$tenantId/settings/': {
       id: '/_authenticated/t/$tenantId/settings/'
       path: '/settings'
@@ -964,6 +985,7 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   STokenRoute: STokenRoute,
   ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicRtcApuracaoRefRoute: ApiPublicRtcApuracaoRefRoute,
 }
 export const routeTree = rootRouteImport
