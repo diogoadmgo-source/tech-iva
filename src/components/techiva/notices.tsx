@@ -26,12 +26,7 @@ function NoticeChip({ notice, highlight = false }: { notice: Notice; highlight?:
       <PopoverTrigger asChild>
         <button
           type="button"
-          className={cn(
-            "focus-glow inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-left text-xs font-medium transition-all duration-200 hover:-translate-y-px",
-            warning
-              ? "border-amber-400/40 bg-amber-400/10 text-amber-200 hover:border-amber-400/70"
-              : "border-border/70 bg-surface-2/60 text-muted-foreground hover:border-primary/50 hover:text-foreground",
-          )}
+          className={cn("hint-pill focus-glow", warning && "hint-pill-warn")}
         >
           <Icon
             className={cn("size-3.5 shrink-0", warning ? "text-amber-400" : "text-muted-foreground")}
