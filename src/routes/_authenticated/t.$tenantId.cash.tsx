@@ -269,7 +269,7 @@ function CashScreen() {
               <p className="text-lg font-semibold">
                 <MoneyText cents={nextGap.amount_cents} />
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 font-mono tabular text-xs text-muted-foreground">
                 Semana de {weekLabel(nextGap.week)}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
@@ -277,6 +277,7 @@ function CashScreen() {
                   <Button
                     type="button"
                     size="sm"
+                    className="cta-lift"
                     disabled={!nextGap.offer_available}
                     onClick={() =>
                       void navigate({ to: "/t/$tenantId/finance", params: { tenantId } })
