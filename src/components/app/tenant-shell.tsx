@@ -166,6 +166,33 @@ export function TenantShell({ data, children }: { data: ShellData; children: Rea
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-surface/80 px-4 backdrop-blur">
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden" aria-label="Abrir menu">
+                <Menu className="size-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[17rem] p-0">
+              <SheetTitle className="sr-only">Navegação</SheetTitle>
+              <TenantSidebar
+                variant="sheet"
+                tenant={data.tenant}
+                chain={data.chain}
+                context={data.context}
+                role={data.role}
+                email={data.email}
+                fullName={data.fullName}
+                collapsed={false}
+                onToggle={toggleSidebar}
+                onOpenScopePicker={() => {
+                  setMobileNavOpen(false);
+                  setPaletteOpen(true);
+                }}
+                onNavigate={() => setMobileNavOpen(false)}
+              />
+            </SheetContent>
+          </Sheet>
+
           <nav aria-label="Trilha hierárquica" className="min-w-0 flex-1">
             <ol className="flex flex-wrap items-center gap-1 text-sm">
               {data.chain.map((node, index) => {
