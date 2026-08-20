@@ -90,16 +90,17 @@ export const STATUS_LABEL: Record<CredentialStatus, string> = {
   erro: "Erro",
 };
 
-/** Semáforo por validade: verde > 30 dias, amarelo 30–7, vermelho < 7 ou expirada. */
-export type Semaphore = "green" | "amber" | "red" | "neutral";
-
-export function credentialSemaphore(row: CredentialRow): Semaphore {
-  if (row.status === "expirada" || row.status === "erro") return "red";
-  if (row.status === "pendente") return "amber";
-  if (row.dias_para_expirar === null) return row.status === "ativa" ? "green" : "neutral";
-  if (row.dias_para_expirar < 7) return "red";
-  if (row.dias_para_expirar <= 30) return "amber";
-  return "green";
+/**
+ * Semáforo por validade: ok > 30 dias, atenção 30–7, crítico < 7 ou expirada.
+ * Usa o vocabulário único do produto (SemaphoreLevel) — não há paleta paralela.
+ */
+export function credentialSemaphore(row: CredentialRow): SemaphoreLevel {
+  if (row.status === "expirada" || row.status === "erro") return "crit";
+  if (row.status === "pendente") return "warn";
+  if (row.dias_para_expirar === null) return row.status === "ativa" ? "ok" : "info";
+  if (row.dias_para_expirar < 7) return "crit";
+  if (row.dias_para_expirar <= 30) return "warn";
+  return "ok";
 }
 
 export function useCredentials(tenantId: string) {
