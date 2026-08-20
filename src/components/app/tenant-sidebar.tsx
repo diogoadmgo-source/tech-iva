@@ -95,9 +95,13 @@ export function TenantSidebar({
   return (
     <TooltipProvider delayDuration={120}>
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
-          collapsed ? "w-16" : "w-64"
-        }`}
+        className={
+          isSheet
+            ? "flex h-full w-full shrink-0 flex-col bg-surface"
+            : `sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-surface md:flex ${
+                collapsed ? "w-16" : "w-64"
+              }`
+        }
         aria-label="Navegação"
       >
         {/* Marca: lockup TECH-IVA centralizado (ou o símbolo, quando recolhida) */}
