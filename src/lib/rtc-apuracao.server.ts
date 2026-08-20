@@ -46,15 +46,29 @@ function validHttpBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-function baseUrl(): string | null {
-  // Uma variável antiga ou preenchida incorretamente não pode bloquear o
-  // gateway compartilhado válido. A URL dedicada continua tendo prioridade
-  // quando é uma URL HTTP(S) real; caso contrário, usamos RTC_CALC_URL.
+/**
+ * Endereço da API da Receita. Produção por padrão; a variável de ambiente
+ * permite apontar para Produção Restrita (/prr-rtc) ou Homologação
+ * (h-gateway.receitaintegra.serpro.gov.br). Valores que não são URL HTTP(S)
+ * são ignorados — já bloquearam a integração uma vez.
+ */
+const RECEITA_PROD = "https://api.receitafederal.gov.br";
+
+function apiBase(): string | null {
   return (
+    validHttpBaseUrl(process.env["RTC_API_URL"]) ??
     validHttpBaseUrl(process.env["RTC_APURACAO_URL"]) ??
-    validHttpBaseUrl(process.env["RTC_CALC_URL"])
+    RECEITA_PROD
   );
 }
+
+function tokenUrl(): string | null {
+  const explicito = validHttpBaseUrl(process.env["RTC_TOKEN_URL"]);
+  if (explicito) return explicito;
+  const base = apiBase();
+  return base ? `${base}/token` : null;
+}
+
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
