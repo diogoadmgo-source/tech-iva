@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -80,9 +80,12 @@ function ApuracaoPage() {
   const [competencia, setCompetencia] = useState(COMPETENCIAS[0] as string);
   const [invoice, setInvoice] = useState<InvoiceRow | null>(null);
   const [validatorOpen, setValidatorOpen] = useState(false);
+  // Polling de auto-atualização: ligado após "Consultar Receita", desligado
+  // quando a apuração chega (status disponível) ou após 2 min de segurança.
+  const [polling, setPolling] = useState(false);
 
-  const detalhe = useApuracaoDetalhe(tenantId, competencia);
-  const divergencia = useApuracaoDivergencia(tenantId, competencia);
+  const detalhe = useApuracaoDetalhe(tenantId, competencia, polling);
+  const divergencia = useApuracaoDivergencia(tenantId, competencia, polling);
   const quota = useRtcQuota(tenantId);
   const request = useRequestApuracao(tenantId);
   const pendentes = useProcessarPendentesApuracao(tenantId);
@@ -102,6 +105,23 @@ function ApuracaoPage() {
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
 
+  // A Receita responde de forma assíncrona via webhook. Enquanto o polling está
+  // ligado, refazemos a consulta; ao vir "disponível" os campos preenchem sozinhos.
+  useEffect(() => {
+    if (!polling) return;
+    if (detalhe.data?.disponivel) {
+      setPolling(false);
+      toast.success("Apuração da Receita recebida — campos preenchidos automaticamente.");
+    }
+  }, [polling, detalhe.data]);
+
+  // Segurança: nunca rodar o polling para sempre.
+  useEffect(() => {
+    if (!polling) return;
+    const t = setTimeout(() => setPolling(false), 120_000);
+    return () => clearTimeout(t);
+  }, [polling]);
+
   const compareIcon = divergente ? AlertTriangle : CheckCircle2;
   const naoConsultadaMsg = withPeriod(
     d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada para esta competência",
@@ -112,23 +132,28 @@ function ApuracaoPage() {
       type="button"
       className="cta-lift gap-2"
       title={!podeConsultar ? quota.data?.mensagem : undefined}
-      disabled={!podeConsultar || request.isPending || quota.isLoading}
+      disabled={!podeConsultar || request.isPending || quota.isLoading || polling}
       onClick={async () => {
         try {
           await request.mutateAsync(competencia);
-          toast.success("Solicitação enviada. A Receita retorna o resultado em seguida.");
+          // Liga a auto-atualização: a Receita devolve o resultado via webhook e
+          // a tela preenche sozinha assim que ele chegar (sem recarregar).
+          setPolling(true);
+          toast.success("Solicitação enviada. A Receita retorna o resultado em seguida — a tela atualiza sozinha quando chegar.");
         } catch (error) {
           const message = error instanceof Error ? error.message : "Falha ao consultar.";
           toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);
         }
       }}
     >
-      {request.isPending ? (
+      {polling ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+      ) : request.isPending ? (
         <Loader2 className="size-4 animate-spin" aria-hidden />
       ) : (
         <RefreshCw className="size-4" aria-hidden />
       )}
-      Consultar Receita
+      {polling ? "Aguardando Receita…" : "Consultar Receita"}
     </Button>
   );
 
@@ -174,6 +199,7 @@ function ApuracaoPage() {
                   value={competencia}
                   onValueChange={(v) => {
                     setInvPage(0);
+                    setPolling(false);
                     setCompetencia(v);
                   }}
                 >
