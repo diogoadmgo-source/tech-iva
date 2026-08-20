@@ -169,12 +169,15 @@ export async function unsealSecret(blob: Uint8Array | string): Promise<Uint8Arra
   }
 
   const ring = masterKeyRing();
-  const candidates = envelope.kid ? ring.filter((k) => k.kid === envelope.kid) : ring;
-  if (candidates.length === 0) {
-    throw new CredentialError(
-      "Não foi possível abrir a credencial: a chave mestra usada no cadastro não está mais configurada.",
-    );
-  }
+  const matching = envelope.kid ? ring.filter((key) => key.kid === envelope.kid) : ring;
+  // O `kid` identifica a chave, mas não deve tornar o envelope irrecuperável se
+  // apenas o identificador foi renomeado na configuração. Tenta primeiro a
+  // correspondência exata e, depois, as demais chaves configuradas. O material
+  // continua protegido: somente uma KEK que autentique o AES-GCM consegue abrir.
+  const candidates = [
+    ...matching,
+    ...ring.filter((key) => !matching.some((candidate) => candidate.kid === key.kid)),
+  ];
 
   const salt = fromBase64(envelope.salt);
   const wrapIv = fromBase64(envelope.wrap_iv);
@@ -199,7 +202,7 @@ export async function unsealSecret(blob: Uint8Array | string): Promise<Uint8Arra
     }
   }
   throw new CredentialError(
-    "Não foi possível abrir a credencial: a chave mestra não corresponde à usada no cadastro.",
+    "Não foi possível abrir a credencial: nenhuma chave mestra configurada corresponde à usada no cadastro. Cadastre novamente a credencial RTC em Integrações.",
   );
 }
 
