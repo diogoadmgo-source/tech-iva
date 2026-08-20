@@ -46,6 +46,10 @@ type Props = {
   collapsed: boolean;
   onToggle: () => void;
   onOpenScopePicker: () => void;
+  /** "sheet" = dentro da gaveta do celular (sem sticky/hidden, sempre expandida). */
+  variant?: "desktop" | "sheet";
+  /** Fecha a gaveta ao navegar (só no celular). */
+  onNavigate?: () => void;
 };
 
 export function TenantSidebar({
@@ -55,10 +59,14 @@ export function TenantSidebar({
   role,
   email,
   fullName,
-  collapsed,
+  collapsed: collapsedProp,
   onToggle,
   onOpenScopePicker,
+  variant = "desktop",
+  onNavigate,
 }: Props) {
+  const isSheet = variant === "sheet";
+  const collapsed = isSheet ? false : collapsedProp;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const credit = useFeature(tenant.id, "credit");
