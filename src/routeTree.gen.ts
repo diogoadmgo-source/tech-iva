@@ -16,6 +16,7 @@ import { Route as DesignRouteImport } from './routes/design'
 import { Route as ForgotRouteImport } from './routes/forgot'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MfaRouteImport } from './routes/mfa'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ReembolsoRouteImport } from './routes/reembolso'
 import { Route as ResetRouteImport } from './routes/reset'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -87,6 +88,11 @@ const LoginRoute = LoginRouteImport.update({
 const MfaRoute = MfaRouteImport.update({
   id: '/mfa',
   path: '/mfa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReembolsoRoute = ReembolsoRouteImport.update({
@@ -316,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
@@ -362,6 +369,7 @@ export interface FileRoutesByTo {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
@@ -457,6 +466,7 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
     | '/reembolso'
     | '/reset'
     | '/signup'
@@ -503,6 +513,7 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
     | '/reembolso'
     | '/reset'
     | '/signup'
@@ -549,6 +560,7 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
     | '/reembolso'
     | '/reset'
     | '/signup'
@@ -597,6 +609,7 @@ export interface RootRouteChildren {
   ForgotRoute: typeof ForgotRoute
   LoginRoute: typeof LoginRoute
   MfaRoute: typeof MfaRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   ReembolsoRoute: typeof ReembolsoRoute
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
@@ -657,6 +670,13 @@ declare module '@tanstack/react-router' {
       path: '/mfa'
       fullPath: '/mfa'
       preLoaderRoute: typeof MfaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reembolso': {
@@ -1020,6 +1040,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotRoute: ForgotRoute,
   LoginRoute: LoginRoute,
   MfaRoute: MfaRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   ReembolsoRoute: ReembolsoRoute,
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
