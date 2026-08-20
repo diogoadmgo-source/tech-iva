@@ -292,15 +292,8 @@ export async function solicitarApuracao(
   const urlRetorno = `${origin.replace(/\/+$/, "")}/api/public/rtc/apuracao/${row.webhook_ref}`;
 
   try {
-    const resposta = await callGateway(
-      "/api/apuracao/solicitar",
-      {
-        cnpj,
-        competencia: competencia.slice(0, 7).replace("-", ""),
-        urlRetorno,
-      },
-      credential.apiKey,
-    );
+    const resposta = await solicitarNaReceita(cnpj, urlRetorno, credential.apiKey);
+
     await logUse(admin, credential.id, "apuracao.solicitar", true);
 
     // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
