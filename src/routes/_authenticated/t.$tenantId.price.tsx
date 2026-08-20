@@ -588,22 +588,15 @@ function PricePage() {
           </Rise>
 
           <Rise index={4} className="overflow-x-auto">
-            {detail.isError ? (
-              <ErrorState
-                message={authErrorMessage(detail.error)}
-                onRetry={() => void detail.refetch()}
-              />
-            ) : (
-              <DataTable
-                columns={columns}
-                data={lines}
-                loading={detail.isLoading}
-                searchPlaceholder="Buscar SKU, produto ou NCM…"
-                emptyTitle="Nenhuma linha calculada"
-                emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
-                density="compact"
-              />
-            )}
+            <DataTable
+              columns={columns}
+              data={lines}
+              loading={detail.isLoading}
+              searchPlaceholder="Buscar SKU, produto ou NCM…"
+              emptyTitle="Nenhuma linha calculada"
+              emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
+              density="compact"
+            />
           </Rise>
 
           <Rise index={5}>
