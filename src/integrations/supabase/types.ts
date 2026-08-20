@@ -4702,6 +4702,8 @@ export type Database = {
         Args: { p_tenant: string }
         Returns: Database["public"]["Enums"]["modalidade_recolhimento"]
       }
+      tenant_plan: { Args: { p_tenant: string }; Returns: Json }
+      tenant_plans_scope: { Args: { p_tenant: string }; Returns: Json }
       unshare_simulation: { Args: { p_id: string }; Returns: undefined }
       update_product_price: {
         Args: {

@@ -36,6 +36,7 @@ import {
 import { authErrorMessage } from "@/lib/auth";
 import { EmptyState } from "@/components/techiva/empty-state";
 import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
+import { PlanEntitlementSection } from "@/components/techiva/plan-entitlement";
 import {
   SUBSCRIPTION_STATUSES,
   formatCents,
@@ -101,7 +102,7 @@ function PlansPage() {
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [error, setError] = useState<string | null>(null);
 
-  const [tab, setTab] = useState<"catalog" | "subscription">("catalog");
+  const [tab, setTab] = useState<"plan" | "catalog" | "subscription">("plan");
   const [planId, setPlanId] = useState<string>("");
   const [status, setStatus] = useState<string>("active");
   const [subError, setSubError] = useState<string | null>(null);
@@ -213,6 +214,7 @@ function PlansPage() {
             value={tab}
             onChange={setTab}
             options={[
+              { value: "plan", label: "Meu plano" },
               { value: "catalog", label: "Catálogo" },
               { value: "subscription", label: "Assinatura" },
             ]}
@@ -220,7 +222,12 @@ function PlansPage() {
         }
       />
 
-      {tab === "catalog" ? (
+      {tab === "plan" ? (
+        <PlanEntitlementSection
+          tenantId={tenantId}
+          showScope={shell.data?.tenant.kind === "channel" || shell.data?.tenant.kind === "platform"}
+        />
+      ) : tab === "catalog" ? (
         <Rise index={1}>
           <Panel
             title="Catálogo de planos"

@@ -139,6 +139,101 @@ export function useChangeSubscription(tenantId: string) {
         .insert({ tenant_id: tenantId, plan_id: planId, status });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subscription", tenantId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["subscription", tenantId] });
+      // o plano herdado das empresas abaixo muda junto com a assinatura
+      void queryClient.invalidateQueries({ queryKey: ["tenant-plan"] });
+      void queryClient.invalidateQueries({ queryKey: ["tenant-plans-scope"] });
+    },
   });
+}
+
+/* ------------------------------------------------------------------ *
+ * Plano efetivo (herdado pela hierarquia)
+ * A empresa não vê a linha de subscriptions do canal/plataforma (RLS
+ * por escopo), então quem resolve a herança é a RPC tenant_plan.
+ * ------------------------------------------------------------------ */
+
+export type PlanLimits = {
+  companies?: number;
+  users?: number;
+  invoices_month?: number;
+};
+
+export type EffectivePlan = {
+  tenant_id: string;
+  ativo: boolean;
+  assinatura: {
+    id: string;
+    status: string;
+    started_at: string;
+    ends_at: string | null;
+  } | null;
+  plano: {
+    id: string;
+    code: string;
+    name: string;
+    price_cents: number;
+    limits: PlanLimits;
+    features: Record<string, boolean>;
+  } | null;
+  herdado_de: { id: string; name: string; kind: string } | null;
+  uso: { companies?: number; users?: number; invoices_month?: number };
+};
+
+export type ScopePlanRow = {
+  id: string;
+  name: string;
+  kind: string;
+  cnpj: string | null;
+  plano: EffectivePlan;
+};
+
+const rpcAny = supabase.rpc.bind(supabase) as unknown as (
+  fn: string,
+  args?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+/** Plano vigente do tenant aberto, já resolvendo herança do ancestral. */
+export function useTenantPlan(tenantId: string) {
+  return useQuery({
+    queryKey: ["tenant-plan", tenantId],
+    enabled: Boolean(tenantId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<EffectivePlan> => {
+      const { data, error } = await rpcAny("tenant_plan", { p_tenant: tenantId });
+      if (error) throw new Error(error.message);
+      return data as EffectivePlan;
+    },
+  });
+}
+
+/** Empresas/unidades do escopo com o plano efetivo de cada uma. */
+export function useScopePlans(tenantId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["tenant-plans-scope", tenantId],
+    enabled: enabled && Boolean(tenantId),
+    staleTime: 60_000,
+    queryFn: async (): Promise<ScopePlanRow[]> => {
+      const { data, error } = await rpcAny("tenant_plans_scope", { p_tenant: tenantId });
+      if (error) throw new Error(error.message);
+      return (data as ScopePlanRow[] | null) ?? [];
+    },
+  });
+}
+
+export const LIMIT_LABELS: Record<keyof PlanLimits, string> = {
+  companies: "Empresas",
+  users: "Usuários",
+  invoices_month: "Notas no mês",
+};
+
+export function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    trialing: "em teste",
+    active: "ativa",
+    past_due: "pagamento pendente",
+    canceled: "cancelada",
+  };
+  return map[status] ?? status;
 }
