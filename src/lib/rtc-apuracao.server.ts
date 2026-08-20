@@ -252,11 +252,49 @@ async function solicitarNaReceita(
   return body ?? {};
 }
 
+/**
+ * Diagnóstico técnico da resposta de download. Guardado no banco para que uma
+ * falha possa ser explicada sem gastar outra consulta da cota diária. Não
+ * carrega credencial nem token — só metadados da resposta.
+ */
+export type DownloadDiag = {
+  status: number | null;
+  ok: boolean;
+  caminho_token: "guardado" | "novo";
+  headers: Record<string, string>;
+  corpo_recorte?: string;
+  em: string;
+};
+
+/** Cabeçalhos úteis para diagnóstico (nunca a nossa Authorization). */
+const HEADERS_DIAG = [
+  "content-type",
+  "content-length",
+  "date",
+  "x-request-id",
+  "x-correlation-id",
+  "x-ratelimit-limit",
+  "x-ratelimit-remaining",
+  "x-ratelimit-reset",
+  "retry-after",
+  "www-authenticate",
+];
+
+function headersDiag(res: Response): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of HEADERS_DIAG) {
+    const value = res.headers.get(name);
+    if (value) out[name] = value.slice(0, 200);
+  }
+  return out;
+}
+
 /** Passo 3: baixa o JSON do extrato. Um único acesso por tíquete. */
 async function baixarNaReceita(
   tiquete: string,
   token: string,
-): Promise<Record<string, unknown>> {
+  caminhoToken: "guardado" | "novo",
+): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
   const base = apiBase();
   if (!base) {
     throw new ApuracaoGatewayError(
@@ -278,9 +316,41 @@ async function baixarNaReceita(
   }
   const text = await res.text();
   const body = corpoJson(text);
-  if (!res.ok) throw erroDaReceita(res.status, body);
-  if (!body) throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
-  return body;
+  const diag: DownloadDiag = {
+    status: res.status,
+    ok: res.ok,
+    caminho_token: caminhoToken,
+    headers: headersDiag(res),
+    em: new Date().toISOString(),
+  };
+  if (!res.ok) {
+    // Recorte do corpo de erro: é o que explica a recusa sem gastar cota.
+    diag.corpo_recorte = text.slice(0, 1000);
+    const err = erroDaReceita(res.status, body) as ApuracaoGatewayError & { diag?: DownloadDiag };
+    err.diag = diag;
+    throw err;
+  }
+  if (!body) {
+    diag.corpo_recorte = text.slice(0, 1000);
+    const err = new ApuracaoGatewayError(
+      "error",
+      "A Receita devolveu um corpo inesperado.",
+    ) as ApuracaoGatewayError & { diag?: DownloadDiag };
+    err.diag = diag;
+    throw err;
+  }
+  return { body, diag };
+}
+
+async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: DownloadDiag | undefined) {
+  if (!diag) return;
+  console.info("[rtc-apuracao] download", {
+    apuracao: apuracaoId,
+    status: diag.status,
+    ok: diag.ok,
+    caminho_token: diag.caminho_token,
+  });
+  await table(admin, "rtc_apuracao").update({ download_diag: diag }).eq("id", apuracaoId);
 }
 
 
