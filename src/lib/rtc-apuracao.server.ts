@@ -7,12 +7,11 @@
  *      -> src/routes/api/public/rtc.apuracao.$ref.tsx
  *   3. GET/POST download do JSON usando o tíquete e ingestão -> este arquivo
  *
- * Por que o app e não um worker externo: os passos 1 e 3 são HTTP + JSON e não
- * precisam guardar estado. O único motivo para existir máquina fora era o TLS
- * mútuo com certificado — que continua no componente oficial hospedado na nossa
- * infra (RTC_APURACAO_URL / RTC_CALC_URL), usado aqui como PROXY de transporte.
- * O aplicativo passou a ser o orquestrador: nada fica pendurado esperando um
- * processo externo rodar.
+ * Falamos DIRETO com a API da Receita (apuracao-cbs v1), sem proxy no meio:
+ * OAuth client_credentials no /token e Bearer nas duas chamadas. O endereço vem
+ * de RTC_API_URL (produção por padrão) e o prefixo de RTC_API_PREFIX (`rtc` ou
+ * `prr-rtc` na produção restrita).
+
  *
  * REGRA DO PROJETO PRESERVADA: nenhum valor fiscal é produzido aqui. Este módulo
  * só transporta e grava o que a Receita devolveu. Motor fora do ar => erro
