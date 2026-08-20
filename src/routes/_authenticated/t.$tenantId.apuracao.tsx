@@ -104,6 +104,15 @@ function ApuracaoPage() {
   const divergente = disponivel && d.divergente;
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
+  // Com 2 consultas por dia, a data da última e o que resta são decisivos para
+  // o usuário decidir se gasta uma — por isso vivem no cabeçalho.
+  const restantes = quota.data?.restantes ?? 0;
+  const limiteDia = quota.data?.limite ?? 2;
+  const ultimaConsulta = (lista.data ?? []).reduce<string | null>((maior, a) => {
+    const em = a.recebido_em ?? a.solicitado_em;
+    if (!em) return maior;
+    return !maior || em > maior ? em : maior;
+  }, null);
 
   // A Receita responde de forma assíncrona via webhook. Enquanto o polling está
   // ligado, refazemos a consulta; ao vir "disponível" os campos preenchem sozinhos.
