@@ -237,7 +237,7 @@ async function solicitarNaReceita(
   let res: Response;
   try {
     res = await withTimeout((signal) =>
-      fetch(`${base}/rtc/apuracao-cbs/v1/${cnpj8}`, {
+      fetch(`${base}/${apiPrefix()}/apuracao-cbs/v1/${cnpj8}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ urlRetorno }),
@@ -268,7 +268,7 @@ async function baixarNaReceita(
   let res: Response;
   try {
     res = await withTimeout((signal) =>
-      fetch(`${base}/rtc/download/v1/${encodeURIComponent(tiquete)}`, {
+      fetch(`${base}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`, {
         method: "GET",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         signal,
