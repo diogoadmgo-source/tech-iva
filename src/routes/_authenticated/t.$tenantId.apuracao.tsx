@@ -229,7 +229,6 @@ function ApuracaoPage() {
             </InfoHint>
           </header>
 
-          <>
               <div className="mt-4 grid gap-5 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground">Divergência</p>
@@ -275,7 +274,6 @@ function ApuracaoPage() {
                   Seu cálculo bate com a apuração da Receita nesta competência.
                 </p>
               )}
-          </>
         </section>
         )}
       </Rise>
