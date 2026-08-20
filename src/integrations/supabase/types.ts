@@ -1664,6 +1664,7 @@ export type Database = {
       }
       rtc_apuracao: {
         Row: {
+          access_token_ref: string | null
           competencia: string
           creditos_cents: number | null
           debitos_cents: number | null
@@ -1694,6 +1695,7 @@ export type Database = {
           webhook_ref: string | null
         }
         Insert: {
+          access_token_ref?: string | null
           competencia: string
           creditos_cents?: number | null
           debitos_cents?: number | null
@@ -1724,6 +1726,7 @@ export type Database = {
           webhook_ref?: string | null
         }
         Update: {
+          access_token_ref?: string | null
           competencia?: string
           creditos_cents?: number | null
           debitos_cents?: number | null
