@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Semaphore } from "@/components/techiva/badges";
 import { InfoHint } from "@/components/techiva/info-hint";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { NoticeBoard } from "@/components/techiva/notices";
@@ -470,7 +471,7 @@ function ApuracaoPage() {
                           {inv.series ? `${inv.series}/` : ""}
                           {inv.number ?? "s/n"}
                         </span>{" "}
-                        · {new Date(inv.issued_at).toLocaleDateString("pt-BR")}
+                        · <span className="font-mono tabular text-xs">{new Date(inv.issued_at).toLocaleDateString("pt-BR")}</span>
                       </p>
                       <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                         IBS+CBS {formatCents((inv.ibs_cents ?? 0) + (inv.cbs_cents ?? 0))}
@@ -526,7 +527,7 @@ function ApuracaoPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"
-                          className="text-sm text-primary hover:underline"
+                          className="font-mono tabular text-sm text-primary hover:underline"
                           onClick={() => {
                             setInvPage(0);
                             setCompetencia(comp);
@@ -541,7 +542,10 @@ function ApuracaoPage() {
                         )}
                         {a.recebido_em && (
                           <span className="text-[11px] text-muted-foreground">
-                            recebida em {new Date(a.recebido_em).toLocaleDateString("pt-BR")}
+                            recebida em{" "}
+                            <span className="font-mono tabular">
+                              {new Date(a.recebido_em).toLocaleDateString("pt-BR")}
+                            </span>
                           </span>
                         )}
                       </div>
@@ -596,7 +600,7 @@ function ProjecaoItem({
   return (
     <div className="rounded-lg border border-border bg-surface-2 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-base tabular-nums">{formatCents(cents)}</p>
+      <p className="mt-1 font-mono tabular text-base">{formatCents(cents)}</p>
       {hint && <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
   );
