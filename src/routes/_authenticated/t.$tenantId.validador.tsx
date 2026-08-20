@@ -1,12 +1,19 @@
 import { useCallback, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, CheckCircle2, FileUp, Loader2, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileUp,
+  ListChecks,
+  Loader2,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
 import { NoticeBoard } from "@/components/techiva/notices";
 import { useValidateClassTrib } from "@/lib/rtc";
-import { KpiCard } from "@/components/techiva/metrics";
+import { Kpi } from "@/components/techiva/kpi";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
 import {
   EngineBanner,
@@ -16,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
 import {
   VALIDADOR_PITCH,
   engineUnavailableMessage,
