@@ -1,7 +1,10 @@
 import { AlertTriangle, BookOpen, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 
+import { Semaphore } from "@/components/techiva/badges";
+import { Panel } from "@/components/techiva/page";
 import { formatCents } from "@/components/techiva/money";
 import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import {
   MOTOR_OFICIAL,
