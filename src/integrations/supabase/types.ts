@@ -4184,6 +4184,31 @@ export type Database = {
           situacao: Database["public"]["Enums"]["debito_situacao"]
         }[]
       }
+      conciliacao_documentos_page: {
+        Args: {
+          p_competencia: string
+          p_dir?: string
+          p_limit?: number
+          p_offset?: number
+          p_order?: string
+          p_search?: string
+          p_so_divergentes?: boolean
+          p_tenant: string
+        }
+        Returns: {
+          chave_dfe: string
+          contraparte: string
+          debito_id: number
+          diferenca_cents: number
+          grupo: Database["public"]["Enums"]["apuracao_grupo"]
+          nao_extinto_cents: number
+          nosso_cents: number
+          numero_dfe: string
+          receita_cents: number
+          situacao: Database["public"]["Enums"]["debito_situacao"]
+          total_count: number
+        }[]
+      }
       counterparties_missing_registry: {
         Args: { p_tenant: string; p_ttl_days?: number }
         Returns: {

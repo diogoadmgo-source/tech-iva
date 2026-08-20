@@ -1,26 +1,36 @@
-import { useState } from "react";
-import { Coins, Download, ScanSearch } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Coins, Download, ScanSearch, Search } from "lucide-react";
+import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
 import { formatCents } from "@/components/techiva/money";
 import { Panel, Rise, Segmented } from "@/components/techiva/page";
+import { Pager } from "@/components/techiva/pager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DEFAULT_PAGE_SIZE } from "@/lib/paginate";
 import { downloadCsv } from "@/lib/pricing";
 import {
+  CONCILIACAO_ORDER_LABEL,
   conciliacaoCsv,
   DEBITO_SITUACAO_LABEL,
+  fetchConciliacaoAll,
   formatCompetencia,
   GRUPO_LABEL,
   motivoDivergencia,
-  useConciliacaoDocumentos,
+  useConciliacaoPage,
   useExtincaoResumo,
+  type ConciliacaoOrder,
 } from "@/lib/rtc";
 
 /**
- * Conciliação nota a nota: sai do total e aponta a nota. Alimentado pelas RPCs
- * conciliacao_documentos e extincao_resumo (débito por documento da Receita).
+ * Conciliação nota a nota: sai do total e aponta a nota. Paginada e ordenada no
+ * SERVIDOR (RPC conciliacao_documentos_page) — a competência de uma empresa
+ * grande tem centenas de milhares de documentos, e ordenar/cortar no navegador
+ * significaria carregar tudo (e o PostgREST cortaria em 1000 linhas calado).
  */
 export function ConciliacaoPanel({
   tenantId,
@@ -32,8 +42,57 @@ export function ConciliacaoPanel({
   index?: number | undefined;
 }) {
   const [escopo, setEscopo] = useState<"divergentes" | "todos">("divergentes");
-  const docs = useConciliacaoDocumentos(tenantId, competencia, escopo === "divergentes");
-  const rows = docs.data ?? [];
+  const [order, setOrder] = useState<ConciliacaoOrder>("diferenca");
+  const [dir, setDir] = useState<"asc" | "desc">("desc");
+  const [busca, setBusca] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [exporting, setExporting] = useState(false);
+
+  // busca no servidor, com respiro para não disparar RPC a cada tecla
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(busca.trim()), 350);
+    return () => clearTimeout(t);
+  }, [busca]);
+
+  // qualquer troca de filtro/ordem volta para a primeira página
+  useEffect(() => {
+    setPage(0);
+  }, [escopo, order, dir, search, pageSize, competencia]);
+
+  const query = useMemo(
+    () => ({
+      soDivergentes: escopo === "divergentes",
+      order,
+      dir,
+      page,
+      pageSize,
+      search,
+    }),
+    [escopo, order, dir, page, pageSize, search],
+  );
+
+  const docs = useConciliacaoPage(tenantId, competencia, query);
+  const rows = docs.data?.rows ?? [];
+  const total = docs.data?.total ?? 0;
+
+  async function exportarCsv() {
+    setExporting(true);
+    try {
+      const all = await fetchConciliacaoAll(tenantId, competencia, {
+        soDivergentes: query.soDivergentes,
+        order,
+        dir,
+        search,
+      });
+      downloadCsv(`conciliacao-${competencia.slice(0, 7)}.csv`, conciliacaoCsv(all));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <Rise index={index}>
@@ -50,6 +109,10 @@ export function ConciliacaoPanel({
             <p>
               Linha sem valor no nosso cálculo é nota que a Receita tem e nós não recebemos.
               “Ainda devido” é o que falta pagar naquele documento.
+            </p>
+            <p>
+              A lista é paginada e ordenada no servidor: a contagem e a ordem valem para a
+              competência inteira, não só para as linhas visíveis. O CSV sai completo.
             </p>
           </>
         }
@@ -69,20 +132,58 @@ export function ConciliacaoPanel({
               size="sm"
               variant="outline"
               className="gap-2"
-              disabled={rows.length === 0}
-              onClick={() =>
-                downloadCsv(
-                  `conciliacao-${competencia.slice(0, 7)}.csv`,
-                  conciliacaoCsv(rows),
-                )
-              }
+              disabled={total === 0 || exporting}
+              onClick={exportarCsv}
             >
               <Download className="size-4" aria-hidden />
-              CSV
+              {exporting ? "Gerando…" : "CSV"}
             </Button>
           </>
         }
       >
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:max-w-xs">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Número, chave ou contraparte"
+              aria-label="Buscar documento na conciliação"
+              className="h-8 pl-8 text-xs"
+            />
+          </div>
+          <Select value={order} onValueChange={(v) => setOrder(v as ConciliacaoOrder)}>
+            <SelectTrigger className="h-8 w-44 text-xs" aria-label="Ordenar por">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(CONCILIACAO_ORDER_LABEL) as ConciliacaoOrder[]).map((k) => (
+                <SelectItem key={k} value={k}>
+                  {CONCILIACAO_ORDER_LABEL[k]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-2 px-2 text-xs"
+            onClick={() => setDir((d) => (d === "desc" ? "asc" : "desc"))}
+            aria-label={dir === "desc" ? "Ordem decrescente" : "Ordem crescente"}
+          >
+            {dir === "desc" ? (
+              <ArrowDownWideNarrow className="size-4" aria-hidden />
+            ) : (
+              <ArrowUpNarrowWide className="size-4" aria-hidden />
+            )}
+            {dir === "desc" ? "Maior primeiro" : "Menor primeiro"}
+          </Button>
+        </div>
+
         {docs.isLoading ? (
           <Skeleton className="h-32 w-full" />
         ) : docs.isError ? (
@@ -93,60 +194,75 @@ export function ConciliacaoPanel({
         ) : rows.length === 0 ? (
           <EmptyState
             title={
-              escopo === "divergentes"
-                ? "Nenhum documento divergente nesta competência"
-                : "Nenhum débito por documento recebido nesta competência"
+              search
+                ? "Nenhum documento encontrado para esta busca"
+                : escopo === "divergentes"
+                  ? "Nenhum documento divergente nesta competência"
+                  : "Nenhum débito por documento recebido nesta competência"
             }
           />
         ) : (
-          <ul className="divide-y divide-border">
-            {rows.map((doc, i) => {
-              const diff = doc.diferenca_cents ?? 0;
-              return (
-                <li
-                  key={`${doc.chave_dfe ?? doc.numero_dfe ?? "doc"}-${i}`}
-                  className="flex flex-wrap items-start justify-between gap-3 py-2.5"
-                >
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {doc.numero_dfe ?? "s/n"}
-                      </span>
-                      <span className="truncate">{doc.contraparte ?? "contraparte não identificada"}</span>
-                      {doc.grupo && doc.grupo !== "corrente" ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          {GRUPO_LABEL[doc.grupo] ?? doc.grupo}
-                        </Badge>
-                      ) : null}
-                      {doc.situacao ? (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {DEBITO_SITUACAO_LABEL[doc.situacao] ?? doc.situacao}
-                        </Badge>
-                      ) : null}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {motivoDivergencia(doc)}
-                      {doc.chave_dfe ? ` · ${doc.chave_dfe}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 text-right">
-                    <Coluna label="Receita" cents={doc.receita_cents ?? 0} />
-                    <Coluna label="Nosso" cents={doc.nosso_cents ?? 0} />
-                    <Coluna
-                      label="Diferença"
-                      cents={diff}
-                      className={diff === 0 ? undefined : diff > 0 ? "text-flow-out" : "text-primary"}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <ul className="divide-y divide-border">
+              {rows.map((doc) => {
+                const diff = doc.diferenca_cents ?? 0;
+                return (
+                  <li
+                    key={doc.debito_id}
+                    className="flex flex-wrap items-start justify-between gap-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {doc.numero_dfe ?? "s/n"}
+                        </span>
+                        <span className="truncate">{doc.contraparte ?? "contraparte não identificada"}</span>
+                        {doc.grupo && doc.grupo !== "corrente" ? (
+                          <Badge variant="outline" className="text-[10px]">
+                            {GRUPO_LABEL[doc.grupo] ?? doc.grupo}
+                          </Badge>
+                        ) : null}
+                        {doc.situacao ? (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {DEBITO_SITUACAO_LABEL[doc.situacao] ?? doc.situacao}
+                          </Badge>
+                        ) : null}
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {motivoDivergencia(doc)}
+                        {doc.chave_dfe ? ` · ${doc.chave_dfe}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <Coluna label="Receita" cents={doc.receita_cents ?? 0} />
+                      <Coluna label="Nosso" cents={doc.nosso_cents ?? 0} />
+                      <Coluna
+                        label="Diferença"
+                        cents={diff}
+                        className={diff === 0 ? undefined : diff > 0 ? "text-flow-out" : "text-primary"}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            <Pager
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              unit="documento(s)"
+              loading={docs.isFetching}
+              className="-mx-4 mt-2 px-4 sm:-mx-5 sm:px-5"
+            />
+          </>
         )}
       </Panel>
     </Rise>
   );
 }
+
 
 function Coluna({
   label,
