@@ -285,7 +285,10 @@ type StorageLike = {
     };
   };
   from: (table: string) => {
-    select: (columns: string) => Promise<{ data: { secret_ref: string | null }[] | null; error: { message: string } | null }>;
+    select: (columns: string) => Promise<{
+      data: Array<{ secret_ref?: string | null; access_token_ref?: string | null }> | null;
+      error: { message: string } | null;
+    }>;
   };
 };
 
@@ -315,7 +318,14 @@ export async function cleanupOrphanSecrets(
   const objects = await listAll(client, "secrets");
   const { data, error } = await client.from("integration_credentials").select("secret_ref");
   if (error) throw new Error(error.message);
-  const referenced = new Set((data ?? []).map((r) => r.secret_ref).filter(Boolean) as string[]);
+  const { data: rtcTokens, error: rtcError } = await client
+    .from("rtc_apuracao")
+    .select("access_token_ref");
+  if (rtcError) throw new Error(rtcError.message);
+  const referenced = new Set([
+    ...(data ?? []).map((r) => r.secret_ref).filter(Boolean),
+    ...(rtcTokens ?? []).map((r) => r.access_token_ref).filter(Boolean),
+  ] as string[]);
   const orphans = objects.filter((path) => !referenced.has(path));
 
   let removed: string[] = [];
