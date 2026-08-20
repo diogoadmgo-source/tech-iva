@@ -203,49 +203,82 @@ export function ConciliacaoPanel({
           />
         ) : (
           <>
-            <ul className="divide-y divide-border">
-              {rows.map((doc) => {
-                const diff = doc.diferenca_cents ?? 0;
-                return (
-                  <li
-                    key={doc.debito_id}
-                    className="flex flex-wrap items-start justify-between gap-3 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-2 text-sm">
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {doc.numero_dfe ?? "s/n"}
-                        </span>
-                        <span className="truncate">{doc.contraparte ?? "contraparte não identificada"}</span>
-                        {doc.grupo && doc.grupo !== "corrente" ? (
-                          <Badge variant="outline" className="text-[10px]">
-                            {GRUPO_LABEL[doc.grupo] ?? doc.grupo}
-                          </Badge>
-                        ) : null}
-                        {doc.situacao ? (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {DEBITO_SITUACAO_LABEL[doc.situacao] ?? doc.situacao}
-                          </Badge>
-                        ) : null}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {motivoDivergencia(doc)}
-                        {doc.chave_dfe ? ` · ${doc.chave_dfe}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <Coluna label="Receita" cents={doc.receita_cents ?? 0} />
-                      <Coluna label="Nosso" cents={doc.nosso_cents ?? 0} />
-                      <Coluna
-                        label="Diferença"
-                        cents={diff}
-                        className={diff === 0 ? undefined : diff > 0 ? "text-flow-out" : "text-primary"}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="-mx-4 overflow-x-auto px-4">
+              <table className="w-full min-w-[46rem] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border/70">
+                    <th scope="col" className="th-label">
+                      Situação
+                    </th>
+                    <th scope="col" className="th-label">
+                      Documento
+                    </th>
+                    <th scope="col" className="th-label !text-right">
+                      Receita
+                    </th>
+                    <th scope="col" className="th-label !text-right">
+                      Nosso
+                    </th>
+                    <th scope="col" className="th-label !text-right">
+                      Diferença
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((doc) => {
+                    const diff = doc.diferenca_cents ?? 0;
+                    const semNosso = (doc.nosso_cents ?? 0) === 0 && (doc.receita_cents ?? 0) > 0;
+                    const level: SemaphoreLevel = diff === 0 ? "ok" : semNosso ? "crit" : "warn";
+                    return (
+                      <tr key={doc.debito_id} className="row-hover border-b border-border/50">
+                        <td className="px-3 py-2.5 align-top">
+                          <Semaphore level={level} showLabel={false} />
+                        </td>
+                        <td className="px-3 py-2.5 align-top">
+                          <p className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono tabular text-xs text-muted-foreground">
+                              {doc.numero_dfe ?? "s/n"}
+                            </span>
+                            <span className="truncate">
+                              {doc.contraparte ?? "contraparte não identificada"}
+                            </span>
+                            {doc.grupo && doc.grupo !== "corrente" ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {GRUPO_LABEL[doc.grupo] ?? doc.grupo}
+                              </Badge>
+                            ) : null}
+                            {doc.situacao ? (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {DEBITO_SITUACAO_LABEL[doc.situacao] ?? doc.situacao}
+                              </Badge>
+                            ) : null}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            {motivoDivergencia(doc)}
+                            {doc.chave_dfe ? (
+                              <span className="font-mono tabular"> · {doc.chave_dfe}</span>
+                            ) : null}
+                          </p>
+                        </td>
+                        <td className="num px-3 py-2.5 align-top">
+                          {formatCents(doc.receita_cents ?? 0)}
+                        </td>
+                        <td className="num px-3 py-2.5 align-top">
+                          {formatCents(doc.nosso_cents ?? 0)}
+                        </td>
+                        <td
+                          className={`num px-3 py-2.5 align-top ${
+                            diff === 0 ? "" : diff > 0 ? "text-flow-out" : "text-primary"
+                          }`}
+                        >
+                          {formatCents(diff)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             <Pager
               page={page}
               pageSize={pageSize}
