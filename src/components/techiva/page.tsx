@@ -75,6 +75,11 @@ export function PageHeader({
           </h1>
           {help ? <InfoHint title={helpTitle ?? title}>{help}</InfoHint> : null}
         </div>
+        {meta ? (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {meta}
+          </div>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </Rise>
