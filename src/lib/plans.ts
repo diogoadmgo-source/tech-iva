@@ -139,7 +139,12 @@ export function useChangeSubscription(tenantId: string) {
         .insert({ tenant_id: tenantId, plan_id: planId, status });
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["subscription", tenantId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["subscription", tenantId] });
+      // o plano herdado das empresas abaixo muda junto com a assinatura
+      void queryClient.invalidateQueries({ queryKey: ["tenant-plan"] });
+      void queryClient.invalidateQueries({ queryKey: ["tenant-plans-scope"] });
+    },
   });
 }
 
