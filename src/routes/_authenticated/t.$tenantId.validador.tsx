@@ -139,7 +139,7 @@ function ValidadorPage() {
         title="Validador de XML"
         helpTitle="Como usar o validador"
         help={<p>{VALIDADOR_PITCH}</p>}
-        actions={<EngineBanner status={engine.data} loading={engine.isLoading} />}
+        actions={<EngineChip status={engine.data} loading={engine.isLoading} />}
       />
 
       {/* avisos mantidos pela plataforma (notices_for) */}
@@ -148,15 +148,27 @@ function ValidadorPage() {
       </Rise>
 
       <Rise index={2} className="grid gap-4 sm:grid-cols-3">
-        <KpiCard
+        <Kpi
           label="Documentos validados (30 dias)"
-          value={s ? String(s.total) : "—"}
-          hint={s?.ultima ? `Último em ${new Date(s.ultima).toLocaleDateString("pt-BR")}` : undefined}
+          value={<span className="font-mono tabular">{s ? String(s.total) : "—"}</span>}
+          loading={summary.isLoading}
+          hint={
+            s?.ultima ? `Último em ${new Date(s.ultima).toLocaleDateString("pt-BR")}` : undefined
+          }
         />
-        <KpiCard label="Válidos" value={s ? String(s.validos) : "—"} />
-        <KpiCard
+        <Kpi
+          label="Válidos"
+          value={<span className="font-mono tabular">{s ? String(s.validos) : "—"}</span>}
+          loading={summary.isLoading}
+        />
+        <Kpi
           label="Taxa de erro"
-          value={s ? `${Number(s.taxa_erro).toFixed(1).replace(".", ",")}%` : "—"}
+          value={
+            <span className="font-mono tabular">
+              {s ? `${Number(s.taxa_erro).toFixed(1).replace(".", ",")}%` : "—"}
+            </span>
+          }
+          loading={summary.isLoading}
           hint={s ? `${s.invalidos} documento(s) com inconsistência` : undefined}
         />
       </Rise>
@@ -166,7 +178,17 @@ function ValidadorPage() {
           title="Seus erros recorrentes"
           help={<p>Corrigir a parametrização do emissor resolve o erro em lote, não uma nota por vez.</p>}
         >
-          <TopIssuesPanel issues={topIssues.data} loading={topIssues.isLoading} />
+          {topIssues.isLoading ? (
+            <p className="text-xs text-muted-foreground">Carregando ranking…</p>
+          ) : (topIssues.data ?? []).length === 0 ? (
+            <EmptyState
+              icon={ListChecks}
+              title="Nenhuma inconsistência registrada no período"
+              hint="Valide alguns XML para ver o padrão: aqui aparece o erro que mais se repete, com quantas notas ele atingiu."
+            />
+          ) : (
+            <TopIssuesPanel issues={topIssues.data} />
+          )}
         </Panel>
       </Rise>
 
@@ -177,7 +199,7 @@ function ValidadorPage() {
       )}
 
       <Rise index={5}>
-        <Panel bodyClassName="p-0">
+        <Panel bodyClassName="p-3">
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -190,8 +212,10 @@ function ValidadorPage() {
               void handleFiles(e.dataTransfer.files);
             }}
             className={cn(
-              "rounded-lg border-2 border-dashed p-8 text-center transition-colors",
-              dragging ? "border-primary bg-primary/5" : "border-border/70",
+              "rounded-xl border-2 border-dashed p-8 text-center transition-all duration-200",
+              dragging
+                ? "border-primary bg-primary/5 shadow-[0_0_0_4px_oklch(0.62_0.2_264_/_18%),0_0_34px_-6px_oklch(0.62_0.2_264_/_55%)]"
+                : "border-border/70",
             )}
           >
             <FileUp className="mx-auto size-6 text-muted-foreground" aria-hidden />
@@ -209,9 +233,8 @@ function ValidadorPage() {
             />
             <Button
               type="button"
-              variant="outline"
               size="sm"
-              className="mt-3"
+              className="mt-4 cta-lift"
               disabled={!engineReady || validate.isPending}
               onClick={() => inputRef.current?.click()}
             >
@@ -230,6 +253,7 @@ function ValidadorPage() {
           </div>
         </Panel>
       </Rise>
+
 
       {results.length > 0 && (
         <Rise index={6}>
