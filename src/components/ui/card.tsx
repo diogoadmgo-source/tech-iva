@@ -2,11 +2,20 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+export type CardProps = React.HTMLAttributes<HTMLDivElement> & {
+  /** Cartão que reage ao ponteiro: elevação, foco de luz e brilho de borda. */
+  interactive?: boolean | undefined;
+};
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, interactive, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-xl border bg-card text-card-foreground shadow", className)}
+      className={cn(
+        "panel text-card-foreground",
+        interactive && "panel-hover spotlight sheen",
+        className,
+      )}
       {...props}
     />
   ),
