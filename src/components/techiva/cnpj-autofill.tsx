@@ -1,5 +1,6 @@
 import { AlertTriangle, BadgeCheck, Loader2, Search } from "lucide-react";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,9 +152,11 @@ export function RegistrySummary({
       </div>
 
       {!ativa && record.situacao && (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
-          Situação cadastral não é ATIVA. Notas emitidas para este CNPJ podem ser recusadas e o
-          crédito pode não ser aproveitado.
+        <p className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+          Situação cadastral não é ATIVA.
+          <InfoHint title="Risco desta situação">
+            Notas emitidas para este CNPJ podem ser recusadas e o crédito pode não ser aproveitado.
+          </InfoHint>
         </p>
       )}
 

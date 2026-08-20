@@ -5,6 +5,7 @@ import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { RegimeBadge, Semaphore, type RegimeKind, type SemaphoreLevel } from "@/components/techiva/badges";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
@@ -715,9 +716,12 @@ function CounterpartyRegistry({ cnpj }: { cnpj: string }) {
   if (isLoading) return <Skeleton className="h-24 w-full" />;
   if (!data?.found) {
     return (
-      <p className="rounded-lg border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
-        Sem dados do cadastro público para este CNPJ. Use “Classificar contrapartes” para consultar a
-        Receita.
+      <p className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 p-3 text-xs text-muted-foreground">
+        Sem dados do cadastro público.
+        <InfoHint title="Cadastro não consultado">
+          Ainda não consultamos este CNPJ. Use “Classificar contrapartes” para buscar os dados
+          cadastrais na Receita.
+        </InfoHint>
       </p>
     );
   }

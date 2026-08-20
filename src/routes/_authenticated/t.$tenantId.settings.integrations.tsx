@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
@@ -582,15 +583,15 @@ function CredentialsList({
                   <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" aria-hidden />
                     <div>
-                      <p className="font-medium">
+                      <p className="flex items-center gap-1.5 font-medium">
                         {row.falhas_consecutivas} falha
                         {row.falhas_consecutivas === 1 ? "" : "s"} consecutiva
                         {row.falhas_consecutivas === 1 ? "" : "s"}
-                      </p>
-                      <p className="mt-0.5 text-muted-foreground">
-                        Falhas isoladas costumam ser instabilidade da Receita e não param nada. Após
-                        3 falhas seguidas, pausamos a ingestão e avisamos. O contador zera no
-                        primeiro sucesso.
+                        <InfoHint title="Falhas consecutivas">
+                          Falhas isoladas costumam ser instabilidade da Receita e não param nada.
+                          Após 3 falhas seguidas, pausamos a ingestão e avisamos. O contador zera no
+                          primeiro sucesso.
+                        </InfoHint>
                       </p>
                     </div>
                   </div>

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
+import { InfoHint } from "@/components/techiva/info-hint";
 import { DataTable } from "@/components/techiva/data-table";
 import { ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
@@ -251,9 +252,12 @@ function FeaturesPage() {
                   onChange={(event) => setConfirmed(event.target.checked)}
                   className="mt-1"
                 />
-                <span>
-                  Confirmo que existe fundo ou banco parceiro para esta empresa e que ela pode
-                  receber ofertas de crédito.
+                <span className="flex items-center gap-1.5">
+                  Confirmo que existe fundo ou banco parceiro.
+                  <InfoHint title="Confirmação">
+                    Só ligue o módulo quando existir fundo ou banco parceiro para esta empresa e ela
+                    puder receber ofertas de crédito.
+                  </InfoHint>
                 </span>
               </label>
             </div>
