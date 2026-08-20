@@ -45,7 +45,7 @@ export type ApuracaoDivergencia =
     };
 
 /** RPC apuracao_divergencia — nosso cálculo vs. apuração da Receita. */
-export function useApuracaoDivergencia(tenantId: string, competencia: string) {
+export function useApuracaoDivergencia(tenantId: string, competencia: string, poll = false) {
   return useQuery({
     queryKey: ["apuracao-divergencia", tenantId, competencia],
     enabled: Boolean(tenantId && competencia),
@@ -57,6 +57,10 @@ export function useApuracaoDivergencia(tenantId: string, competencia: string) {
       if (error) throw new Error(error.message);
       return data as ApuracaoDivergencia;
     },
+    // Poll só enquanto uma solicitação está em trânsito (a Receita responde via
+    // webhook assíncrono). Em fundo não, para não gastar cota/atenção do usuário.
+    refetchInterval: poll ? 4000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -419,7 +423,7 @@ export type ApuracaoDetalhe =
     };
 
 /** RPC apuracao_detalhe — totais + árvore de contas por visão. */
-export function useApuracaoDetalhe(tenantId: string, competencia: string) {
+export function useApuracaoDetalhe(tenantId: string, competencia: string, poll = false) {
   return useQuery({
     queryKey: ["apuracao-detalhe", tenantId, competencia],
     enabled: Boolean(tenantId && competencia),
@@ -431,6 +435,10 @@ export function useApuracaoDetalhe(tenantId: string, competencia: string) {
       if (error) throw new Error(error.message);
       return data as ApuracaoDetalhe;
     },
+    // Poll só enquanto uma solicitação está em trânsito (a Receita responde via
+    // webhook assíncrono). Em fundo não, para não gastar cota/atenção do usuário.
+    refetchInterval: poll ? 4000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 
