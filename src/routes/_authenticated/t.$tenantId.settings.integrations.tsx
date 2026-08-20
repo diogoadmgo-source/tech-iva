@@ -438,12 +438,6 @@ function RtcCredentialPaths({ tenantId }: { tenantId: string }) {
 
 /* ---------------------------------------------------------------- lista */
 
-const DOT: Record<string, string> = {
-  green: "bg-flow-in",
-  amber: "bg-amber-400",
-  red: "bg-flow-out",
-  neutral: "bg-muted-foreground",
-};
 
 function CredentialsList({
   tenantId,
