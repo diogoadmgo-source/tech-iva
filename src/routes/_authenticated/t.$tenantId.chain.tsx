@@ -1,19 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { ResponsiveContainer, Tooltip, Treemap } from "recharts";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, Network, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { InfoHint } from "@/components/techiva/info-hint";
 import { RegimeBadge, Semaphore, type RegimeKind, type SemaphoreLevel } from "@/components/techiva/badges";
 import { DataTable } from "@/components/techiva/data-table";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
-import { formatCents, formatCnpj, formatPct, MoneyText } from "@/components/techiva/money";
+import { CnpjText, formatCents, formatCnpj, formatPct, MoneyText } from "@/components/techiva/money";
+import { Kpi } from "@/components/techiva/kpi";
+import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
 import { SideSheet } from "@/components/techiva/side-sheet";
 import { ItemsList } from "@/components/techiva/rtc";
 import { useInvoiceItems } from "@/lib/rtc";
-import { useChartColors } from "@/components/techiva/use-chart-colors";
+import { useChartColors, useRegimeColors } from "@/components/techiva/use-chart-colors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -117,6 +119,7 @@ function ChainScreen() {
   const chain = useChainMap(tenantId, role);
   const mark = useMarkRenegotiate(tenantId);
   const colors = useChartColors();
+  const regimeColors = useRegimeColors();
 
   const isCustomer = role === "customer";
   const rows = chain.data ?? [];
