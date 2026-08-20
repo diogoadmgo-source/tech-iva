@@ -415,6 +415,39 @@
   }
 }
 
+/* movimento contínuo e discreto: as barras respiram depois de subir */
+@keyframes bar-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.93);
+  }
+}
+
+/* o traço do saldo escorre devagar, sugerindo dado em atualização */
+@keyframes line-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -420;
+  }
+}
+
+@keyframes dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    r: 2.5;
+  }
+  50% {
+    opacity: 0.55;
+    r: 3.4;
+  }
+}
+
 .cash-anim .cash-bar {
   transform-box: fill-box;
   transform-origin: bottom;
@@ -432,15 +465,21 @@
 }
 
 .cash-anim[data-run="true"] .cash-bar {
-  animation: bar-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation:
+    bar-rise 620ms var(--d, 0ms) cubic-bezier(0.22, 1, 0.36, 1) forwards,
+    bar-breathe 4.2s calc(1000ms + var(--d, 0ms)) ease-in-out infinite;
 }
 
 .cash-anim[data-run="true"] .cash-line {
-  animation: line-draw 1100ms 520ms ease-out forwards;
+  animation:
+    line-draw 1100ms 520ms ease-out forwards,
+    line-flow 9s 1700ms linear infinite;
 }
 
 .cash-anim[data-run="true"] .cash-fade {
-  animation: soft-in 320ms 1200ms ease-out forwards;
+  animation:
+    soft-in 320ms var(--d, 0ms) ease-out forwards,
+    dot-pulse 3.6s calc(600ms + var(--d, 0ms)) ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -453,6 +492,7 @@
     stroke-dashoffset: 0;
   }
 }
+
 
 
 /* ==========================================================================
