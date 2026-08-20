@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Download, Loader2, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +32,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { authErrorMessage } from "@/lib/auth";
 import {
   FISCAL_YEARS,
@@ -106,6 +112,9 @@ function PricePage() {
   const totals = detail.data?.totals;
   const scenario = detail.data?.scenario;
   const editable = scenario?.status === "draft";
+  // Cenário sem linha calculada não tem número real: nada de herói nem KPI zerado.
+  const hasLines = (totals?.lines ?? lines.length) > 0;
+  const emptyScenario = Boolean(scenarioId) && !detail.isLoading && !detail.isError && !hasLines;
 
   const compareByProduct = useMemo(() => {
     const map = new Map<string, PriceLine>();
@@ -357,25 +366,58 @@ function PricePage() {
                 )}
                 Recalcular
               </Button>
-              <Button
-                variant="outline"
-                disabled={!detail.data || lines.length === 0}
-                onClick={() => {
-                  if (!detail.data) return;
-                  downloadCsv(
-                    `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
-                      /\s+/g,
-                      "-",
-                    ),
-                    scenarioCsv(detail.data),
-                  );
-                }}
-              >
-                <Download className="mr-2 size-4" /> Exportar ERP
-              </Button>
-              <Button disabled={!scenario || scenario.status !== "draft"} onClick={() => setApproveOpen(true)}>
-                <Check className="mr-2 size-4" /> Aprovar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button
+                        variant="outline"
+                        disabled={!detail.data || !hasLines}
+                        onClick={() => {
+                          if (!detail.data) return;
+                          downloadCsv(
+                            `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
+                              /\s+/g,
+                              "-",
+                            ),
+                            scenarioCsv(detail.data),
+                          );
+                        }}
+                      >
+                        <Download className="mr-2 size-4" /> Exportar ERP
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!detail.data || !hasLines ? (
+                    <TooltipContent>
+                      A exportação libera quando o cenário tem pelo menos uma linha calculada — o
+                      arquivo do ERP é gerado a partir do piso e do alvo por produto.
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button
+                        disabled={!scenario || scenario.status !== "draft" || !hasLines}
+                        onClick={() => setApproveOpen(true)}
+                      >
+                        <Check className="mr-2 size-4" /> Aprovar
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!scenario || scenario.status !== "draft" || !hasLines ? (
+                    <TooltipContent>
+                      {!scenario
+                        ? "Selecione um cenário para aprovar."
+                        : scenario.status !== "draft"
+                          ? `Cenário já ${STATUS_LABEL[scenario.status] ?? scenario.status}: só rascunhos podem ser aprovados.`
+                          : "Cenário sem linhas calculadas. Aprovar enviaria uma tabela vazia ao ERP — cadastre produtos com custo e preço atual e recalcule."}
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </Panel>
@@ -390,7 +432,55 @@ function PricePage() {
         </Rise>
       ) : null}
 
-      {scenarioId ? (
+      {emptyScenario ? (
+        <Rise index={2}>
+          <EmptyState
+            title="Cenário sem linhas calculadas"
+            hint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo. Sem produtos não há número para aprovar nem exportar."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button asChild className="cta-lift">
+                  <Link to="/t/$tenantId/onboarding" params={{ tenantId }}>
+                    <Plus className="mr-2 size-4" /> Cadastrar ou importar produtos
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!editable || recompute.isPending}
+                  onClick={async () => {
+                    try {
+                      await recompute.mutateAsync(scenarioId);
+                      toast.success("Cenário recalculado.");
+                    } catch (err) {
+                      toast.error(authErrorMessage(err));
+                    }
+                  }}
+                >
+                  {recompute.isPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 size-4" />
+                  )}
+                  Recalcular cenário
+                </Button>
+              </div>
+            }
+          />
+        </Rise>
+      ) : null}
+
+      {scenarioId && detail.isError ? (
+        <Rise index={2}>
+          <ErrorState
+            message={authErrorMessage(detail.error)}
+            onRetry={() => void detail.refetch()}
+          />
+        </Rise>
+      ) : null}
+
+
+
+      {scenarioId && !emptyScenario && !detail.isError ? (
         <>
           {/* resultado principal + memória de cálculo, no mesmo padrão do simulador */}
           <Rise index={2}>
@@ -472,19 +562,13 @@ function PricePage() {
             </Panel>
           </Rise>
 
-          <Rise index={3} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
+          {/* KPIs não repetem o número do herói (receita a preço-alvo e Δ ficam lá) */}
+          <Rise index={3} className="grid gap-4 sm:grid-cols-3">
             <Kpi
               label="Receita a preço atual"
               valueCents={totals?.revenue_current_cents ?? 0}
               loading={detail.isLoading}
               hint="Soma dos preços atuais das linhas"
-            />
-            <Kpi
-              label="Receita a preço-alvo"
-              valueCents={totals?.revenue_target_cents ?? 0}
-              loading={detail.isLoading}
-              hint={`Δ médio ${formatPct(totals?.avg_delta_pct ?? 0)}`}
             />
             <Kpi
               label="Margem média no alvo"
@@ -504,22 +588,15 @@ function PricePage() {
           </Rise>
 
           <Rise index={4} className="overflow-x-auto">
-            {detail.isError ? (
-              <ErrorState
-                message={authErrorMessage(detail.error)}
-                onRetry={() => void detail.refetch()}
-              />
-            ) : (
-              <DataTable
-                columns={columns}
-                data={lines}
-                loading={detail.isLoading}
-                searchPlaceholder="Buscar SKU, produto ou NCM…"
-                emptyTitle="Nenhuma linha calculada"
-                emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
-                density="compact"
-              />
-            )}
+            <DataTable
+              columns={columns}
+              data={lines}
+              loading={detail.isLoading}
+              searchPlaceholder="Buscar SKU, produto ou NCM…"
+              emptyTitle="Nenhuma linha calculada"
+              emptyHint="Cadastre produtos com custo e preço atual para o cenário gerar piso e alvo."
+              density="compact"
+            />
           </Rise>
 
           <Rise index={5}>
