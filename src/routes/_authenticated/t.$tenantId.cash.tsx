@@ -170,21 +170,40 @@ function CashScreen() {
         />
       </Rise>
 
-      <Rise index={3}>
-        <HeroMetric
-          label={`Buraco líquido — próximos ${horizon} dias`}
-          valueCents={heroValue ?? 0}
-          sub={heroSub || undefined}
-          trend={hero?.trend}
-          loading={cash.isLoading}
-          help={
-            <p>
-              Diferença entre o imposto que sai e o crédito que volta no período. Negativo é caixa
-              que falta; positivo é caixa que sobra.
-            </p>
-          }
-        />
-      </Rise>
+      {/* herói só existe quando há número real: sem eventos de caixa, mostramos o caminho */}
+      {hasCashData ? (
+        <Rise index={3}>
+          <HeroMetric
+            label={`Buraco líquido — próximos ${horizon} dias`}
+            valueCents={heroValue ?? 0}
+            sub={heroSub || undefined}
+            trend={hero?.trend}
+            loading={cash.isLoading}
+            help={
+              <p>
+                Diferença entre o imposto que sai e o crédito que volta no período. Negativo é caixa
+                que falta; positivo é caixa que sobra.
+              </p>
+            }
+          />
+        </Rise>
+      ) : (
+        <Rise index={3}>
+          <EmptyState
+            icon={Banknote}
+            title="Sem eventos de caixa no período"
+            hint="Importe ou emita documentos fiscais para o Caixa do Imposto projetar o buraco líquido, os créditos e a provisão do período."
+            action={
+              <Button asChild className="cta-lift">
+                <Link to="/t/$tenantId/onboarding" params={{ tenantId }}>
+                  Importar documentos
+                </Link>
+              </Button>
+            }
+          />
+        </Rise>
+      )}
+
 
       <Rise index={4} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
