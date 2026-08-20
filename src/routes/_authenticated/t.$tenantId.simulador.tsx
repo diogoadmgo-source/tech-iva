@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Calculator, Link2, Loader2, Save } from "lucide-react";
+import { Calculator, Eye, Link2, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { EmptyState } from "@/components/techiva/empty-state";
@@ -89,6 +89,7 @@ function SimuladorPage() {
   const [nome, setNome] = useState("");
   const [result, setResult] = useState<CalcResult | null>(null);
   const [unavailable, setUnavailable] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const engine = useEngineStatus();
   const classTrib = useValidateClassTrib(cst, cclasstrib, data);
@@ -154,6 +155,10 @@ function SimuladorPage() {
     setNome(row.nome ?? "");
     setResult(row.results ?? null);
     setUnavailable(null);
+    // rola até o resultado: em telas estreitas o histórico fica abaixo do cálculo
+    requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   return (
@@ -323,7 +328,7 @@ function SimuladorPage() {
           )}
 
           {result && (
-            <div className="space-y-4">
+            <div ref={resultRef} className="space-y-4 scroll-mt-24">
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-52 flex-1 space-y-1.5">
                   <Label htmlFor="nome">Nome da simulação</Label>
@@ -395,6 +400,15 @@ function SimuladorPage() {
                       )}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => loadSimulation(row)}
+                      >
+                        <Eye className="size-3.5" aria-hidden />
+                        Visualizar
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
