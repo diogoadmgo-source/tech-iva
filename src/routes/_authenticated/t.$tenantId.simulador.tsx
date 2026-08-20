@@ -396,6 +396,15 @@ function SimuladorPage() {
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => loadSimulation(row)}
+                      >
+                        <Eye className="size-3.5" aria-hidden />
+                        Visualizar
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2"
