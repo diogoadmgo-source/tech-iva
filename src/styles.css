@@ -151,6 +151,8 @@
 @theme inline {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Rótulos de navegação e sobrancelhas: texto, não dado. */
+  --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
   --color-success: var(--success);
