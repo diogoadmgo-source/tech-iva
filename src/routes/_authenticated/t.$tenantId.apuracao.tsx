@@ -175,48 +175,59 @@ function ApuracaoPage() {
 
       {/* 1 — COMPARAÇÃO: o portal não sabe o que você calculou */}
       <Rise index={2}>
-        <Panel
-          title="Receita × nosso cálculo"
-          icon={compareIcon}
-          help={<p>{APURACAO_LIMITACAO}</p>}
-          className={divergente ? "border-flow-out/50 bg-flow-out/10" : undefined}
-        >
+        <section className="panel-hero p-5 sm:p-6">
+          <header className="flex items-center gap-2">
+            {(() => {
+              const Icon = compareIcon;
+              return <Icon className="size-4 shrink-0 text-primary" aria-hidden />;
+            })()}
+            <h2 className="text-sm font-semibold text-foreground">Receita × nosso cálculo</h2>
+            <InfoHint title="Receita × nosso cálculo">
+              <p>{APURACAO_LIMITACAO}</p>
+            </InfoHint>
+          </header>
+
           {divergencia.isLoading ? (
-            <Skeleton className="h-16 w-full" />
+            <Skeleton className="mt-4 h-20 w-full" />
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="mt-4 grid gap-5 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-muted-foreground">Divergência</p>
+                  <p
+                    className={`mt-1 font-mono tabular text-[2rem] leading-none font-semibold tracking-[-0.02em] sm:text-[2.5rem] ${
+                      divergente ? "text-flow-out" : "text-flow-in"
+                    }`}
+                  >
+                    {disponivel ? formatCents(Math.abs(d.diferenca_cents)) : "—"}
+                  </p>
+                  <div className="mt-3">
+                    <Semaphore level={divergente ? "crit" : disponivel ? "ok" : "warn"} />
+                  </div>
+                </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito apurado pela Receita</p>
-                  <p className="mt-1 font-mono text-lg tabular-nums">
+                  <p className="mt-1 font-mono tabular text-lg">
                     {disponivel ? formatCents(d.receita_debito_cents ?? 0) : "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">O que calculamos das suas notas</p>
-                  <p className="mt-1 font-mono text-lg tabular-nums">
+                  <p className="mt-1 font-mono tabular text-lg">
                     {formatCents(d?.nosso_debito_cents ?? 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Divergência</p>
-                  <p
-                    className={`mt-1 font-mono text-lg tabular-nums ${divergente ? "text-flow-out" : "text-flow-in"}`}
-                  >
-                    {disponivel ? formatCents(Math.abs(d.diferenca_cents)) : "—"}
                   </p>
                 </div>
               </div>
 
               {!disponivel && (
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-4 text-sm text-muted-foreground">
                   {d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada."} Use
                   “Consultar Receita” abaixo para solicitar.
                 </p>
               )}
 
               {divergente && (
-                <p className="mt-3 text-xs text-muted-foreground">
+                <p className="mt-4 text-xs text-muted-foreground">
                   {d.diferenca_cents > 0
                     ? "A Receita apurou mais do que calculamos: pode haver documento emitido que não chegou até nós."
                     : "Calculamos mais do que a Receita apurou: pode haver documento que a Receita ainda não processou, ou cancelamento/devolução."}{" "}
@@ -228,13 +239,13 @@ function ApuracaoPage() {
               )}
 
               {disponivel && !divergente && (
-                <p className="mt-3 text-sm text-flow-in">
+                <p className="mt-4 text-sm text-flow-in">
                   Seu cálculo bate com a apuração da Receita nesta competência.
                 </p>
               )}
             </>
           )}
-        </Panel>
+        </section>
       </Rise>
 
       {/* 1b — CONCILIAÇÃO: aponta a nota, não só o total */}
@@ -250,20 +261,26 @@ function ApuracaoPage() {
         >
           {cash.isLoading ? (
             <Skeleton className="h-16 w-full" />
+          ) : !cash.data ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="Sem projeção de caixa para esta empresa"
+              hint="A projeção aparece assim que houver notas e vencimentos de imposto registrados."
+            />
           ) : (
             <>
               <div className="grid gap-3 sm:grid-cols-3">
-                <ProjecaoItem label="Sai em 30 dias" cents={cash.data?.hero.gap_30_cents ?? 0} />
-                <ProjecaoItem label="Sai em 60 dias" cents={cash.data?.hero.gap_60_cents ?? 0} />
-                <ProjecaoItem label="Sai em 90 dias" cents={cash.data?.hero.gap_90_cents ?? 0} />
+                <ProjecaoItem label="Sai em 30 dias" cents={cash.data.hero.gap_30_cents ?? 0} />
+                <ProjecaoItem label="Sai em 60 dias" cents={cash.data.hero.gap_60_cents ?? 0} />
+                <ProjecaoItem label="Sai em 90 dias" cents={cash.data.hero.gap_90_cents ?? 0} />
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <ProjecaoItem
                   label="Crédito ainda a voltar"
-                  cents={cash.data?.kpis.credit_backlog_cents ?? 0}
-                  hint={`prazo médio de ${Math.round(cash.data?.kpis.credit_avg_days ?? 0)} dias`}
+                  cents={cash.data.kpis.credit_backlog_cents ?? 0}
+                  hint={`prazo médio de ${Math.round(cash.data.kpis.credit_avg_days ?? 0)} dias`}
                 />
-                {cash.data?.next_gap ? (
+                {cash.data.next_gap ? (
                   <ProjecaoItem
                     label="Próximo aperto"
                     cents={cash.data.next_gap.amount_cents}
@@ -277,6 +294,7 @@ function ApuracaoPage() {
           )}
         </Panel>
       </Rise>
+
 
       {/* 3 — SIGNIFICADO PARA O CAIXA: crédito acumulado em linguagem de dinheiro */}
       {acumulado && (
