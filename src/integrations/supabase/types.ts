@@ -4137,6 +4137,43 @@ export type Database = {
         Returns: boolean
       }
       auth_scopes: { Args: never; Returns: unknown[] }
+      billing_events_scope: {
+        Args: { p_limit?: number; p_tenant: string }
+        Returns: {
+          action: string
+          actor_role: string
+          amount: string
+          at: string
+          currency: string
+          event_id: number
+          reference: string
+          status_after: string
+          status_before: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
+      billing_subscriptions_scope: {
+        Args: { p_tenant: string }
+        Returns: {
+          cancel_at_period_end: boolean
+          cnpj: string
+          current_period_end: string
+          current_period_start: string
+          ends_at: string
+          environment: string
+          paddle_subscription_id: string
+          plan_code: string
+          plan_name: string
+          price_cents: number
+          started_at: string
+          status: string
+          subscription_id: string
+          tenant_id: string
+          tenant_kind: Database["public"]["Enums"]["tenant_kind"]
+          tenant_name: string
+        }[]
+      }
       calc_rule_cache_upsert: { Args: { p: Json }; Returns: number }
       can_admin: { Args: { p_tenant: string }; Returns: boolean }
       can_credit: { Args: { p_tenant: string }; Returns: boolean }
