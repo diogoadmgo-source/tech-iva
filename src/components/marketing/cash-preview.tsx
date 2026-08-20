@@ -1,7 +1,10 @@
+import { useEffect, useRef, useState } from "react";
+
 /**
  * Miniatura do gráfico de caixa do produto: imposto que sai, crédito que volta
- * e a linha de saldo. Animação em loop lento (7s) só com transform/opacity e
- * stroke-dashoffset — nunca layout. Valores ilustrativos, marcados como tal.
+ * e a linha de saldo. O ciclo de animação roda UMA vez, quando o gráfico entra
+ * na viewport, e para no estado final. Só transform/opacity e stroke-dashoffset.
+ * Valores ilustrativos, marcados como tal.
  */
 
 const WEEKS = [
@@ -17,13 +20,45 @@ const BASE_Y = 132;
 const X0 = 34;
 const STEP = 60;
 
+/** Azul da marca nas duas séries; o verde fica reservado ao crédito. */
+const COLOR_OUT = "var(--primary)";
+const COLOR_IN = "var(--brand-glow)";
+
 export function CashPreview() {
   const linePoints = WEEKS.map((w, i) => `${X0 + i * STEP + 9},${BASE_Y - w.saldo}`).join(" ");
+  const ref = useRef<HTMLElement | null>(null);
+  const [run, setRun] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setRun(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setRun(true);
+            observer.disconnect();
+          }
+        }
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <figure className="surface-lit overflow-hidden rounded-2xl p-5">
+    <figure
+      ref={ref as never}
+      data-run={run ? "true" : "false"}
+      className="cash-anim surface-lit overflow-hidden rounded-2xl p-5"
+    >
       <figcaption className="flex items-baseline justify-between gap-4">
-        <span className="font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
+        <span className="font-display text-[10px] tracking-[0.28em] text-primary uppercase">
           projeção de caixa
         </span>
         <span className="text-[11px] text-muted-foreground">semana a semana</span>
@@ -49,7 +84,7 @@ export function CashPreview() {
 
         {WEEKS.map((w, i) => {
           const x = X0 + i * STEP;
-          const delay = `${i * 220}ms`;
+          const delay = `${i * 90}ms`;
           return (
             <g key={w.label}>
               <rect
@@ -60,19 +95,19 @@ export function CashPreview() {
                 width="11"
                 height={w.out}
                 rx="2"
-                fill="var(--flow-out)"
-                opacity="0.9"
+                fill={COLOR_OUT}
+                opacity="0.95"
               />
               <rect
                 className="cash-bar"
-                style={{ animationDelay: `calc(${delay} + 90ms)` }}
+                style={{ animationDelay: `calc(${delay} + 70ms)` }}
                 x={x + 2}
                 y={BASE_Y - w.in}
                 width="11"
                 height={w.in}
                 rx="2"
-                fill="var(--flow-in)"
-                opacity="0.85"
+                fill={COLOR_IN}
+                opacity="0.6"
               />
               <text
                 x={x}
@@ -101,7 +136,7 @@ export function CashPreview() {
           <circle
             key={`p-${w.label}`}
             className="cash-fade"
-            style={{ animationDelay: `${i * 90}ms` }}
+            style={{ animationDelay: `calc(1200ms + ${i * 60}ms)` }}
             cx={X0 + i * STEP + 9}
             cy={BASE_Y - w.saldo}
             r="2.5"
@@ -111,8 +146,8 @@ export function CashPreview() {
       </svg>
 
       <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4 text-[11px]">
-        <Legend color="var(--flow-out)" label="Imposto a pagar" value="R$ 88.400" />
-        <Legend color="var(--flow-in)" label="Crédito a recuperar" value="R$ 44.100" />
+        <Legend color={COLOR_OUT} label="Imposto a pagar" value="R$ 88.400" />
+        <Legend color={COLOR_IN} label="Crédito a recuperar" value="R$ 44.100" />
         <Legend color="var(--primary)" label="Diferença no caixa" value="− R$ 44.300" />
       </div>
 
