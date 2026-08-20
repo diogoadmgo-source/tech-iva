@@ -114,6 +114,13 @@ async function callGateway(
       "Integração de apuração não configurada neste ambiente (RTC_APURACAO_URL).",
     );
   }
+  // Dois segredos DIFERENTES e não intercambiáveis:
+  //  - X-Api-Key: chave do proxy que protege o serviço na nossa infra
+  //    (RTC_APURACAO_API_KEY, caindo para RTC_CALC_API_KEY no gateway compartilhado).
+  //    Mandar a credencial do contribuinte aqui devolvia HTTP 401 do proxy.
+  //  - X-Rtc-Credential: credencial do contribuinte (<CLIENT_ID>:<CLIENT_SECRET>)
+  //    que o serviço usa para falar com a Receita. Nenhuma das duas vai para log.
+  const proxyKey = process.env["RTC_APURACAO_API_KEY"] ?? process.env["RTC_CALC_API_KEY"] ?? "";
   let res: Response;
   try {
     res = await withTimeout((signal) =>
@@ -121,8 +128,8 @@ async function callGateway(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // A chave nunca é logada; segue apenas no cabeçalho da chamada.
-          "x-api-key": apiKey,
+          ...(proxyKey ? { "X-Api-Key": proxyKey } : {}),
+          "X-Rtc-Credential": apiKey,
         },
         body: JSON.stringify(body),
         signal,
@@ -149,6 +156,23 @@ async function callGateway(
     parsed = null;
   }
   if (!res.ok) {
+    // 404/501: o destino configurado não expõe apuração (é só a calculadora).
+    // Isso é falha de configuração nossa — a Receita nem foi consultada, então
+    // não pode ser tratado como erro dela nem consumir cota.
+    if (res.status === 404 || res.status === 501) {
+      console.error("[rtc-apuracao] endpoint ausente no destino configurado", { path, status: res.status });
+      throw new ApuracaoGatewayError(
+        "not_configured",
+        "O serviço configurado neste ambiente não expõe a apuração da Receita (RTC_APURACAO_URL aponta para a calculadora). Consulta não realizada.",
+      );
+    }
+    if (res.status === 401 || res.status === 403) {
+      console.error("[rtc-apuracao] destino recusou a autenticação", { path, status: res.status });
+      throw new ApuracaoGatewayError(
+        "not_configured",
+        "O serviço de apuração recusou a autenticação do ambiente (chave do proxy inválida). Consulta não realizada.",
+      );
+    }
     const detail =
       (parsed as { mensagem?: string; message?: string } | null)?.mensagem ??
       (parsed as { message?: string } | null)?.message ??
@@ -158,6 +182,7 @@ async function callGateway(
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
   }
+
   return parsed as Record<string, unknown>;
 }
 
