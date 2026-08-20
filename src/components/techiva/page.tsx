@@ -59,7 +59,7 @@ export function PageHeader({
     <Rise className="flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
+          <p className="font-display text-[10px] tracking-[0.28em] text-primary uppercase">
             {eyebrow}
           </p>
         ) : null}
@@ -84,7 +84,7 @@ export function Panel({
   children,
   className,
   bodyClassName,
-  interactive = true,
+  interactive = false,
 }: {
   title?: string | undefined;
   icon?: ElementType | undefined;

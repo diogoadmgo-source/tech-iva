@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InfoHint } from "@/components/techiva/info-hint";
 import { cn } from "@/lib/utils";
-import { formatPct, MoneyText } from "./money";
+import { formatPct, MoneyCountUp, MoneyText } from "./money";
 
 function Delta({ value }: { value: number }) {
   const Icon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus;
@@ -86,7 +86,7 @@ export function HeroMetric({
             <Skeleton className="mt-3 h-12 w-64" />
           ) : (
             <p className="mt-2 text-[2.25rem] leading-none font-semibold tracking-[-0.02em] sm:text-[2.5rem]">
-              <MoneyText cents={valueCents} sign />
+              <MoneyCountUp cents={valueCents} sign />
             </p>
           )}
           <div className="mt-3 flex items-center gap-3">

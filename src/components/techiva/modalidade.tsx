@@ -49,6 +49,7 @@ export function ModalidadeSelector({
 
   return (
     <Panel
+      interactive
       title="Modalidade de recolhimento"
       icon={CalendarClock}
       help={
