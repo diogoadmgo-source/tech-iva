@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { SemaphoreLevel } from "@/components/techiva/badges";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadCredential } from "@/lib/credentials.functions";
 
