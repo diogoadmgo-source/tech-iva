@@ -120,7 +120,7 @@ function Index() {
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {BENEFITS.map((item, i) => (
             <Reveal key={item.label} index={i + 1}>
-              <SpotlightCard as="article" className="panel-hover h-full rounded-xl bg-surface p-6">
+              <SpotlightCard as="article" className="panel-hover h-full rounded-xl border border-border bg-surface p-6 transition-[transform,border-color,box-shadow] duration-200 ease-out">
                 <item.icon className="size-5 text-primary" aria-hidden />
                 <p className="mt-4 font-display text-[10px] tracking-[0.28em] text-primary uppercase">
                   {item.label}
