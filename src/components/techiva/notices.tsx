@@ -64,26 +64,53 @@ export function NoticeBoard({
   scope,
   className = "",
   highlightKeys = [],
+  maxVisible = 3,
 }: {
   scope: string;
   className?: string;
   highlightKeys?: string[];
+  /** Quantos avisos ficam na tela; o resto recolhe atrás de "+N avisos". */
+  maxVisible?: number;
 }) {
   const notices = useNotices(scope);
+  const [expanded, setExpanded] = useState(false);
 
   if (notices.isLoading) return <Skeleton className={`h-8 w-64 ${className}`} />;
   if (notices.isError || (notices.data?.length ?? 0) === 0) return null;
 
   const isHighlighted = (key: string) => highlightKeys.includes(key);
-  const ordered = [...(notices.data ?? [])].sort(
-    (a, b) => Number(isHighlighted(b.key)) - Number(isHighlighted(a.key)),
-  );
+  const weight = (n: Notice) =>
+    (isHighlighted(n.key) ? 4 : 0) +
+    (n.severity === "critical" ? 3 : n.severity === "warning" ? 2 : 0);
+  const ordered = [...(notices.data ?? [])].sort((a, b) => weight(b) - weight(a));
+  const shown = expanded ? ordered : ordered.slice(0, maxVisible);
+  const hidden = ordered.length - shown.length;
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      {ordered.map((n) => (
+      {shown.map((n) => (
         <NoticeChip key={n.key} notice={n} highlight={isHighlighted(n.key)} />
       ))}
+      {hidden > 0 ? (
+        <button
+          type="button"
+          className="hint-pill focus-glow"
+          onClick={() => setExpanded(true)}
+          aria-expanded={false}
+        >
+          +{hidden} aviso{hidden > 1 ? "s" : ""}
+        </button>
+      ) : null}
+      {expanded && ordered.length > maxVisible ? (
+        <button
+          type="button"
+          className="hint-pill focus-glow"
+          onClick={() => setExpanded(false)}
+          aria-expanded
+        >
+          Recolher avisos
+        </button>
+      ) : null}
     </div>
   );
 }
