@@ -473,11 +473,16 @@ function ApuracaoPage() {
         </Panel>
       </Rise>
 
-      {/* documentos da competência — só quando há nota para mostrar */}
-      {invoices.isLoading || invoiceTotal > 0 ? (
+      {/* documentos da competência — sempre visível: zero nota também é informação */}
       <Rise index={9}>
         <Panel
           title="Documentos de saída da competência"
+          help={
+            <p>
+              Contamos aqui as notas de saída já ingeridas para a competência escolhida. Zero nota
+              costuma indicar ingestão parada ou competência errada — não ausência de movimento.
+            </p>
+          }
           actions={
             <Badge variant="outline" className="text-xs">
               {invoiceTotal.toLocaleString("pt-BR")} nota(s)
@@ -486,8 +491,15 @@ function ApuracaoPage() {
         >
           {invoices.isLoading ? (
             <Skeleton className="h-32 w-full" />
+          ) : invoiceTotal === 0 ? (
+            <EmptyState
+              icon={Info}
+              title="Nenhuma nota de saída ingerida nesta competência"
+              hint="Confira a competência selecionada acima e a integração de entrada de documentos. Enquanto não houver nota, o nosso cálculo fica em zero e a comparação com a Receita aponta divergência."
+            />
           ) : (
             <div className="overflow-x-auto">
+
               <ul className="divide-y divide-border">
                 {invoiceRows.map((inv) => (
                   <li key={inv.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
