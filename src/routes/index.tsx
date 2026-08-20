@@ -74,13 +74,13 @@ function Index() {
 
       <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 pt-12 pb-20 lg:grid-cols-[1.05fr_0.95fr] lg:pt-20">
         <div>
-          <Reveal as="p" className="font-mono text-xs tracking-[0.3em] text-primary uppercase">
+          <Reveal as="p" className="font-display text-xs tracking-[0.3em] text-primary uppercase">
             reforma tributária · ibs e cbs
           </Reveal>
           <Reveal
             as="h1"
             index={1}
-            className="text-sheen mt-6 max-w-2xl text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.5rem]"
+            className="mt-6 max-w-2xl text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.02em] text-foreground sm:text-5xl lg:text-[3.5rem]"
           >
             Descubra quanto o IBS e a CBS vão tirar do seu caixa.
           </Reveal>
@@ -101,19 +101,11 @@ function Index() {
               Ver como funciona
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </a>
-            <Link
-              to="/login"
-              className="focus-glow inline-flex items-center rounded-md border border-border px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-            >
-              Entrar
-            </Link>
           </Reveal>
         </div>
 
         <Reveal index={2} className="lg:pl-4">
-          <div className="float-soft">
-            <CashPreview />
-          </div>
+          <CashPreview />
         </Reveal>
       </section>
 
@@ -122,15 +114,15 @@ function Index() {
       </div>
 
       <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-16 px-6 py-20">
-        <Reveal as="h2" className="text-2xl font-semibold tracking-[-0.01em] text-foreground">
+        <Reveal as="h2" className="text-[2rem] leading-tight font-semibold tracking-[-0.015em] text-foreground sm:text-4xl">
           O que você recebe
         </Reveal>
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {BENEFITS.map((item, i) => (
             <Reveal key={item.label} index={i + 1}>
-              <SpotlightCard as="article" className="card-lift sheen h-full rounded-xl bg-surface p-6">
+              <SpotlightCard as="article" className="panel-hover h-full rounded-xl bg-surface p-6">
                 <item.icon className="size-5 text-primary" aria-hidden />
-                <p className="mt-4 font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
+                <p className="mt-4 font-display text-[10px] tracking-[0.28em] text-primary uppercase">
                   {item.label}
                 </p>
                 <h3 className="mt-2 text-base font-medium text-foreground">{item.title}</h3>
@@ -144,10 +136,10 @@ function Index() {
       <section className="mx-auto max-w-6xl px-6 pb-20">
         <Reveal>
           <SpotlightCard className="surface-lit sheen rounded-2xl p-8 sm:p-10">
-            <p className="font-mono text-[10px] tracking-[0.28em] text-primary uppercase">
+            <p className="font-display text-[10px] tracking-[0.28em] text-primary uppercase">
               teste agora, sem conectar nada
             </p>
-            <h2 className="mt-4 max-w-2xl text-2xl leading-snug font-semibold tracking-[-0.01em] text-foreground sm:text-3xl">
+            <h2 className="mt-4 max-w-2xl text-[2rem] leading-tight font-semibold tracking-[-0.015em] text-foreground sm:text-4xl">
               O validador de XML e o simulador funcionam antes de você conectar qualquer coisa.
             </h2>
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
@@ -187,7 +179,7 @@ function Index() {
         <Reveal>
           <SpotlightCard className="card-lift sheen flex flex-col gap-4 rounded-xl bg-surface/60 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-mono text-[10px] tracking-[0.28em] text-warn uppercase">
+              <p className="font-display text-[10px] tracking-[0.28em] text-warn uppercase">
                 programa nacional de conformidade
               </p>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
