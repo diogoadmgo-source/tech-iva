@@ -102,7 +102,35 @@ function ApuracaoPage() {
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
 
-  const compareIcon = divergente ? AlertTriangle : disponivel ? CheckCircle2 : Info;
+  const compareIcon = divergente ? AlertTriangle : CheckCircle2;
+  const naoConsultadaMsg = withPeriod(
+    d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada para esta competência",
+  );
+
+  const consultarReceita = (
+    <Button
+      type="button"
+      className="cta-lift gap-2"
+      title={!podeConsultar ? quota.data?.mensagem : undefined}
+      disabled={!podeConsultar || request.isPending || quota.isLoading}
+      onClick={async () => {
+        try {
+          await request.mutateAsync(competencia);
+          toast.success("Solicitação enviada. A Receita retorna o resultado em seguida.");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Falha ao consultar.";
+          toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);
+        }
+      }}
+    >
+      {request.isPending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+      ) : (
+        <RefreshCw className="size-4" aria-hidden />
+      )}
+      Consultar Receita
+    </Button>
+  );
 
   if (divergencia.isError) {
     return (
@@ -165,6 +193,7 @@ function ApuracaoPage() {
             <Button type="button" variant="outline" onClick={() => setValidatorOpen(true)}>
               Validar CST × cClassTrib
             </Button>
+            {consultarReceita}
           </>
         }
       />
@@ -174,8 +203,20 @@ function ApuracaoPage() {
         <NoticeBoard scope="apuracao" />
       </Rise>
 
-      {/* 1 — COMPARAÇÃO: o portal não sabe o que você calculou */}
+      {/* 1 — COMPARAÇÃO: só existe divergência depois que a Receita responde */}
       <Rise index={2}>
+        {divergencia.isLoading ? (
+          <Skeleton className="h-32 w-full" />
+        ) : !disponivel ? (
+          <Panel title="Apuração ainda não consultada" icon={Info}>
+            <p className="text-sm text-muted-foreground">{naoConsultadaMsg}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A Receita responde de forma assíncrona: ao consultar, a estrutura completa da apuração
+              e a comparação com o seu cálculo aparecem aqui.
+            </p>
+            <div className="mt-4">{consultarReceita}</div>
+          </Panel>
+        ) : (
         <section className="panel-hero p-5 sm:p-6">
           <header className="flex items-center gap-2">
             {(() => {
@@ -188,10 +229,6 @@ function ApuracaoPage() {
             </InfoHint>
           </header>
 
-          {divergencia.isLoading ? (
-            <Skeleton className="mt-4 h-20 w-full" />
-          ) : (
-            <>
               <div className="mt-4 grid gap-5 sm:grid-cols-[1.2fr_1fr_1fr] sm:items-end">
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-muted-foreground">Divergência</p>
@@ -200,32 +237,25 @@ function ApuracaoPage() {
                       divergente ? "text-flow-out" : "text-flow-in"
                     }`}
                   >
-                    {disponivel ? formatCents(Math.abs(d.diferenca_cents)) : "—"}
+                    {formatCents(Math.abs(d.diferenca_cents))}
                   </p>
                   <div className="mt-3">
-                    <Semaphore level={divergente ? "crit" : disponivel ? "ok" : "warn"} />
+                    <Semaphore level={divergente ? "crit" : "ok"} />
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito apurado pela Receita</p>
                   <p className="mt-1 font-mono tabular text-lg">
-                    {disponivel ? formatCents(d.receita_debito_cents ?? 0) : "—"}
+                    {formatCents(d.receita_debito_cents ?? 0)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">O que calculamos das suas notas</p>
                   <p className="mt-1 font-mono tabular text-lg">
-                    {formatCents(d?.nosso_debito_cents ?? 0)}
+                    {formatCents(d.nosso_debito_cents ?? 0)}
                   </p>
                 </div>
               </div>
-
-              {!disponivel && (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  {d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada."} Use
-                  “Consultar Receita” abaixo para solicitar.
-                </p>
-              )}
 
               {divergente && (
                 <p className="mt-4 text-xs text-muted-foreground">
@@ -239,19 +269,22 @@ function ApuracaoPage() {
                 </p>
               )}
 
-              {disponivel && !divergente && (
+              {!divergente && (
                 <p className="mt-4 text-sm text-flow-in">
                   Seu cálculo bate com a apuração da Receita nesta competência.
                 </p>
               )}
-            </>
-          )}
         </section>
+        )}
       </Rise>
 
       {/* 1b — CONCILIAÇÃO: aponta a nota, não só o total */}
-      <ConciliacaoPanel tenantId={tenantId} competencia={competencia} index={2} />
-      <ExtincaoPanel tenantId={tenantId} competencia={competencia} index={3} />
+      {disponivel ? (
+        <>
+          <ConciliacaoPanel tenantId={tenantId} competencia={competencia} index={2} />
+          <ExtincaoPanel tenantId={tenantId} competencia={competencia} index={3} />
+        </>
+      ) : null}
 
       {/* 2 — PROJEÇÃO: o portal mostra o passado */}
       <Rise index={3}>
@@ -269,29 +302,26 @@ function ApuracaoPage() {
               hint="A projeção aparece assim que houver notas e vencimentos de imposto registrados."
             />
           ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <ProjecaoItem label="Sai em 30 dias" cents={cash.data.hero.gap_30_cents ?? 0} />
-                <ProjecaoItem label="Sai em 60 dias" cents={cash.data.hero.gap_60_cents ?? 0} />
-                <ProjecaoItem label="Sai em 90 dias" cents={cash.data.hero.gap_90_cents ?? 0} />
-              </div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <ProjecaoItem
-                  label="Crédito ainda a voltar"
-                  cents={cash.data.kpis.credit_backlog_cents ?? 0}
-                  hint={`prazo médio de ${Math.round(cash.data.kpis.credit_avg_days ?? 0)} dias`}
-                />
-                {cash.data.next_gap ? (
-                  <ProjecaoItem
-                    label="Próximo aperto"
-                    cents={cash.data.next_gap.amount_cents}
-                    hint={`semana de ${new Date(cash.data.next_gap.week).toLocaleDateString("pt-BR")}`}
-                  />
-                ) : (
-                  <ProjecaoItem label="Próximo aperto" cents={0} hint="nenhum aperto projetado" />
-                )}
-              </div>
-            </>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <ProjecaoItem label="Sai em 30 dias" cents={cash.data.hero.gap_30_cents ?? 0} />
+              <ProjecaoItem label="Sai em 60 dias" cents={cash.data.hero.gap_60_cents ?? 0} />
+              <ProjecaoItem label="Sai em 90 dias" cents={cash.data.hero.gap_90_cents ?? 0} />
+              <ProjecaoItem
+                label="Crédito ainda a voltar"
+                cents={cash.data.kpis.credit_backlog_cents ?? 0}
+                hint={`prazo médio de ${Math.round(cash.data.kpis.credit_avg_days ?? 0)} dias`}
+              />
+              <ProjecaoItem
+                className="sm:col-span-2"
+                label="Próximo aperto"
+                cents={cash.data.next_gap?.amount_cents ?? 0}
+                hint={
+                  cash.data.next_gap
+                    ? `semana de ${new Date(cash.data.next_gap.week).toLocaleDateString("pt-BR")}`
+                    : "nenhum aperto projetado"
+                }
+              />
+            </div>
           )}
         </Panel>
       </Rise>
@@ -363,14 +393,7 @@ function ApuracaoPage() {
             </Panel>
           </Rise>
         </>
-      ) : (
-        <Rise index={5}>
-          <EmptyState
-            title="Apuração desta competência ainda não consultada"
-            hint="Solicite a consulta abaixo. A Receita responde de forma assíncrona e a estrutura completa (abas e contas) aparece aqui."
-          />
-        </Rise>
-      )}
+      ) : null}
 
       {/* cota da Receita — visível ANTES do clique */}
       <Rise index={8}>
@@ -420,33 +443,12 @@ function ApuracaoPage() {
               Reprocessar retorno
             </Button>
 
-            <Button
-              type="button"
-              className="gap-2"
-              title={!podeConsultar ? quota.data?.mensagem : undefined}
-              disabled={!podeConsultar || request.isPending || quota.isLoading}
-              onClick={async () => {
-                try {
-                  await request.mutateAsync(competencia);
-                  toast.success("Solicitação enviada. A Receita retorna o resultado em seguida.");
-                } catch (error) {
-                  const message = error instanceof Error ? error.message : "Falha ao consultar.";
-                  toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);
-                }
-              }}
-            >
-              {request.isPending ? (
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <RefreshCw className="size-4" aria-hidden />
-              )}
-              Consultar Receita
-            </Button>
           </div>
         </Panel>
       </Rise>
 
-      {/* documentos da competência */}
+      {/* documentos da competência — só quando há nota para mostrar */}
+      {invoices.isLoading || invoiceTotal > 0 ? (
       <Rise index={9}>
         <Panel
           title="Documentos de saída da competência"
@@ -458,8 +460,6 @@ function ApuracaoPage() {
         >
           {invoices.isLoading ? (
             <Skeleton className="h-32 w-full" />
-          ) : invoiceTotal === 0 ? (
-            <EmptyState title="Nenhuma nota de saída nesta competência" />
           ) : (
             <div className="overflow-x-auto">
               <ul className="divide-y divide-border">
@@ -506,8 +506,10 @@ function ApuracaoPage() {
           )}
         </Panel>
       </Rise>
+      ) : null}
 
-      {/* minhas apurações da CBS */}
+      {/* minhas apurações da CBS — só quando já houve retorno */}
+      {lista.isLoading || (lista.data?.length ?? 0) > 0 ? (
       <Rise index={10}>
         <Panel
           title="Minhas apurações da CBS"
@@ -515,8 +517,6 @@ function ApuracaoPage() {
         >
           {lista.isLoading ? (
             <Skeleton className="h-20 w-full" />
-          ) : (lista.data?.length ?? 0) === 0 ? (
-            <EmptyState title="Nenhuma apuração recebida" />
           ) : (
             <div className="overflow-x-auto">
               <ul className="divide-y divide-border">
@@ -564,6 +564,7 @@ function ApuracaoPage() {
           )}
         </Panel>
       </Rise>
+      ) : null}
 
       <SideSheet
         open={Boolean(invoice)}
@@ -588,17 +589,26 @@ function ApuracaoPage() {
   );
 }
 
+/** Garante ponto final em texto que vem do banco. */
+function withPeriod(text: string) {
+  const t = (text ?? "").trim();
+  if (!t) return t;
+  return /[.!?…]$/.test(t) ? t : `${t}.`;
+}
+
 function ProjecaoItem({
   label,
   cents,
   hint,
+  className,
 }: {
   label: string;
   cents: number;
   hint?: string;
+  className?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface-2 p-3">
+    <div className={`rounded-lg border border-border bg-surface-2 p-3 ${className ?? ""}`}>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-mono tabular text-base">{formatCents(cents)}</p>
       {hint && <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>}
