@@ -10,14 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { authErrorMessage } from "@/lib/auth";
 import {
   AUDIT_PAGE_SIZE,
@@ -82,6 +74,7 @@ function AuditPage() {
               <Label htmlFor="action">Ação</Label>
               <Input
                 id="action"
+                className="field focus-glow"
                 placeholder="tenant.create"
                 value={filters.action}
                 onChange={(e) => setFilters({ ...filters, action: e.target.value })}
@@ -91,6 +84,7 @@ function AuditPage() {
               <Label htmlFor="entity">Entidade</Label>
               <Input
                 id="entity"
+                className="field focus-glow"
                 placeholder="membership"
                 value={filters.entity}
                 onChange={(e) => setFilters({ ...filters, entity: e.target.value })}
@@ -100,6 +94,7 @@ function AuditPage() {
               <Label htmlFor="actor">Autor (user id)</Label>
               <Input
                 id="actor"
+                className="field focus-glow"
                 placeholder="uuid"
                 value={filters.actor}
                 onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
@@ -109,6 +104,7 @@ function AuditPage() {
               <Label htmlFor="from">De</Label>
               <Input
                 id="from"
+                className="field focus-glow"
                 type="date"
                 value={filters.from}
                 onChange={(e) => setFilters({ ...filters, from: e.target.value })}
@@ -118,6 +114,7 @@ function AuditPage() {
               <Label htmlFor="to">Até</Label>
               <Input
                 id="to"
+                className="field focus-glow"
                 type="date"
                 value={filters.to}
                 onChange={(e) => setFilters({ ...filters, to: e.target.value })}
@@ -125,6 +122,7 @@ function AuditPage() {
             </div>
             <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-5">
               <Button
+                className="cta-lift"
                 onClick={() => {
                   setPage(0);
                   setApplied(filters);
@@ -268,7 +266,7 @@ function AuditPage() {
 
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="font-mono text-xs text-muted-foreground">
+            <p className="font-mono tabular text-xs text-muted-foreground">
               {total.toLocaleString("pt-BR")}
               {audit.data?.approx ? " (aprox.)" : ""} registro(s) · página {page + 1} de {lastPage + 1}
             </p>
