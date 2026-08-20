@@ -362,12 +362,9 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 
   let payload: Record<string, unknown>;
   try {
-    payload = await callGateway(
-      "/api/apuracao/download",
-      { cnpj, tiquete: row.tiquete_download, competencia: String(row.competencia).slice(0, 7).replace("-", "") },
-      credential.apiKey,
-    );
+    payload = await baixarNaReceita(String(row.tiquete_download), credential.apiKey);
     await logUse(admin, credential.id, "apuracao.download", true);
+
   } catch (e) {
     const err = e as ApuracaoGatewayError;
     await logUse(admin, credential.id, "apuracao.download", false, err.message);
