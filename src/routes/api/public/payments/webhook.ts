@@ -69,7 +69,7 @@ async function audit(
 ) {
   const db = await admin();
   const { error } = await db.rpc("log_billing_event", {
-    p_tenant: tenantId,
+    p_tenant: tenantId as never,
     p_action: action,
     p_entity_id: entityId,
     p_before: (before ?? null) as never,
