@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Coins, Download, ScanSearch, Search } from "lucide-react";
 import { toast } from "sonner";
 
+import { Semaphore, type SemaphoreLevel } from "@/components/techiva/badges";
 import { EmptyState } from "@/components/techiva/empty-state";
 import { formatCents } from "@/components/techiva/money";
 import { Panel, Rise, Segmented } from "@/components/techiva/page";
