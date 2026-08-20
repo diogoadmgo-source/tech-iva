@@ -174,6 +174,20 @@ async function marcarErro(admin: AdminClient, id: string, motivo: string) {
     .eq("id", id);
 }
 
+/**
+ * Só existe consulta quando a Receita responde — erro ou sucesso. Se a tentativa
+ * morreu antes disso (sem credencial, ambiente não configurado, serviço fora do
+ * ar), a cota diária é devolvida: o contador da Receita também não contou.
+ */
+function consumiuCotaDaReceita(reason: GatewayUnavailableReason | undefined): boolean {
+  return reason === "error";
+}
+
+async function estornarCota(admin: AdminClient, cnpj: string, reason?: GatewayUnavailableReason) {
+  if (consumiuCotaDaReceita(reason)) return;
+  await rpc(admin)("rtc_quota_estornar", { p_cnpj: cnpj, p_kind: "solicitacao" });
+}
+
 /* ------------------------------------------------------------ passo 1 */
 
 export type SolicitarResult =
