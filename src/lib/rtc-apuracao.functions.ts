@@ -51,7 +51,7 @@ export const apuracaoProcessarPendentes = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { processarPendentes } = await import("@/lib/rtc-apuracao.server");
     await assertScope(context.supabase as never, data.tenantId);
-    const results = await processarPendentes();
+    const results = await processarPendentes(data.tenantId);
     return {
       processadas: results.filter((r) => r.ok).length,
       falhas: results.filter((r) => !r.ok).map((r) => ("motivo" in r ? r.motivo : "")),

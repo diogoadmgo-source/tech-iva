@@ -498,15 +498,17 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     }
 
     try {
-      let token = row.access_token_ref ? await lerToken(admin, row.access_token_ref as string) : await accessToken(credential.apiKey);
-      try {
-        payload = await baixarNaReceita(String(row.tiquete_download), token);
-      } catch (firstError) {
-        const first = firstError as ApuracaoGatewayError;
-        if (first.status !== 401) throw first;
-        token = await accessToken(credential.apiKey);
-        payload = await baixarNaReceita(String(row.tiquete_download), token);
+      if (!row.access_token_ref) {
+        throw new ApuracaoGatewayError(
+          "error",
+          "O token original desta solicitação não está disponível. Faça uma nova consulta; o tíquete não pode ser baixado com outro token.",
+        );
       }
+      const token = await lerToken(admin, row.access_token_ref as string);
+      // O download é de acesso único e vinculado ao token da solicitação.
+      // Nunca repetir automaticamente um 401/429 nem trocar o token: isso só
+      // invalida o tíquete e consome o limite da Receita.
+      payload = await baixarNaReceita(String(row.tiquete_download), token);
       await logUse(admin, credential.id, "apuracao.download", true);
       // O tíquete só permite um download: persiste o JSON bruto ANTES de parsear.
       const saved = await table(admin, "rtc_apuracao")
@@ -536,11 +538,13 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 }
 
 /** Fila de recuperação: tíquetes recebidos que ainda não foram baixados. */
-export async function processarPendentes(): Promise<ProcessarResult[]> {
+export async function processarPendentes(tenantId?: string): Promise<ProcessarResult[]> {
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await rpc(admin)("rtc_apuracao_pendentes_download", {});
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as Array<{ id: string }>;
+  const rows = ((data ?? []) as Array<{ id: string; tenant_id: string }>).filter(
+    (row) => !tenantId || row.tenant_id === tenantId,
+  );
   const out: ProcessarResult[] = [];
   for (const r of rows) out.push(await processarApuracao(r.id));
   return out;
