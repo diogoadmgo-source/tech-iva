@@ -252,7 +252,10 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
                   }
                 >
                   <header className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-foreground">{plan.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <PlanGem code={plan.code} size={28} />
+                      <h3 className="text-sm font-semibold text-foreground">{plan.name}</h3>
+                    </div>
                     {isCurrent ? (
                       <Badge variant="outline" className={TONE_CLASS["ok"]}>
                         atual

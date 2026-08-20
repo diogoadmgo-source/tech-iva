@@ -246,9 +246,12 @@ function Index() {
                       <Check className="size-3" aria-hidden /> Recomendado
                     </span>
                   ) : null}
-                  <p className="mt-1 font-display text-[10px] tracking-[0.28em] text-primary uppercase">
-                    {plan.name}
-                  </p>
+                  <div className="mt-1 flex items-center gap-3">
+                    <PlanGem code={plan.code} size={44} />
+                    <p className="font-display text-[10px] tracking-[0.28em] text-primary uppercase">
+                      {plan.name}
+                    </p>
+                  </div>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="font-mono tabular text-3xl font-semibold tracking-tight text-foreground">
                       {formatCents(plan.price[cycle])}
