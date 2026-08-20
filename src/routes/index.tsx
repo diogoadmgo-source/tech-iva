@@ -209,9 +209,21 @@ function Index() {
         <div className="hairline" />
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <BrandLogo className="h-6 w-auto" />
+          <nav className="flex flex-wrap items-center gap-4">
+            <Link to="/termos" className="hover:text-foreground">
+              Termos e condições
+            </Link>
+            <Link to="/reembolso" className="hover:text-foreground">
+              Reembolso
+            </Link>
+            <Link to="/privacidade" className="hover:text-foreground">
+              Privacidade
+            </Link>
+          </nav>
           <p>Cálculo com o motor oficial da Receita Federal. Sem telemetria.</p>
         </div>
       </footer>
+
     </main>
   );
 }

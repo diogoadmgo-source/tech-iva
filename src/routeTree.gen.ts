@@ -16,8 +16,11 @@ import { Route as DesignRouteImport } from './routes/design'
 import { Route as ForgotRouteImport } from './routes/forgot'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MfaRouteImport } from './routes/mfa'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as ReembolsoRouteImport } from './routes/reembolso'
 import { Route as ResetRouteImport } from './routes/reset'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSelectTenantRouteImport } from './routes/_authenticated/select-tenant'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -87,6 +90,16 @@ const MfaRoute = MfaRouteImport.update({
   path: '/mfa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReembolsoRoute = ReembolsoRouteImport.update({
+  id: '/reembolso',
+  path: '/reembolso',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetRoute = ResetRouteImport.update({
   id: '/reset',
   path: '/reset',
@@ -95,6 +108,11 @@ const ResetRoute = ResetRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -304,8 +322,11 @@ export interface FileRoutesByFullPath {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/termos': typeof TermosRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -348,8 +369,11 @@ export interface FileRoutesByTo {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/termos': typeof TermosRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -393,8 +417,11 @@ export interface FileRoutesById {
   '/forgot': typeof ForgotRoute
   '/login': typeof LoginRoute
   '/mfa': typeof MfaRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/reembolso': typeof ReembolsoRoute
   '/reset': typeof ResetRoute
   '/signup': typeof SignupRoute
+  '/termos': typeof TermosRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/select-tenant': typeof AuthenticatedSelectTenantRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -439,8 +466,11 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
+    | '/reembolso'
     | '/reset'
     | '/signup'
+    | '/termos'
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
@@ -483,8 +513,11 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
+    | '/reembolso'
     | '/reset'
     | '/signup'
+    | '/termos'
     | '/profile'
     | '/select-tenant'
     | '/invite/$token'
@@ -527,8 +560,11 @@ export interface FileRouteTypes {
     | '/forgot'
     | '/login'
     | '/mfa'
+    | '/privacidade'
+    | '/reembolso'
     | '/reset'
     | '/signup'
+    | '/termos'
     | '/_authenticated/profile'
     | '/_authenticated/select-tenant'
     | '/invite/$token'
@@ -573,8 +609,11 @@ export interface RootRouteChildren {
   ForgotRoute: typeof ForgotRoute
   LoginRoute: typeof LoginRoute
   MfaRoute: typeof MfaRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  ReembolsoRoute: typeof ReembolsoRoute
   ResetRoute: typeof ResetRoute
   SignupRoute: typeof SignupRoute
+  TermosRoute: typeof TermosRoute
   InviteTokenRoute: typeof InviteTokenRoute
   STokenRoute: typeof STokenRoute
   ApiPublicCronWeeklyDigestRoute: typeof ApiPublicCronWeeklyDigestRoute
@@ -633,6 +672,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MfaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reembolso': {
+      id: '/reembolso'
+      path: '/reembolso'
+      fullPath: '/reembolso'
+      preLoaderRoute: typeof ReembolsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset': {
       id: '/reset'
       path: '/reset'
@@ -645,6 +698,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/profile': {
@@ -980,8 +1040,11 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotRoute: ForgotRoute,
   LoginRoute: LoginRoute,
   MfaRoute: MfaRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  ReembolsoRoute: ReembolsoRoute,
   ResetRoute: ResetRoute,
   SignupRoute: SignupRoute,
+  TermosRoute: TermosRoute,
   InviteTokenRoute: InviteTokenRoute,
   STokenRoute: STokenRoute,
   ApiPublicCronWeeklyDigestRoute: ApiPublicCronWeeklyDigestRoute,
