@@ -95,7 +95,7 @@ async function upsertSubscription(data: Any, env: PaddleEnv) {
 async function markStatus(data: Any, env: PaddleEnv, status: string) {
   const { error } = await db()
     .from("subscriptions")
-    .update({ status, updated_at: undefined })
+    .update({ status })
     .eq("paddle_subscription_id", data.id)
     .eq("environment", env);
   if (error) throw new Error(error.message);
