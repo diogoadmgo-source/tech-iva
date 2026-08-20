@@ -168,9 +168,7 @@ function ChainScreen() {
       {
         accessorKey: "cnpj",
         header: "CNPJ",
-        cell: ({ row }) => (
-          <span className="font-mono tabular text-xs">{formatCnpj(row.original.cnpj)}</span>
-        ),
+        cell: ({ row }) => <CnpjText value={row.original.cnpj} className="text-xs" />,
       },
       { accessorKey: "name", header: "Nome" },
       {
@@ -181,27 +179,31 @@ function ChainScreen() {
       {
         accessorKey: "share_pct",
         header: isCustomer ? "% receita" : "% compras",
-        cell: ({ row }) => <span className="font-mono tabular">{formatPct(row.original.share_pct)}</span>,
+        cell: ({ row }) => <span className="num block">{formatPct(row.original.share_pct)}</span>,
       },
       {
         accessorKey: "total_cents",
         header: isCustomer ? "Receita 12m" : "Compras 12m",
-        cell: ({ row }) => <MoneyText cents={row.original.total_cents} />,
+        cell: ({ row }) => (
+          <span className="num block">
+            <MoneyText cents={row.original.total_cents} />
+          </span>
+        ),
       },
       {
         accessorKey: "credit_transfer_pct",
         header: isCustomer ? "Crédito transferido" : "Crédito recuperado",
         cell: ({ row }) => (
-          <span className="font-mono tabular">{formatPct(row.original.credit_transfer_pct)}</span>
+          <span className="num block">{formatPct(row.original.credit_transfer_pct)}</span>
         ),
       },
       {
         accessorKey: "credit_lost_cents",
         header: isCustomer ? "Impacto crédito integral" : "Crédito perdido/ano",
         cell: ({ row }) => (
-          <div className="flex flex-col">
+          <div className="num">
             <MoneyText cents={row.original.credit_lost_cents} className="text-flow-out" />
-            <span className="text-[11px] text-muted-foreground">
+            <span className="block text-[11px] text-muted-foreground">
               {formatPct(100 - row.original.credit_transfer_pct)} do valor
             </span>
           </div>
@@ -229,6 +231,7 @@ function ChainScreen() {
     ],
     [isCustomer],
   );
+
 
   const kind = shell.data?.tenant.kind;
   if (kind && kind !== "company" && kind !== "unit") {
