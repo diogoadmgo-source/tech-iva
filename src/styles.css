@@ -903,16 +903,11 @@ select:-webkit-autofill {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-enter,
-  .float-soft,
-  .text-sheen {
+  .route-enter {
     animation: none;
   }
 
-  .text-sheen {
-    color: var(--foreground);
-    -webkit-text-fill-color: var(--foreground);
-  }
+
 
   .sheen::after,
   .cta-lift::after,
