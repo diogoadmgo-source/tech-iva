@@ -190,6 +190,29 @@ function ApuracaoPage() {
             </p>
           </>
         }
+        meta={
+          <>
+            <span>
+              Última consulta:{" "}
+              <span className="font-mono tabular-nums text-foreground">
+                {ultimaConsulta
+                  ? new Date(ultimaConsulta).toLocaleString("pt-BR")
+                  : "nenhuma ainda"}
+              </span>
+            </span>
+            <span aria-hidden>·</span>
+            <span>
+              Chamadas restantes hoje:{" "}
+              <span
+                className={`font-mono tabular-nums ${
+                  restantes === 0 ? "text-flow-out" : "text-foreground"
+                }`}
+              >
+                {quota.isLoading ? "…" : `${restantes} de ${limiteDia}`}
+              </span>
+            </span>
+          </>
+        }
         actions={
           <>
             <div className="flex items-end gap-1.5">
