@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentTestBadge } from "@/components/techiva/payment-test-banner";
 import { Panel, Rise, Segmented } from "@/components/techiva/page";
+import {
+  BillingLifecycleActions,
+  PlanChangeDialog,
+  classifyChange,
+  type PlanChange,
+} from "@/components/techiva/billing-manage";
 import { authErrorMessage } from "@/lib/auth";
 import {
   BILLING_CATALOG,
@@ -23,6 +29,8 @@ import {
 import { usePaddleCheckout } from "@/lib/paddle";
 import { formatCents } from "@/lib/plans";
 import { useProfile } from "@/lib/profile";
+
+const RANK_LABEL: Record<string, number> = { starter: 1, pro: 2, scale: 3 };
 
 const TONE_CLASS: Record<string, string> = {
   ok: "border-success/40 bg-success/10 text-success",
@@ -52,6 +60,8 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
   const [pending, setPending] = useState<string | null>(null);
   /** voltou do checkout e ainda aguarda a confirmação do provedor */
   const [awaiting, setAwaiting] = useState(false);
+  /** troca de plano aguardando confirmação no diálogo */
+  const [change, setChange] = useState<PlanChange | null>(null);
 
   const subscription = useBillingSubscription(tenantId, awaiting ? 4000 : 0);
   const current = subscription.data ?? null;
@@ -85,7 +95,14 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
     [tenantId],
   );
 
+  const managed = Boolean(current?.paddle_subscription_id) && current?.status !== "canceled";
+
   async function subscribe(priceId: string) {
+    if (managed) {
+      const next = classifyChange(current?.paddle_price_id ?? null, priceId);
+      if (next) setChange(next);
+      return;
+    }
     if (!profile.data) return;
     setPending(priceId);
     try {
@@ -168,9 +185,12 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
           )}
 
           {current?.paddle_customer_id && allowed ? (
-            <div className="mt-4 border-t border-border/60 pt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
+              {current.paddle_subscription_id ? (
+                <BillingLifecycleActions tenantId={tenantId} subscription={current} />
+              ) : null}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 disabled={portal.isPending}
                 onClick={() => {
@@ -184,7 +204,7 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
                 ) : (
                   <ExternalLink className="mr-2 size-4" />
                 )}
-                Gerenciar assinatura
+                Cartão e faturas
               </Button>
             </div>
           ) : null}
@@ -258,11 +278,18 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
                     className="mt-auto"
                     size="sm"
                     variant={isCurrent ? "outline" : "default"}
-                    disabled={!allowed || busy || isCurrent || !profile.data}
+                    disabled={!allowed || busy || isCurrent || (!managed && !profile.data)}
                     onClick={() => void subscribe(priceId)}
                   >
                     {busy ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                    {isCurrent ? "Plano atual" : current ? "Trocar para este" : "Assinar"}
+                    {isCurrent
+                      ? "Plano atual"
+                      : managed
+                        ? (RANK_LABEL[plan.code] ?? 0) >
+                          (RANK_LABEL[currentCode ?? ""] ?? 0)
+                          ? "Subir para este"
+                          : "Descer para este"
+                        : "Assinar"}
                   </Button>
                 </article>
               );
@@ -275,6 +302,14 @@ export function SubscriptionCheckoutSection({ tenantId }: { tenantId: string }) 
           ) : null}
         </Panel>
       </Rise>
+
+      <PlanChangeDialog
+        tenantId={tenantId}
+        change={change}
+        onOpenChange={(open) => {
+          if (!open) setChange(null);
+        }}
+      />
     </div>
   );
 }
