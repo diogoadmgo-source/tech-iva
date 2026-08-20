@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 
 import { InfoHint } from "@/components/techiva/info-hint";
+import { Semaphore } from "@/components/techiva/badges";
 import { CertificateStatusCard } from "@/components/techiva/certificate-card";
 import { EmptyState, ErrorState, NoPermissionState } from "@/components/techiva/empty-state";
 import { NoticeBody } from "@/components/techiva/notices";
