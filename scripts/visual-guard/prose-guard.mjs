@@ -63,9 +63,13 @@ const EXCLUDED_FILES = new Set(
     "src/routes/invite.$token.tsx",
     "src/routes/s.$token.tsx",
     "src/routes/design.tsx",
+    "src/routes/termos.tsx",
+    "src/routes/reembolso.tsx",
+    "src/routes/privacidade.tsx",
     "src/routes/__root.tsx",
   ].map((p) => p.split("/").join(path.sep)),
 );
+
 
 /** Diretórios varridos (código de produto, não a lib shadcn). */
 const SCAN_DIRS = ["src/routes", "src/components/techiva", "src/components/app"];
