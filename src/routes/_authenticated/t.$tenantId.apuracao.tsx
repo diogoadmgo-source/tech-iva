@@ -109,7 +109,7 @@ function ApuracaoPage() {
   const restantes = quota.data?.restantes ?? 0;
   const limiteDia = quota.data?.limite ?? 2;
   const ultimaConsulta = (lista.data ?? []).reduce<string | null>((maior, a) => {
-    const em = a.recebido_em ?? a.solicitado_em;
+    const em = a.recebido_em;
     if (!em) return maior;
     return !maior || em > maior ? em : maior;
   }, null);
