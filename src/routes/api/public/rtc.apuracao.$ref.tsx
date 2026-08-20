@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/public/rtc/apuracao/$ref")({
         }
 
         const result = data as { ok?: boolean; id?: string } | null;
-        if (!result?.ok) {
+        if (!result?.ok || !result.id) {
           // ref desconhecido, expirado ou já consumido: não reenviar.
           return new Response("Solicitação não encontrada", { status: 404 });
         }
@@ -59,9 +59,9 @@ export const Route = createFileRoute("/api/public/rtc/apuracao/$ref")({
          * o resultado disso — respondemos 200 de qualquer forma, e a falha fica
          * registrada na apuração (status 'erro') para reprocessamento.
          */
-        const { processarPendentes } = await import("@/lib/rtc-apuracao.server");
+        const { processarApuracao } = await import("@/lib/rtc-apuracao.server");
         try {
-          await processarPendentes();
+          await processarApuracao(result.id);
         } catch (e) {
           console.error(
             "[rtc-webhook] tíquete gravado, mas o download falhou:",
