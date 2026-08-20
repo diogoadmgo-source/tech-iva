@@ -68,6 +68,13 @@ function tokenUrl(): string | null {
   return base ? `${base}/token` : null;
 }
 
+/** `rtc` em produção/homologação; `prr-rtc` na produção restrita. */
+function apiPrefix(): string {
+  const raw = (process.env["RTC_API_PREFIX"] ?? "rtc").trim().replace(/^\/+|\/+$/g, "");
+  return /^[a-z0-9-]+$/.test(raw) ? raw : "rtc";
+}
+
+
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
