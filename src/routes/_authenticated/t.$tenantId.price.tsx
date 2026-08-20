@@ -112,6 +112,9 @@ function PricePage() {
   const totals = detail.data?.totals;
   const scenario = detail.data?.scenario;
   const editable = scenario?.status === "draft";
+  // Cenário sem linha calculada não tem número real: nada de herói nem KPI zerado.
+  const hasLines = (totals?.lines ?? lines.length) > 0;
+  const emptyScenario = Boolean(scenarioId) && !detail.isLoading && !detail.isError && !hasLines;
 
   const compareByProduct = useMemo(() => {
     const map = new Map<string, PriceLine>();
