@@ -360,19 +360,16 @@
 /* entrada escalonada: fade + translateY, disparada por IntersectionObserver */
 @utility reveal {
   opacity: 0;
-  transform: translate3d(0, 16px, 0) scale(0.995);
-  filter: blur(4px);
+  transform: translate3d(0, 14px, 0);
   transition:
-    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 620ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--reveal-delay, 0ms);
   will-change: opacity, transform;
 
   &[data-shown="true"] {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 
@@ -380,82 +377,79 @@
   .reveal {
     opacity: 1;
     transform: none;
-    filter: none;
     transition: none;
   }
 }
 
-/* miniatura animada do gráfico de caixa (herói) — loop lento com pausa */
+/* miniatura do gráfico de caixa (herói) — roda uma vez ao entrar na viewport */
 @keyframes bar-rise {
-  0%,
-  6% {
+  from {
     transform: scaleY(0.04);
     opacity: 0;
   }
-  22%,
-  86% {
+  to {
     transform: scaleY(1);
     opacity: 1;
-  }
-  100% {
-    transform: scaleY(0.04);
-    opacity: 0;
   }
 }
 
 @keyframes line-draw {
-  0%,
-  24% {
+  from {
     stroke-dashoffset: 420;
   }
-  56%,
-  88% {
+  to {
     stroke-dashoffset: 0;
   }
-  100% {
-    stroke-dashoffset: 420;
-  }
 }
 
-@keyframes soft-pulse {
-  0%,
-  40% {
+@keyframes soft-in {
+  from {
     opacity: 0;
   }
-  62%,
-  88% {
+  to {
     opacity: 1;
   }
-  100% {
-    opacity: 0;
-  }
 }
 
-.cash-bar {
+.cash-anim .cash-bar {
   transform-box: fill-box;
   transform-origin: bottom;
-  animation: bar-rise 7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  transform: scaleY(0.04);
+  opacity: 0;
 }
 
-.cash-line {
+.cash-anim .cash-line {
   stroke-dasharray: 420;
-  animation: line-draw 7s ease-in-out infinite;
+  stroke-dashoffset: 420;
 }
 
-.cash-fade {
-  animation: soft-pulse 7s ease-out infinite;
+.cash-anim .cash-fade {
+  opacity: 0;
+}
+
+.cash-anim[data-run="true"] .cash-bar {
+  animation: bar-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cash-anim[data-run="true"] .cash-line {
+  animation: line-draw 1100ms 520ms ease-out forwards;
+}
+
+.cash-anim[data-run="true"] .cash-fade {
+  animation: soft-in 320ms 1200ms ease-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cash-bar,
-  .cash-line,
-  .cash-fade {
+  .cash-anim .cash-bar,
+  .cash-anim .cash-line,
+  .cash-anim .cash-fade {
     animation: none;
-  }
-  .cash-line {
-    stroke-dasharray: none;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
   }
 }
+
 
 /* ==========================================================================
    Vida no ambiente de auth/landing — só transform/opacity, nada de layout
