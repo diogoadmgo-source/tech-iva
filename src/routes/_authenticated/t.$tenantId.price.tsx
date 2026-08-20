@@ -503,7 +503,7 @@ function PricePage() {
             />
           </Rise>
 
-          <Rise index={3} className="overflow-x-auto">
+          <Rise index={4} className="overflow-x-auto">
             {detail.isError ? (
               <ErrorState
                 message={authErrorMessage(detail.error)}
@@ -522,7 +522,7 @@ function PricePage() {
             )}
           </Rise>
 
-          <Rise index={4}>
+          <Rise index={5}>
             <p className="text-xs text-muted-foreground">
               {scenario?.assumptions["counterparty_id"] ? (
                 <>
