@@ -236,114 +236,178 @@ function ChainScreen() {
   const kind = shell.data?.tenant.kind;
   if (kind && kind !== "company" && kind !== "unit") {
     return (
-      <div className="mx-auto max-w-2xl py-10">
+      <Page>
         <NoPermissionState hint="A Carteira existe para empresas e filiais. Selecione uma empresa no seletor de organização." />
-      </div>
+      </Page>
     );
   }
 
   if (chain.error) {
     return (
-      <div className="mx-auto max-w-2xl py-10">
+      <Page>
         <ErrorState
           message="Não foi possível carregar o mapa da cadeia."
           onRetry={() => void chain.refetch()}
         />
-      </div>
+      </Page>
     );
   }
 
+  const vazio = !chain.isLoading && rows.length === 0;
+
+  const conviteIngestao = (
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Button asChild size="sm" className="cta-lift">
+        <Link to="/t/$tenantId/onboarding" params={{ tenantId }}>
+          Conectar entrada de notas
+        </Link>
+      </Button>
+      <Button asChild size="sm" variant="outline">
+        <Link to="/t/$tenantId/validador" params={{ tenantId }}>
+          Enviar XML manualmente
+        </Link>
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Carteira</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {chain.isLoading
-              ? "Carregando concentração da cadeia…"
-              : `${summary.count} ${isCustomer ? "clientes" : "fornecedores"} · ${formatPct(summary.regularPct)} do volume em regime regular · crédito perdido/ano ${formatCents(summary.lost)}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-        <ClassifyCounterpartiesButton tenantId={tenantId} />
-        <div
-          className="inline-flex rounded-lg border border-border bg-surface-1 p-1"
-          role="group"
-          aria-label="Papel da contraparte"
-        >
-          {(["customer", "supplier"] as PartyRole[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
+    <Page className="max-w-7xl">
+      <PageHeader
+        eyebrow="empresa · carteira"
+        title="Carteira de parceiros"
+        help={
+          <>
+            <p>
+              Cada contraparte das suas notas dos últimos 12 meses, agrupada pelo regime tributário
+              dela. O regime do parceiro decide quanto crédito de IBS/CBS chega até você — ou quanto
+              se perde no caminho.
+            </p>
+            <p>
+              O bloco de concentração mostra o peso de cada regime no seu volume; clique em um
+              regime para filtrar a tabela.
+            </p>
+          </>
+        }
+        actions={
+          <>
+            <ClassifyCounterpartiesButton tenantId={tenantId} />
+            <Segmented<PartyRole>
+              label="Papel da contraparte"
+              value={role}
+              onChange={(r) => {
                 setRole(r);
                 setSelectedRegime(null);
               }}
-              aria-pressed={role === r}
-              className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                role === r
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {r === "customer" ? "Clientes" : "Fornecedores"}
-            </button>
-          ))}
-        </div>
-        </div>
-      </header>
+              options={[
+                { value: "customer", label: "Clientes" },
+                { value: "supplier", label: "Fornecedores" },
+              ]}
+            />
+          </>
+        }
+      />
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-        <div className="rounded-xl border border-border bg-surface-1 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium">Concentração por regime</h2>
-            {selectedRegime && (
-              <Button variant="ghost" size="sm" onClick={() => setSelectedRegime(null)}>
-                Limpar seleção
-              </Button>
-            )}
-          </div>
-          <div className="mt-3 h-[320px]">
-            {chain.isLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : treemap.length === 0 ? (
-              <EmptyState
-                title="Sem notas classificadas"
-                hint="Assim que houver notas dos últimos 12 meses, a concentração aparece aqui."
-              />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <Treemap
-                  data={treemap}
-                  dataKey="size"
-                  stroke={colors.border}
-                  fill={colors.primary}
-                  isAnimationActive={false}
-                  onClick={(node: unknown) => {
-                    const reg = (node as { regime?: RegimeKind })?.regime;
-                    if (reg) setSelectedRegime((cur) => (cur === reg ? null : reg));
-                  }}
-                >
-                  <Tooltip
-                    formatter={(value: number) => formatCents(Number(value))}
-                    contentStyle={{
-                      background: "hsl(var(--surface-2, 222 20% 12%))",
-                      border: `1px solid ${colors.border}`,
-                      borderRadius: 8,
-                      fontSize: 12,
+      <Rise index={1} className="grid gap-4 sm:grid-cols-3">
+        <Kpi
+          label={isCustomer ? "Clientes na carteira" : "Fornecedores na carteira"}
+          value={<span className="num">{summary.count.toLocaleString("pt-BR")}</span>}
+          hint="contrapartes com nota nos últimos 12 meses"
+          loading={chain.isLoading}
+        />
+        <Kpi
+          label="Volume em regime regular"
+          value={<span className="num">{formatPct(summary.regularPct)}</span>}
+          hint="parte do volume com Real ou Presumido — onde o crédito é integral"
+          loading={chain.isLoading}
+        />
+        <Kpi
+          label="Crédito perdido por ano"
+          valueCents={summary.lost}
+          hint="crédito que não chega até você por causa do regime da contraparte"
+          loading={chain.isLoading}
+        />
+      </Rise>
+
+      <Rise index={2} as="section" className="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        <div className="space-y-5">
+          <Panel
+            title="Concentração por regime"
+            help={
+              <p>
+                O tamanho de cada bloco é o volume dos últimos 12 meses. A cor identifica o regime —
+                a mesma paleta usada nos selos de regime em todo o sistema.
+              </p>
+            }
+            actions={
+              selectedRegime ? (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedRegime(null)}>
+                  Limpar seleção
+                </Button>
+              ) : null
+            }
+          >
+            <div className="h-[300px]">
+              {chain.isLoading ? (
+                <Skeleton className="h-full w-full" />
+              ) : treemap.length === 0 ? (
+                <EmptyState
+                  icon={Network}
+                  title="Sem notas classificadas ainda"
+                  hint="A concentração por regime aparece assim que houver notas dos últimos 12 meses."
+                />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <Treemap
+                    data={treemap}
+                    dataKey="size"
+                    stroke={colors.border}
+                    fill={colors.primary}
+                    isAnimationActive={false}
+                    content={<RegimeCell />}
+                    onClick={(node: unknown) => {
+                      const reg = (node as { regime?: RegimeKind })?.regime;
+                      if (reg) setSelectedRegime((cur) => (cur === reg ? null : reg));
                     }}
-                  />
-                </Treemap>
-              </ResponsiveContainer>
+                  >
+                    <Tooltip
+                      formatter={(value: number) => formatCents(Number(value))}
+                      contentStyle={{
+                        background: "var(--surface-2)",
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                    />
+                  </Treemap>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {treemap.length > 0 && (
+              <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-2 border-t border-border/60 pt-4">
+                {treemap.map((t) => (
+                  <li key={t.regime} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span
+                      aria-hidden
+                      className="size-2.5 rounded-sm"
+                      style={{ background: regimeColors[t.regime] }}
+                    />
+                    {t.name}
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-          <div className="mt-4 space-y-3 border-t border-border pt-4">
+          </Panel>
+
+          <Panel
+            title="Filtros"
+            help={<p>Os filtros valem para a tabela ao lado e para a ação em lote.</p>}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs text-muted-foreground">Regime</Label>
                 <Select value={regime} onValueChange={(v) => setRegime(v as RegimeKind | "all")}>
-                  <SelectTrigger className="mt-1 h-9">
+                  <SelectTrigger className="field focus-glow mt-1 h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -362,7 +426,7 @@ function ChainScreen() {
                   value={semaphore}
                   onValueChange={(v) => setSemaphore(v as SemaphoreLevel | "all")}
                 >
-                  <SelectTrigger className="mt-1 h-9">
+                  <SelectTrigger className="field focus-glow mt-1 h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -373,27 +437,28 @@ function ChainScreen() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="sm:col-span-2">
+                <Label className="text-xs text-muted-foreground" htmlFor="min-value">
+                  Valor mínimo 12m (R$)
+                </Label>
+                <Input
+                  id="min-value"
+                  inputMode="numeric"
+                  value={minValue}
+                  onChange={(e) => setMinValue(e.target.value)}
+                  placeholder="0"
+                  className="field focus-glow mt-1 h-9 font-mono tabular"
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground" htmlFor="min-value">
-                Valor mínimo 12m (R$)
-              </Label>
-              <Input
-                id="min-value"
-                inputMode="numeric"
-                value={minValue}
-                onChange={(e) => setMinValue(e.target.value)}
-                placeholder="0"
-                className="mt-1 h-9 font-mono"
-              />
-            </div>
-          </div>
+          </Panel>
         </div>
 
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              {filtered.length} de {rows.length} linhas
+              <span className="num">{filtered.length.toLocaleString("pt-BR")}</span> de{" "}
+              <span className="num">{rows.length.toLocaleString("pt-BR")}</span> contrapartes
               {selectedRegime ? ` · regime ${REGIME_LABEL[selectedRegime]}` : ""}
             </p>
             <Button
@@ -424,12 +489,18 @@ function ChainScreen() {
             loading={chain.isLoading}
             density="compact"
             searchPlaceholder="Buscar por CNPJ ou nome…"
-            emptyTitle="Nenhuma contraparte"
-            emptyHint="Ajuste os filtros ou ingira notas fiscais para popular a carteira."
+            emptyTitle={vazio ? "Sua carteira ainda está vazia" : "Nenhuma contraparte com esses filtros"}
+            emptyHint={
+              vazio
+                ? "A carteira é montada a partir das suas notas fiscais: cada cliente e fornecedor entra aqui com o regime dele, o peso no seu volume e o crédito que se perde. Conecte a entrada de notas ou envie um XML para ver a primeira leitura."
+                : "Solte o regime, o semáforo ou o valor mínimo para ver mais contrapartes."
+            }
+            emptyAction={vazio ? conviteIngestao : undefined}
             exportName={`carteira-${role}`}
           />
         </div>
-      </section>
+      </Rise>
+
 
       <PartySheet
         tenantId={tenantId}
