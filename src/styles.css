@@ -235,6 +235,8 @@
   --color-border-strong: var(--border-strong);
   --color-flow-in: var(--flow-in);
   --color-flow-out: var(--flow-out);
+  --color-brand-glow: var(--brand-glow);
+
   --color-warn: var(--warn);
   --color-warn-foreground: var(--warn-foreground);
   --color-regime-simples: var(--regime-simples);
