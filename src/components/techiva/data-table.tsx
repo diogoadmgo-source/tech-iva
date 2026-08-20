@@ -8,7 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, Download, Search } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { type ReactNode, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +59,7 @@ export function DataTable<T>({
   emptyTitle?: string | undefined;
   emptyHint?: string | undefined;
   /** Convite mostrado no estado vazio (ex.: botão para ingerir notas). */
-  emptyAction?: React.ReactNode | undefined;
+  emptyAction?: ReactNode | undefined;
   exportName?: string | undefined;
   density?: Density | undefined;
   className?: string | undefined;
