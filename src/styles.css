@@ -487,11 +487,13 @@
   }
 }
 
-/* varredura de luz que percorre a borda superior do cartão, uma vez a cada ciclo */
+/* varredura de luz que percorre a borda superior do cartão, uma vez a cada ciclo.
+   Anima background-position (não translateX): o brilho fica CONTIDO no cartão.
+   Com translate a linha vazava para fora e aparecia como risco azul sobre o menu. */
 @keyframes sheen-sweep {
   0%,
   55% {
-    transform: translateX(-120%);
+    background-position: -100% 0;
     opacity: 0;
   }
   62% {
@@ -499,10 +501,11 @@
   }
   92%,
   100% {
-    transform: translateX(120%);
+    background-position: 200% 0;
     opacity: 0;
   }
 }
+
 
 .ambient::after {
   content: "";
