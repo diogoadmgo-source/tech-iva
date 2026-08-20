@@ -366,25 +366,58 @@ function PricePage() {
                 )}
                 Recalcular
               </Button>
-              <Button
-                variant="outline"
-                disabled={!detail.data || lines.length === 0}
-                onClick={() => {
-                  if (!detail.data) return;
-                  downloadCsv(
-                    `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
-                      /\s+/g,
-                      "-",
-                    ),
-                    scenarioCsv(detail.data),
-                  );
-                }}
-              >
-                <Download className="mr-2 size-4" /> Exportar ERP
-              </Button>
-              <Button disabled={!scenario || scenario.status !== "draft"} onClick={() => setApproveOpen(true)}>
-                <Check className="mr-2 size-4" /> Aprovar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button
+                        variant="outline"
+                        disabled={!detail.data || !hasLines}
+                        onClick={() => {
+                          if (!detail.data) return;
+                          downloadCsv(
+                            `preco-${detail.data.scenario.fiscal_year}-${detail.data.scenario.name}.csv`.replace(
+                              /\s+/g,
+                              "-",
+                            ),
+                            scenarioCsv(detail.data),
+                          );
+                        }}
+                      >
+                        <Download className="mr-2 size-4" /> Exportar ERP
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!detail.data || !hasLines ? (
+                    <TooltipContent>
+                      A exportação libera quando o cenário tem pelo menos uma linha calculada — o
+                      arquivo do ERP é gerado a partir do piso e do alvo por produto.
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button
+                        disabled={!scenario || scenario.status !== "draft" || !hasLines}
+                        onClick={() => setApproveOpen(true)}
+                      >
+                        <Check className="mr-2 size-4" /> Aprovar
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!scenario || scenario.status !== "draft" || !hasLines ? (
+                    <TooltipContent>
+                      {!scenario
+                        ? "Selecione um cenário para aprovar."
+                        : scenario.status !== "draft"
+                          ? `Cenário já ${STATUS_LABEL[scenario.status] ?? scenario.status}: só rascunhos podem ser aprovados.`
+                          : "Cenário sem linhas calculadas. Aprovar enviaria uma tabela vazia ao ERP — cadastre produtos com custo e preço atual e recalcule."}
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </Panel>
