@@ -237,6 +237,8 @@ function PlansPage() {
         />
       ) : tab === "checkout" ? (
         <SubscriptionCheckoutSection tenantId={tenantId} />
+      ) : tab === "history" ? (
+        <BillingHistorySection tenantId={tenantId} />
       ) : tab === "catalog" ? (
         <Rise index={1}>
           <Panel
