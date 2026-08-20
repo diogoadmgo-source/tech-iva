@@ -28,6 +28,9 @@ const CALC_PATH = "/api/calculadora/regime-geral";
 const VALIDATE_PATH = "/api/calculadora/xml/validate";
 const VERSION_PATH = "/api/calculadora/dados-abertos/versao";
 const TIMEOUT_MS = 20_000;
+/** Chave do proxy Caddy na frente do motor (produção). Vazio em dev local. */
+const API_KEY = process.env["RTC_CALC_API_KEY"] ?? "";
+const authHeaders = (): Record<string, string> => (API_KEY ? { "X-Api-Key": API_KEY } : {});
 /** Local padrão quando a tela não informa o município (art. 11 LC 214/25): Goiânia. */
 const DEFAULT_MUNICIPIO = process.env["RTC_DEFAULT_MUNICIPIO"] ?? "5208707";
 
@@ -146,7 +149,7 @@ export async function engineStatus(): Promise<EngineStatus> {
   }
   try {
     const res = await withTimeout((signal) =>
-      fetch(`${url}${VERSION_PATH}`, { method: "GET", signal }),
+      fetch(`${url}${VERSION_PATH}`, { method: "GET", headers: authHeaders(), signal }),
     );
     const version = await readVersion(res);
     return {
@@ -200,7 +203,7 @@ async function postJson(path: string, body: unknown): Promise<Record<string, unk
     res = await withTimeout((signal) =>
       fetch(`${url}${path}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(body),
         signal,
       }),
@@ -385,7 +388,7 @@ export async function validateXml(filename: string, xml: string): Promise<XmlVal
   try {
     res = await withTimeout((signal) =>
       fetch(`${url}${VALIDATE_PATH}?${q}`, {
-        method: "POST", headers: { "Content-Type": "application/xml" }, body: xml, signal,
+        method: "POST", headers: { "Content-Type": "application/xml", ...authHeaders() }, body: xml, signal,
       }),
     );
   } catch {
