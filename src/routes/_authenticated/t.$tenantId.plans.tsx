@@ -36,6 +36,7 @@ import {
 import { authErrorMessage } from "@/lib/auth";
 import { EmptyState } from "@/components/techiva/empty-state";
 import { Page, PageHeader, Panel, Rise, Segmented } from "@/components/techiva/page";
+import { PlanEntitlementSection } from "@/components/techiva/plan-entitlement";
 import {
   SUBSCRIPTION_STATUSES,
   formatCents,
