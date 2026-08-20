@@ -32,6 +32,7 @@ import {
   useValidationSummary,
   useValidationTopIssues,
   useXmlValidations,
+  type EngineStatus,
   type XmlIssue,
 } from "@/lib/simulator";
 
@@ -340,7 +341,11 @@ function ValidadorPage() {
           {recent.isLoading ? (
             <p className="text-xs text-muted-foreground">Carregando…</p>
           ) : (recent.data ?? []).length === 0 ? (
-            <EmptyState title="Nenhuma validação ainda" hint="Envie um XML para começar." />
+            <EmptyState
+              icon={FileUp}
+              title="Nenhuma validação ainda"
+              hint="Envie um XML de NF-e ou NFS-e acima — o histórico das últimas validações fica registrado aqui."
+            />
           ) : (
             <ul className="space-y-2 text-xs">
               {(recent.data ?? []).slice(0, 10).map((row) => (
@@ -378,5 +383,41 @@ function IssueSuggestion({ cst, cclasstrib }: { cst: string; cclasstrib: string 
         </code>
       ))}
     </p>
+  );
+}
+
+/** Chip de estado do motor, no canto direito do cabeçalho. */
+function EngineChip({
+  status,
+  loading,
+}: {
+  status: EngineStatus | undefined;
+  loading?: boolean | undefined;
+}) {
+  if (loading) {
+    return (
+      <span className="hint-pill">
+        <Loader2 className="size-3 animate-spin" aria-hidden />
+        Verificando a calculadora oficial…
+      </span>
+    );
+  }
+  if (!status) return null;
+  if (!status.available || status.dev_stub) {
+    return (
+      <span className="hint-pill hint-pill-warn">
+        <AlertTriangle className="size-3.5" aria-hidden />
+        {status.dev_stub ? "Modo de desenvolvimento — sem motor oficial" : "Calculadora não disponível"}
+      </span>
+    );
+  }
+  return (
+    <span className="hint-pill">
+      <CheckCircle2 className="size-3.5 text-flow-in" aria-hidden />
+      Calculadora oficial conectada
+      {status.calc_version ? (
+        <span className="font-mono tabular text-[11px] text-foreground">{status.calc_version}</span>
+      ) : null}
+    </span>
   );
 }
