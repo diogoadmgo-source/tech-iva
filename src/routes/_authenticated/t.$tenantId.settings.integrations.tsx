@@ -714,7 +714,7 @@ function ProcuracaoCard({ tenantId }: { tenantId: string }) {
       </div>
 
       <Button
-        className="mt-4 w-full"
+        className="cta-lift mt-4 w-full"
         disabled={upload.isPending}
         onClick={async () => {
           try {
@@ -857,7 +857,7 @@ function CertificateCard({ tenantId }: { tenantId: string }) {
           </span>
         </label>
         <Button
-          className="w-full"
+          className="cta-lift w-full"
           disabled={!file || password.length === 0 || !ack || upload.isPending}
           onClick={async () => {
             if (!file) return;
