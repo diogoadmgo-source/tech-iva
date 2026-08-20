@@ -291,6 +291,7 @@ function SidebarItem({
       onMouseEnter={warm}
       onFocus={warm}
       onTouchStart={warm}
+      onClick={onNavigate}
       activeOptions={{ exact: item.to === "/t/$tenantId" }}
       activeProps={{
         className:
