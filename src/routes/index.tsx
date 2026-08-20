@@ -9,6 +9,7 @@ import { formatCents } from "@/components/techiva/money";
 import { Segmented } from "@/components/techiva/page";
 import { AmbientBackdrop } from "@/components/visual/ambient-backdrop";
 import { SpotlightCard } from "@/components/visual/spotlight-card";
+import { PlanGem } from "@/components/techiva/plan-gem";
 import { BILLING_CATALOG, type BillingCycle } from "@/lib/billing";
 import { cn } from "@/lib/utils";
 

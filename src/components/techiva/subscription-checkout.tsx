@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PaymentTestBadge } from "@/components/techiva/payment-test-banner";
 import { Panel, Rise, Segmented } from "@/components/techiva/page";
+import { PlanGem } from "@/components/techiva/plan-gem";
 import {
   BillingLifecycleActions,
   PlanChangeDialog,
