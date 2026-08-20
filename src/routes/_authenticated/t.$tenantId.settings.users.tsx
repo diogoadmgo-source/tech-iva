@@ -457,25 +457,10 @@ function UsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </Page>
   );
 }
 
-function LoadingRows({ columns }: { columns: number }) {
-  return (
-    <>
-      {[0, 1, 2].map((row) => (
-        <TableRow key={row}>
-          {Array.from({ length: columns }).map((_, cell) => (
-            <TableCell key={cell}>
-              <Skeleton className="h-4 w-full" />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-    </>
-  );
-}
 
 function InviteLinkCard({ link, onDismiss }: { link: string; onDismiss: () => void }) {
   return (
