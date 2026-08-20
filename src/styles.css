@@ -552,8 +552,12 @@
     z-index: 2;
     pointer-events: none;
     background: linear-gradient(to right, transparent, oklch(0.85 0.12 264 / 90%), transparent);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    background-position: -100% 0;
     animation: sheen-sweep 11s ease-in-out infinite;
-    will-change: transform, opacity;
+    will-change: background-position, opacity;
+
   }
 }
 
