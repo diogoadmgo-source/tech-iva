@@ -104,6 +104,7 @@ function UsersPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<TenantMember | null>(null);
   const [lastLink, setLastLink] = useState<string | null>(null);
+  const [tab, setTab] = useState<"members" | "invites">("members");
 
   const canAdmin = canAdminQuery.data === true;
   const kind = shell.data?.tenant.kind;
