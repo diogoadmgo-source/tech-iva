@@ -44,6 +44,7 @@ export function DataTable<T>({
   searchPlaceholder = "Buscar…",
   emptyTitle = "Nada por aqui",
   emptyHint,
+  emptyAction,
   exportName,
   density: densityProp,
   className,
@@ -57,6 +58,8 @@ export function DataTable<T>({
   searchPlaceholder?: string | undefined;
   emptyTitle?: string | undefined;
   emptyHint?: string | undefined;
+  /** Convite mostrado no estado vazio (ex.: botão para ingerir notas). */
+  emptyAction?: React.ReactNode | undefined;
   exportName?: string | undefined;
   density?: Density | undefined;
   className?: string | undefined;
@@ -133,7 +136,7 @@ export function DataTable<T>({
   }
 
   return (
-    <div className={cn("rounded-xl border border-border bg-surface-1 shadow-e1", className)}>
+    <div className={cn("panel", className)}>
       <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
         <div className="relative min-w-52 flex-1">
           <Search className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -173,7 +176,7 @@ export function DataTable<T>({
                     <th
                       key={header.id}
                       className={cn(
-                        "border-b border-border text-left text-xs font-medium text-muted-foreground",
+                        "th-label border-b border-border",
                         cellPad,
                       )}
                     >
@@ -214,7 +217,7 @@ export function DataTable<T>({
             )}
             {!loading &&
               visibleRows.map((row) => (
-                <tr key={row.id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/60">
+                <tr key={row.id} className="row-hover border-b border-border/60 last:border-0">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className={cellPad}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -245,7 +248,7 @@ export function DataTable<T>({
 
       {!loading && rows.length === 0 && (
         <div className="p-4">
-          <EmptyState title={emptyTitle} hint={emptyHint} />
+          <EmptyState title={emptyTitle} hint={emptyHint} action={emptyAction} />
         </div>
       )}
     </div>
