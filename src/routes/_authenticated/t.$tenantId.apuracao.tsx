@@ -104,6 +104,15 @@ function ApuracaoPage() {
   const divergente = disponivel && d.divergente;
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
+  // Com 2 consultas por dia, a data da última e o que resta são decisivos para
+  // o usuário decidir se gasta uma — por isso vivem no cabeçalho.
+  const restantes = quota.data?.restantes ?? 0;
+  const limiteDia = quota.data?.limite ?? 2;
+  const ultimaConsulta = (lista.data ?? []).reduce<string | null>((maior, a) => {
+    const em = a.recebido_em;
+    if (!em) return maior;
+    return !maior || em > maior ? em : maior;
+  }, null);
 
   // A Receita responde de forma assíncrona via webhook. Enquanto o polling está
   // ligado, refazemos a consulta; ao vir "disponível" os campos preenchem sozinhos.
@@ -188,6 +197,29 @@ function ApuracaoPage() {
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden />
               {CALCULADORA_OFFLINE}
             </p>
+          </>
+        }
+        meta={
+          <>
+            <span>
+              Última consulta:{" "}
+              <span className="font-mono tabular-nums text-foreground">
+                {ultimaConsulta
+                  ? new Date(ultimaConsulta).toLocaleString("pt-BR")
+                  : "nenhuma ainda"}
+              </span>
+            </span>
+            <span aria-hidden>·</span>
+            <span>
+              Chamadas restantes hoje:{" "}
+              <span
+                className={`font-mono tabular-nums ${
+                  restantes === 0 ? "text-flow-out" : "text-foreground"
+                }`}
+              >
+                {quota.isLoading ? "…" : `${restantes} de ${limiteDia}`}
+              </span>
+            </span>
           </>
         }
         actions={

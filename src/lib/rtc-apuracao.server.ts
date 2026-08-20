@@ -252,11 +252,49 @@ async function solicitarNaReceita(
   return body ?? {};
 }
 
+/**
+ * Diagnóstico técnico da resposta de download. Guardado no banco para que uma
+ * falha possa ser explicada sem gastar outra consulta da cota diária. Não
+ * carrega credencial nem token — só metadados da resposta.
+ */
+export type DownloadDiag = {
+  status: number | null;
+  ok: boolean;
+  caminho_token: "guardado" | "novo";
+  headers: Record<string, string>;
+  corpo_recorte?: string;
+  em: string;
+};
+
+/** Cabeçalhos úteis para diagnóstico (nunca a nossa Authorization). */
+const HEADERS_DIAG = [
+  "content-type",
+  "content-length",
+  "date",
+  "x-request-id",
+  "x-correlation-id",
+  "x-ratelimit-limit",
+  "x-ratelimit-remaining",
+  "x-ratelimit-reset",
+  "retry-after",
+  "www-authenticate",
+];
+
+function headersDiag(res: Response): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of HEADERS_DIAG) {
+    const value = res.headers.get(name);
+    if (value) out[name] = value.slice(0, 200);
+  }
+  return out;
+}
+
 /** Passo 3: baixa o JSON do extrato. Um único acesso por tíquete. */
 async function baixarNaReceita(
   tiquete: string,
   token: string,
-): Promise<Record<string, unknown>> {
+  caminhoToken: "guardado" | "novo",
+): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
   const base = apiBase();
   if (!base) {
     throw new ApuracaoGatewayError(
@@ -278,9 +316,41 @@ async function baixarNaReceita(
   }
   const text = await res.text();
   const body = corpoJson(text);
-  if (!res.ok) throw erroDaReceita(res.status, body);
-  if (!body) throw new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.");
-  return body;
+  const diag: DownloadDiag = {
+    status: res.status,
+    ok: res.ok,
+    caminho_token: caminhoToken,
+    headers: headersDiag(res),
+    em: new Date().toISOString(),
+  };
+  if (!res.ok) {
+    // Recorte do corpo de erro: é o que explica a recusa sem gastar cota.
+    diag.corpo_recorte = text.slice(0, 1000);
+    const err = erroDaReceita(res.status, body) as ApuracaoGatewayError & { diag?: DownloadDiag };
+    err.diag = diag;
+    throw err;
+  }
+  if (!body) {
+    diag.corpo_recorte = text.slice(0, 1000);
+    const err = new ApuracaoGatewayError(
+      "error",
+      "A Receita devolveu um corpo inesperado.",
+    ) as ApuracaoGatewayError & { diag?: DownloadDiag };
+    err.diag = diag;
+    throw err;
+  }
+  return { body, diag };
+}
+
+async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: DownloadDiag | undefined) {
+  if (!diag) return;
+  console.info("[rtc-apuracao] download", {
+    apuracao: apuracaoId,
+    status: diag.status,
+    ok: diag.ok,
+    caminho_token: diag.caminho_token,
+  });
+  await table(admin, "rtc_apuracao").update({ download_diag: diag }).eq("id", apuracaoId);
 }
 
 
@@ -483,8 +553,12 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
 
-  // O download é identificado só pelo tíquete (um acesso por tíquete).
-
+  // O download é identificado só pelo tíquete (um acesso por tíquete) e exige
+  // apenas um Bearer válido — o manual não vincula o tíquete ao token da
+  // solicitação. Como o token de client_credentials expira (~1h) e o fluxo é
+  // assíncrono, o token guardado pode estar vencido quando o webhook chega.
+  // Por isso: sem token guardado OU 401 no download, pega token novo e tenta
+  // UMA vez. O download não consome cota de solicitação.
 
   let payload = row.payload as Record<string, unknown> | null;
   if (!payload) {
@@ -497,19 +571,44 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       return { ok: false, id: apuracaoId, motivo: err.message };
     }
 
+    const tiquete = String(row.tiquete_download);
+    let diag: DownloadDiag | undefined;
     try {
-      if (!row.access_token_ref) {
-        throw new ApuracaoGatewayError(
-          "error",
-          "O token original desta solicitação não está disponível. Faça uma nova consulta; o tíquete não pode ser baixado com outro token.",
-        );
+      let resultado: { body: Record<string, unknown>; diag: DownloadDiag } | null = null;
+
+      if (row.access_token_ref) {
+        try {
+          const guardado = await lerToken(admin, row.access_token_ref as string);
+          resultado = await baixarNaReceita(tiquete, guardado, "guardado");
+        } catch (e) {
+          const err = e as ApuracaoGatewayError & { diag?: DownloadDiag };
+          diag = err.diag;
+          const expirado = err.status === 401 || err.status === 403;
+          // Só o 401/403 justifica um token novo. Outros erros (429, 5xx) são
+          // do serviço e repetir não ajuda.
+          if (!expirado) throw err;
+          console.info("[rtc-apuracao] token guardado recusado, tentando token novo", {
+            apuracao: apuracaoId,
+            status: err.status,
+          });
+        }
       }
-      const token = await lerToken(admin, row.access_token_ref as string);
-      // O download é de acesso único e vinculado ao token da solicitação.
-      // Nunca repetir automaticamente um 401/429 nem trocar o token: isso só
-      // invalida o tíquete e consome o limite da Receita.
-      payload = await baixarNaReceita(String(row.tiquete_download), token);
-      await logUse(admin, credential.id, "apuracao.download", true);
+
+      if (!resultado) {
+        const novo = await accessToken(credential.apiKey);
+        resultado = await baixarNaReceita(tiquete, novo, "novo");
+      }
+
+      payload = resultado.body;
+      diag = resultado.diag;
+      await gravarDiag(admin, apuracaoId, diag);
+      await logUse(
+        admin,
+        credential.id,
+        "apuracao.download",
+        true,
+        `token=${diag.caminho_token}`,
+      );
       // O tíquete só permite um download: persiste o JSON bruto ANTES de parsear.
       const saved = await table(admin, "rtc_apuracao")
         .update({ payload, download_em: new Date().toISOString() })
@@ -517,7 +616,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       if (saved.error) throw new Error(saved.error.message);
       await apagarToken(admin, apuracaoId, row.access_token_ref as string | null);
     } catch (e) {
-      const err = e as ApuracaoGatewayError;
+      const err = e as ApuracaoGatewayError & { diag?: DownloadDiag };
+      await gravarDiag(admin, apuracaoId, err.diag ?? diag);
       await logUse(admin, credential.id, "apuracao.download", false, err.message);
       await marcarErro(admin, apuracaoId, `Download da apuração: ${err.message}`);
       return { ok: false, id: apuracaoId, motivo: err.message };
