@@ -20,7 +20,7 @@ export type CatalogPlan = {
 export const BILLING_CATALOG: CatalogPlan[] = [
   {
     code: "starter",
-    name: "Starter",
+    name: "Bronze",
     price: { month: 9900, year: 99000 },
     priceId: { month: "starter_monthly", year: "starter_yearly" },
     resumo: "1 empresa · 3 usuários · 500 notas/mês",
@@ -28,19 +28,19 @@ export const BILLING_CATALOG: CatalogPlan[] = [
   },
   {
     code: "pro",
-    name: "Pro",
+    name: "Prata",
     price: { month: 29900, year: 299000 },
     priceId: { month: "pro_monthly", year: "pro_yearly" },
     resumo: "1 empresa · 10 usuários · 5.000 notas/mês",
-    itens: ["Tudo do Starter", "Preço de venda", "Apuração completa"],
+    itens: ["Tudo do Bronze", "Preço de venda", "Apuração completa"],
   },
   {
     code: "scale",
-    name: "Scale",
+    name: "Ouro",
     price: { month: 79900, year: 799000 },
     priceId: { month: "scale_monthly", year: "scale_yearly" },
     resumo: "5 empresas · 30 usuários · 50.000 notas/mês",
-    itens: ["Tudo do Pro", "Carteira de parceiros", "Comissionamento"],
+    itens: ["Tudo do Prata", "Carteira de parceiros", "Comissionamento"],
   },
 ];
 
