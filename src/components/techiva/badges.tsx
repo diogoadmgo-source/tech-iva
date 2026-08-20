@@ -36,29 +36,35 @@ export function RegimeBadge({ regime, className }: { regime: RegimeKind; classNa
   );
 }
 
-export type SemaphoreLevel = "ok" | "warn" | "crit";
+export type SemaphoreLevel = "ok" | "info" | "warn" | "crit";
 
 const SEMAPHORE: Record<SemaphoreLevel, { dot: string; label: string }> = {
   ok: { dot: "bg-flow-in", label: "Saudável" },
+  info: { dot: "bg-primary/70", label: "Info" },
   warn: { dot: "bg-warn", label: "Atenção" },
   crit: { dot: "bg-destructive", label: "Crítico" },
 };
 
 export function Semaphore({
   level,
+  label,
   showLabel = true,
   className,
 }: {
   level: SemaphoreLevel;
+  /** sobrescreve o texto padrão do nível (ex.: severidade do alerta) */
+  label?: string | undefined;
   showLabel?: boolean | undefined;
   className?: string | undefined;
 }) {
   const cfg = SEMAPHORE[level];
+  const text = label ?? cfg.label;
   return (
     <span className={cn("inline-flex items-center gap-2 text-xs text-muted-foreground", className)}>
       <span className={cn("size-2 rounded-full", cfg.dot)} aria-hidden />
-      {showLabel && cfg.label}
-      <span className="sr-only">{cfg.label}</span>
+      {showLabel && text}
+      <span className="sr-only">{text}</span>
     </span>
   );
 }
+
