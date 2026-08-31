@@ -156,6 +156,24 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // Falhas de import dinâmico durante preload/navegação não chegam ao errorComponent
+  // (a rota nunca monta) e deixavam a tela branca: tratamos no nível da janela.
+  useEffect(() => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (isChunkLoadError(e.reason)) recoverFromChunkError();
+    };
+    const onError = (e: ErrorEvent) => {
+      if (isChunkLoadError(e.error ?? e.message)) recoverFromChunkError();
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("error", onError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("error", onError);
+    };
+  }, []);
+
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes.
