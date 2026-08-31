@@ -67,12 +67,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   // Recuperação automática (uma única vez) quando o app foi atualizado durante a navegação.
   useEffect(() => {
-    if (!chunk || typeof window === "undefined") return;
-    const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
-    if (Date.now() - last < 20_000) return;
-    window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
-    window.location.reload();
+    if (chunk) recoverFromChunkError();
   }, [chunk]);
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
