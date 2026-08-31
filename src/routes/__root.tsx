@@ -46,6 +46,16 @@ function isChunkLoadError(error: unknown) {
 
 const RELOAD_KEY = "techiva:chunk-reload";
 
+/** Recarrega uma única vez por sessão-curta quando o bundle antigo não existe mais. */
+function recoverFromChunkError() {
+  if (typeof window === "undefined") return;
+  const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
+  if (Date.now() - last < 20_000) return;
+  window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  window.location.reload();
+}
+
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
