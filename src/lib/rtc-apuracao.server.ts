@@ -132,11 +132,86 @@ async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credent
  * endpoint de token. Nem a credencial nem o token vão para log.
  */
 
-function basicAuth(credential: string): string {
-  const bytes = new TextEncoder().encode(credential);
+function base64(texto: string): string {
+  const bytes = new TextEncoder().encode(texto);
   let bin = "";
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin);
+}
+
+/**
+ * Formas de autenticar no /token aceitas por servidores OAuth. A Receita não
+ * documenta qual usa — o manual só diz "[user] clientID e clientSecret" — e
+ * `invalid_client` chega igual nas três. Como o /token NÃO consome a cota de 2
+ * consultas por dia (o limite é dos endpoints de apuração), sai mais barato
+ * tentar em ordem do que adivinhar.
+ *
+ *  - `basic`     cabeçalho Basic com id:secret cru. É o mais comum.
+ *  - `basic_rfc` idem, mas com id e secret escapados antes do base64, como
+ *                manda a RFC 6749 §2.3.1. Muda o resultado quando o secret tem
+ *                `+`, `/`, `=` ou `%` — e aí o modo cru falha com invalid_client.
+ *  - `corpo`     credenciais como campos do formulário, sem cabeçalho.
+ */
+const MODOS_AUTH = ["basic", "basic_rfc", "corpo"] as const;
+export type ModoAuth = (typeof MODOS_AUTH)[number];
+
+/** Escape de formulário exigido pela RFC 6749 antes do base64. */
+function escapeForm(valor: string): string {
+  return encodeURIComponent(valor).replace(/%20/g, "+");
+}
+
+function requisicaoToken(
+  credential: string,
+  modo: ModoAuth,
+): { headers: Record<string, string>; body: string } {
+  const corte = credential.indexOf(":");
+  const id = corte >= 0 ? credential.slice(0, corte) : credential;
+  const secret = corte >= 0 ? credential.slice(corte + 1) : "";
+  const form = new URLSearchParams({ grant_type: "client_credentials" });
+
+  if (modo === "corpo") {
+    form.set("client_id", id);
+    form.set("client_secret", secret);
+    return {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    };
+  }
+
+  const par = modo === "basic_rfc" ? `${escapeForm(id)}:${escapeForm(secret)}` : credential;
+  return {
+    headers: {
+      Authorization: `Basic ${base64(par)}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: form.toString(),
+  };
+}
+
+/**
+ * Descreve o FORMATO do material guardado sem revelar nada dele. Serve para
+ * separar "a chave está errada" de "a chave está com a forma errada" — por
+ * exemplo, colada sem o `:`, ou com quebra de linha vinda de um copiar/colar.
+ */
+export type FormatoCredencial = {
+  separadores: number;
+  tam_id: number;
+  tam_secret: number;
+  precisa_escape: boolean;
+  tem_espaco_ou_quebra: boolean;
+};
+
+function formatoCredencial(credential: string): FormatoCredencial {
+  const corte = credential.indexOf(":");
+  const id = corte >= 0 ? credential.slice(0, corte) : credential;
+  const secret = corte >= 0 ? credential.slice(corte + 1) : "";
+  return {
+    separadores: (credential.match(/:/g) ?? []).length,
+    tam_id: id.length,
+    tam_secret: secret.length,
+    precisa_escape: /[+/=%&\s]/.test(id) || /[+/=%&\s]/.test(secret),
+    tem_espaco_ou_quebra: /\s/.test(credential),
+  };
 }
 
 function transporte(error: unknown, etapa: string): ApuracaoGatewayError {
@@ -167,6 +242,11 @@ export type ChamadaDiag = {
   ok: boolean;
   headers: Record<string, string>;
   corpo_recorte?: string;
+  /** Modo de autenticação que produziu esta resposta (só na etapa do token). */
+  modo_auth?: ModoAuth;
+  /** Resultado de cada modo tentado, para o erro dizer o que já foi descartado. */
+  tentativas?: Array<{ modo: ModoAuth; status: number | null; erro?: string }>;
+  formato_credencial?: FormatoCredencial;
   em: string;
 };
 
@@ -188,61 +268,80 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
       "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
     );
   }
-  let res: Response;
-  try {
-    res = await withTimeout((signal) =>
-      fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${basicAuth(credential)}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: "grant_type=client_credentials",
-        signal,
-      }),
-    );
-  } catch (error) {
-    throw transporte(error, "token");
-  }
-  const text = await res.text();
-  const diag: ChamadaDiag = {
-    etapa: "token",
-    status: res.status,
-    ok: res.ok,
-    headers: headersDiag(res),
-    em: new Date().toISOString(),
-  };
-  if (!res.ok) {
+
+  // `RTC_TOKEN_AUTH` fixa o modo quando ele já for conhecido; sem ela, tenta os
+  // três em ordem. Só a falha de AUTENTICAÇÃO faz cair para o próximo — erro de
+  // rede ou 5xx aborta na hora, para não repetir chamada sem sentido.
+  const fixado = (process.env["RTC_TOKEN_AUTH"] ?? "").trim() as ModoAuth;
+  const modos = MODOS_AUTH.includes(fixado) ? [fixado] : [...MODOS_AUTH];
+
+  const tentativas: Array<{ modo: ModoAuth; status: number | null; erro?: string }> = [];
+  let ultimo: { diag: ChamadaDiag; erro: ApuracaoGatewayError } | null = null;
+
+  for (const modo of modos) {
+    const { headers, body } = requisicaoToken(credential, modo);
+    let res: Response;
+    try {
+      res = await withTimeout((signal) => fetch(url, { method: "POST", headers, body, signal }));
+    } catch (error) {
+      throw transporte(error, "token");
+    }
+    const text = await res.text();
+    const diag: ChamadaDiag = {
+      etapa: "token",
+      status: res.status,
+      ok: res.ok,
+      headers: headersDiag(res),
+      modo_auth: modo,
+      formato_credencial: formatoCredencial(credential),
+      em: new Date().toISOString(),
+    };
+
+    if (res.ok) {
+      let token: string | undefined;
+      try {
+        token = (JSON.parse(text) as { access_token?: string }).access_token;
+      } catch {
+        token = undefined;
+      }
+      if (token) {
+        // Sucesso: NUNCA guardar o corpo — ele contém o próprio access_token.
+        tentativas.push({ modo, status: res.status });
+        diag.tentativas = tentativas;
+        console.info("[rtc-apuracao] token obtido", { modo });
+        return { token, diag };
+      }
+      // 200 sem access_token: o corpo não traz token para vazar e é a única
+      // pista de que o formato da resposta mudou.
+      diag.corpo_recorte = text.slice(0, 1000);
+      diag.tentativas = tentativas;
+      throw comDiag(
+        new ApuracaoGatewayError("error", "A Receita devolveu um token inesperado."),
+        diag,
+      );
+    }
+
     // O corpo do erro é o que distingue "credencial vencida" de "pedido mal
     // formado" — os dois chegam como 4xx e sem isto viram o mesmo "HTTP 400".
     diag.corpo_recorte = text.slice(0, 1000);
-    console.error("[rtc-apuracao] token recusado", { status: res.status });
-    throw comDiag(
-      new ApuracaoGatewayError(
-        "no_credential",
-        res.status === 401 || res.status === 403
-          ? "A Receita recusou a credencial cadastrada (client_id/client_secret). Consulta não realizada."
-          : `Não foi possível obter o token de acesso da Receita (HTTP ${res.status}).`,
-      ),
-      diag,
+    const detalhe = (corpoJson(text)?.["error"] as string | undefined) ?? `HTTP ${res.status}`;
+    tentativas.push({ modo, status: res.status, erro: detalhe });
+    console.error("[rtc-apuracao] token recusado", { modo, status: res.status, detalhe });
+
+    const autenticacao = res.status === 400 || res.status === 401 || res.status === 403;
+    const erro = new ApuracaoGatewayError(
+      "no_credential",
+      autenticacao
+        ? "A Receita recusou a credencial cadastrada (client_id/client_secret). Consulta não realizada."
+        : `Não foi possível obter o token de acesso da Receita (HTTP ${res.status}).`,
     );
+    ultimo = { diag, erro };
+    if (!autenticacao) break;
   }
-  let token: string | undefined;
-  try {
-    token = (JSON.parse(text) as { access_token?: string }).access_token;
-  } catch {
-    token = undefined;
-  }
-  if (!token) {
-    // 200 sem access_token: o corpo aqui não traz token para vazar, e é a única
-    // pista de que a resposta mudou de formato.
-    diag.corpo_recorte = text.slice(0, 1000);
-    throw comDiag(
-      new ApuracaoGatewayError("error", "A Receita devolveu um token inesperado."),
-      diag,
-    );
-  }
-  return { token, diag };
+
+  const final = ultimo as { diag: ChamadaDiag; erro: ApuracaoGatewayError };
+  final.diag.tentativas = tentativas;
+  throw comDiag(final.erro, final.diag);
 }
 
 function corpoJson(text: string): Record<string, unknown> | null {
@@ -630,7 +729,16 @@ export type TesteCredencialResult = {
   mensagem: string;
   headers?: Record<string, string>;
   corpo_recorte?: string;
+  modo_auth?: ModoAuth;
+  tentativas?: Array<{ modo: ModoAuth; status: number | null; erro?: string }>;
+  formato_credencial?: FormatoCredencial;
   em: string;
+};
+
+const MODO_LABEL: Record<ModoAuth, string> = {
+  basic: "credenciais no cabeçalho",
+  basic_rfc: "credenciais no cabeçalho, com escape",
+  corpo: "credenciais no corpo",
 };
 
 /**
@@ -654,12 +762,21 @@ export async function testarCredencial(tenantId: string): Promise<TesteCredencia
   }
 
   try {
-    await accessToken(credential.apiKey);
-    await logUse(admin, credential.id, "apuracao.token_teste", true);
+    const { diag } = await accessToken(credential.apiKey);
+    await logUse(
+      admin,
+      credential.id,
+      "apuracao.token_teste",
+      true,
+      `modo=${diag.modo_auth ?? "?"}`,
+    );
+    const como = diag.modo_auth ? ` Funcionou com ${MODO_LABEL[diag.modo_auth]}.` : "";
     return {
       ok: true,
       status: 200,
-      mensagem: "Credencial aceita pela Receita. O acesso foi obtido e vale por 1 hora.",
+      mensagem: `Credencial aceita pela Receita. O acesso foi obtido e vale por 1 hora.${como}`,
+      ...(diag.modo_auth ? { modo_auth: diag.modo_auth } : {}),
+      ...(diag.tentativas ? { tentativas: diag.tentativas } : {}),
       em,
     };
   } catch (e) {
@@ -673,6 +790,10 @@ export async function testarCredencial(tenantId: string): Promise<TesteCredencia
       mensagem: err.message,
       ...(err.chamada?.headers ? { headers: err.chamada.headers } : {}),
       ...(err.chamada?.corpo_recorte ? { corpo_recorte: err.chamada.corpo_recorte } : {}),
+      ...(err.chamada?.tentativas ? { tentativas: err.chamada.tentativas } : {}),
+      ...(err.chamada?.formato_credencial
+        ? { formato_credencial: err.chamada.formato_credencial }
+        : {}),
       em,
     };
   }

@@ -158,13 +158,26 @@ function ApuracaoPage() {
             toast.success(r.mensagem);
             return;
           }
+          // Falhar nas três formas de autenticar elimina "formato do pedido" e
+          // deixa uma causa só: a chave não vale mais. Dizer isso poupa o
+          // usuário de procurar defeito onde não há.
+          const tentou = r.tentativas ?? [];
+          const todasRecusadas = tentou.length > 1 && tentou.every((t) => t.status === 400);
+          const f = r.formato_credencial;
           const detalhe = [
             r.status ? `Código ${r.status}` : null,
-            r.corpo_recorte?.trim() ? r.corpo_recorte.trim().slice(0, 300) : null,
+            r.corpo_recorte?.trim() ? r.corpo_recorte.trim().slice(0, 200) : null,
+            tentou.length > 1 ? `${tentou.length} formas de autenticar tentadas` : null,
+            f && f.separadores !== 1
+              ? `Atenção: a chave guardada tem ${f.separadores} separador(es) — o esperado é 1`
+              : null,
+            todasRecusadas
+              ? "Nenhuma forma foi aceita: o problema é a chave, não o formato do pedido. Gere uma nova credencial no portal da Receita."
+              : null,
           ]
             .filter(Boolean)
             .join(" — ");
-          toast.error(detalhe ? `${r.mensagem} ${detalhe}` : r.mensagem, { duration: 30_000 });
+          toast.error(detalhe ? `${r.mensagem} ${detalhe}` : r.mensagem, { duration: 60_000 });
         } catch (error) {
           const message = error instanceof Error ? error.message : "Falha ao testar a credencial.";
           toast.error(
