@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   apuracaoProcessarPendentes,
   apuracaoSolicitar,
+  apuracaoTestarCredencial,
 } from "@/lib/rtc-apuracao.functions";
 import {
   DEFAULT_PAGE_SIZE,
@@ -121,6 +122,17 @@ export function useProcessarPendentesApuracao(tenantId: string) {
       void queryClient.invalidateQueries({ queryKey: ["rtc-apuracoes", tenantId] });
       void queryClient.invalidateQueries({ queryKey: ["apuracao-detalhe", tenantId] });
     },
+  });
+}
+
+/**
+ * Testa a credencial da Receita sem gastar consulta (só o passo do token).
+ * Não invalida a cota porque não a consome — de propósito.
+ */
+export function useTestarCredencialRtc(tenantId: string) {
+  const testar = useServerFn(apuracaoTestarCredencial);
+  return useMutation({
+    mutationFn: async () => testar({ data: { tenantId } }),
   });
 }
 

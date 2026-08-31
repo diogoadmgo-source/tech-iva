@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Coins,
   Info,
+  KeyRound,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -48,6 +49,7 @@ import {
   useRequestApuracao,
   useProcessarPendentesApuracao,
   useRtcQuota,
+  useTestarCredencialRtc,
   type InvoiceRow,
 } from "@/lib/rtc";
 
@@ -88,6 +90,7 @@ function ApuracaoPage() {
   const divergencia = useApuracaoDivergencia(tenantId, competencia, polling);
   const quota = useRtcQuota(tenantId);
   const request = useRequestApuracao(tenantId);
+  const testeCredencial = useTestarCredencialRtc(tenantId);
   const pendentes = useProcessarPendentesApuracao(tenantId);
   const lista = useApuracoesLista(tenantId);
   const cash = useDashboardCash(tenantId, 90);
@@ -136,7 +139,50 @@ function ApuracaoPage() {
     d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada para esta competência",
   );
 
-  const consultarReceita = (
+  /**
+   * Prova a credencial sem gastar consulta: roda só o passo do acesso, que não
+   * entra no limite de 2 por dia. Existe para o usuário descobrir que a chave
+   * caiu ANTES de queimar uma das duas.
+   */
+  const testarCredencial = (
+    <Button
+      type="button"
+      variant="outline"
+      className="gap-2"
+      title="Verifica se a chave da Receita ainda é aceita. Não consome nenhuma das consultas do dia."
+      disabled={testeCredencial.isPending}
+      onClick={async () => {
+        try {
+          const r = await testeCredencial.mutateAsync();
+          if (r.ok) {
+            toast.success(r.mensagem);
+            return;
+          }
+          const detalhe = [
+            r.status ? `Código ${r.status}` : null,
+            r.corpo_recorte?.trim() ? r.corpo_recorte.trim().slice(0, 300) : null,
+          ]
+            .filter(Boolean)
+            .join(" — ");
+          toast.error(detalhe ? `${r.mensagem} ${detalhe}` : r.mensagem, { duration: 30_000 });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Falha ao testar a credencial.";
+          toast.error(
+            message === "forbidden" ? "Seu papel não permite testar a credencial." : message,
+          );
+        }
+      }}
+    >
+      {testeCredencial.isPending ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+      ) : (
+        <KeyRound className="size-4" aria-hidden />
+      )}
+      Testar credencial
+    </Button>
+  );
+
+  const botaoConsultar = (
     <Button
       type="button"
       className="cta-lift gap-2"
@@ -164,6 +210,13 @@ function ApuracaoPage() {
       )}
       {polling ? "Aguardando Receita…" : "Consultar Receita"}
     </Button>
+  );
+
+  const consultarReceita = (
+    <div className="flex flex-wrap items-center gap-2">
+      {testarCredencial}
+      {botaoConsultar}
+    </div>
   );
 
   if (divergencia.isError) {

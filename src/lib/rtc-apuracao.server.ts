@@ -153,8 +153,34 @@ function transporte(error: unknown, etapa: string): ApuracaoGatewayError {
   );
 }
 
+/**
+ * Diagnóstico das chamadas que antecedem o download (token e solicitação).
+ * Existe pelo mesmo motivo do `DownloadDiag`: uma recusa precisa ser explicada
+ * sem gastar outra consulta da cota diária. Guardado em `rtc_apuracao.chamada_diag`.
+ *
+ * O recorte do corpo só é preenchido em FALHA — a resposta de sucesso do token
+ * contém o próprio access_token e nunca pode ser persistida nem logada.
+ */
+export type ChamadaDiag = {
+  etapa: "token" | "solicitar";
+  status: number | null;
+  ok: boolean;
+  headers: Record<string, string>;
+  corpo_recorte?: string;
+  em: string;
+};
+
+/** Erro que carrega o diagnóstico da etapa em que morreu. */
+type ErroComDiag = ApuracaoGatewayError & { chamada?: ChamadaDiag };
+
+function comDiag(err: ApuracaoGatewayError, chamada: ChamadaDiag): ErroComDiag {
+  const e = err as ErroComDiag;
+  e.chamada = chamada;
+  return e;
+}
+
 /** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
-async function accessToken(credential: string): Promise<string> {
+async function accessToken(credential: string): Promise<{ token: string; diag: ChamadaDiag }> {
   const url = tokenUrl();
   if (!url) {
     throw new ApuracaoGatewayError(
@@ -179,13 +205,26 @@ async function accessToken(credential: string): Promise<string> {
     throw transporte(error, "token");
   }
   const text = await res.text();
+  const diag: ChamadaDiag = {
+    etapa: "token",
+    status: res.status,
+    ok: res.ok,
+    headers: headersDiag(res),
+    em: new Date().toISOString(),
+  };
   if (!res.ok) {
+    // O corpo do erro é o que distingue "credencial vencida" de "pedido mal
+    // formado" — os dois chegam como 4xx e sem isto viram o mesmo "HTTP 400".
+    diag.corpo_recorte = text.slice(0, 1000);
     console.error("[rtc-apuracao] token recusado", { status: res.status });
-    throw new ApuracaoGatewayError(
-      "no_credential",
-      res.status === 401 || res.status === 403
-        ? "A Receita recusou a credencial cadastrada (client_id/client_secret). Consulta não realizada."
-        : `Não foi possível obter o token de acesso da Receita (HTTP ${res.status}).`,
+    throw comDiag(
+      new ApuracaoGatewayError(
+        "no_credential",
+        res.status === 401 || res.status === 403
+          ? "A Receita recusou a credencial cadastrada (client_id/client_secret). Consulta não realizada."
+          : `Não foi possível obter o token de acesso da Receita (HTTP ${res.status}).`,
+      ),
+      diag,
     );
   }
   let token: string | undefined;
@@ -195,9 +234,15 @@ async function accessToken(credential: string): Promise<string> {
     token = undefined;
   }
   if (!token) {
-    throw new ApuracaoGatewayError("error", "A Receita devolveu um token inesperado.");
+    // 200 sem access_token: o corpo aqui não traz token para vazar, e é a única
+    // pista de que a resposta mudou de formato.
+    diag.corpo_recorte = text.slice(0, 1000);
+    throw comDiag(
+      new ApuracaoGatewayError("error", "A Receita devolveu um token inesperado."),
+      diag,
+    );
   }
-  return token;
+  return { token, diag };
 }
 
 function corpoJson(text: string): Record<string, unknown> | null {
@@ -224,7 +269,7 @@ async function solicitarNaReceita(
   cnpj: string,
   urlRetorno: string,
   token: string,
-): Promise<Record<string, unknown>> {
+): Promise<{ body: Record<string, unknown>; diag: ChamadaDiag }> {
   const base = apiBase();
   if (!base) {
     throw new ApuracaoGatewayError(
@@ -247,9 +292,20 @@ async function solicitarNaReceita(
   } catch (error) {
     throw transporte(error, "solicitar");
   }
-  const body = corpoJson(await res.text());
-  if (res.status !== 201 && !res.ok) throw erroDaReceita(res.status, body);
-  return body ?? {};
+  const text = await res.text();
+  const body = corpoJson(text);
+  // Esta é a chamada que consome a cota: o corpo fica guardado em sucesso e em
+  // falha, porque repetir para descobrir o motivo custa uma das 2 do dia.
+  const diag: ChamadaDiag = {
+    etapa: "solicitar",
+    status: res.status,
+    ok: res.ok,
+    headers: headersDiag(res),
+    corpo_recorte: text.slice(0, 1000),
+    em: new Date().toISOString(),
+  };
+  if (res.status !== 201 && !res.ok) throw comDiag(erroDaReceita(res.status, body), diag);
+  return { body: body ?? {}, diag };
 }
 
 /**
@@ -340,6 +396,33 @@ async function baixarNaReceita(
     throw err;
   }
   return { body, diag };
+}
+
+/**
+ * Acumula o diagnóstico das etapas anteriores ao download em `chamada_diag`,
+ * sob a chave da etapa. Escreve por merge para o diagnóstico da solicitação não
+ * apagar o do token quando as duas rodam na mesma tentativa.
+ */
+async function gravarChamada(
+  admin: AdminClient,
+  apuracaoId: string,
+  diag: ChamadaDiag | undefined,
+) {
+  if (!diag) return;
+  console.info("[rtc-apuracao] chamada", {
+    apuracao: apuracaoId,
+    etapa: diag.etapa,
+    status: diag.status,
+    ok: diag.ok,
+  });
+  const { data } = await table(admin, "rtc_apuracao")
+    .select("chamada_diag")
+    .eq("id", apuracaoId)
+    .maybeSingle();
+  const atual = (data?.chamada_diag ?? {}) as Record<string, unknown>;
+  await table(admin, "rtc_apuracao")
+    .update({ chamada_diag: { ...atual, [diag.etapa]: diag } })
+    .eq("id", apuracaoId);
 }
 
 async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: DownloadDiag | undefined) {
@@ -504,9 +587,15 @@ export async function solicitarApuracao(
   try {
     // O download pertence à mesma solicitação OAuth. Guardamos o access token
     // cifrado antes do POST para o webhook nunca chegar antes desse vínculo.
-    const token = await accessToken(credential.apiKey);
+    const { token, diag: diagToken } = await accessToken(credential.apiKey);
+    await gravarChamada(admin, row.id, diagToken);
     tokenRef = await guardarToken(admin, tenantId, row.id, token);
-    const resposta = await solicitarNaReceita(cnpj, urlRetorno, token);
+    const { body: resposta, diag: diagSolicitar } = await solicitarNaReceita(
+      cnpj,
+      urlRetorno,
+      token,
+    );
+    await gravarChamada(admin, row.id, diagSolicitar);
 
     await logUse(admin, credential.id, "apuracao.solicitar", true);
 
@@ -523,12 +612,69 @@ export async function solicitarApuracao(
     }
     return { ok: true, id: row.id, competencia };
   } catch (e) {
-    const err = e as ApuracaoGatewayError;
+    const err = e as ErroComDiag;
+    // Grava o diagnóstico ANTES de marcar o erro: é ele que explica a recusa
+    // sem custar outra consulta da cota diária.
+    await gravarChamada(admin, row.id, err.chamada);
     await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
     await marcarErro(admin, row.id, err.message);
     await apagarToken(admin, row.id, tokenRef);
     await estornarCota(admin, cnpj, err.reason);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
+  }
+}
+
+export type TesteCredencialResult = {
+  ok: boolean;
+  status: number | null;
+  mensagem: string;
+  headers?: Record<string, string>;
+  corpo_recorte?: string;
+  em: string;
+};
+
+/**
+ * Prova a credencial rodando SÓ o passo 1 (token). Não cria apuração, não
+ * debita cota e não chama o endpoint de apuração — o limite de 2 consultas por
+ * dia é dos endpoints de apuração, não do /token. Serve para descobrir por que
+ * o acesso é recusado antes de gastar uma das duas.
+ *
+ * Nunca devolve o access_token: em sucesso, só confirma que ele veio.
+ */
+export async function testarCredencial(tenantId: string): Promise<TesteCredencialResult> {
+  const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+  const em = new Date().toISOString();
+
+  let credential: Credential;
+  try {
+    credential = await loadApiKey(admin, tenantId);
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    return { ok: false, status: null, mensagem: err.message, em };
+  }
+
+  try {
+    await accessToken(credential.apiKey);
+    await logUse(admin, credential.id, "apuracao.token_teste", true);
+    return {
+      ok: true,
+      status: 200,
+      mensagem: "Credencial aceita pela Receita. O acesso foi obtido e vale por 1 hora.",
+      em,
+    };
+  } catch (e) {
+    const err = e as ErroComDiag;
+    await logUse(admin, credential.id, "apuracao.token_teste", false, err.message);
+    // `exactOptionalPropertyTypes`: campo ausente e campo com valor vazio não
+    // são a mesma coisa aqui — só inclui o que existe.
+    return {
+      ok: false,
+      status: err.chamada?.status ?? null,
+      mensagem: err.message,
+      ...(err.chamada?.headers ? { headers: err.chamada.headers } : {}),
+      ...(err.chamada?.corpo_recorte ? { corpo_recorte: err.chamada.corpo_recorte } : {}),
+      em,
+    };
   }
 }
 
@@ -595,7 +741,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       }
 
       if (!resultado) {
-        const novo = await accessToken(credential.apiKey);
+        const { token: novo, diag: diagToken } = await accessToken(credential.apiKey);
+        await gravarChamada(admin, apuracaoId, diagToken);
         resultado = await baixarNaReceita(tiquete, novo, "novo");
       }
 
@@ -616,8 +763,11 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       if (saved.error) throw new Error(saved.error.message);
       await apagarToken(admin, apuracaoId, row.access_token_ref as string | null);
     } catch (e) {
-      const err = e as ApuracaoGatewayError & { diag?: DownloadDiag };
+      const err = e as ApuracaoGatewayError & { diag?: DownloadDiag; chamada?: ChamadaDiag };
       await gravarDiag(admin, apuracaoId, err.diag ?? diag);
+      // A renovação do acesso acontece dentro deste mesmo try: se foi ela que
+      // falhou, o motivo está em `chamada`, não em `diag`.
+      await gravarChamada(admin, apuracaoId, err.chamada);
       await logUse(admin, credential.id, "apuracao.download", false, err.message);
       await marcarErro(admin, apuracaoId, `Download da apuração: ${err.message}`);
       return { ok: false, id: apuracaoId, motivo: err.message };

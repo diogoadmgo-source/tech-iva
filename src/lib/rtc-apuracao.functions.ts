@@ -58,6 +58,20 @@ export const apuracaoProcessarPendentes = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Prova a credencial da Receita sem gastar consulta: roda só o passo do token.
+ * O limite de 2 por dia é dos endpoints de apuração — o /token não entra nele.
+ * Devolve o motivo real da recusa (status, cabeçalhos e recorte do corpo).
+ */
+export const apuracaoTestarCredencial = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ tenantId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { testarCredencial } = await import("@/lib/rtc-apuracao.server");
+    await assertScope(context.supabase as never, data.tenantId);
+    return testarCredencial(data.tenantId);
+  });
+
 export const apuracaoGatewayStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
