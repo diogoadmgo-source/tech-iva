@@ -46,6 +46,16 @@ function isChunkLoadError(error: unknown) {
 
 const RELOAD_KEY = "techiva:chunk-reload";
 
+/** Recarrega uma única vez por sessão-curta quando o bundle antigo não existe mais. */
+function recoverFromChunkError() {
+  if (typeof window === "undefined") return;
+  const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
+  if (Date.now() - last < 20_000) return;
+  window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  window.location.reload();
+}
+
+
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
@@ -57,12 +67,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
   // Recuperação automática (uma única vez) quando o app foi atualizado durante a navegação.
   useEffect(() => {
-    if (!chunk || typeof window === "undefined") return;
-    const last = Number(window.sessionStorage.getItem(RELOAD_KEY) ?? "0");
-    if (Date.now() - last < 20_000) return;
-    window.sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
-    window.location.reload();
+    if (chunk) recoverFromChunkError();
   }, [chunk]);
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -148,6 +155,24 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Falhas de import dinâmico durante preload/navegação não chegam ao errorComponent
+  // (a rota nunca monta) e deixavam a tela branca: tratamos no nível da janela.
+  useEffect(() => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      if (isChunkLoadError(e.reason)) recoverFromChunkError();
+    };
+    const onError = (e: ErrorEvent) => {
+      if (isChunkLoadError(e.error ?? e.message)) recoverFromChunkError();
+    };
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("error", onError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("error", onError);
+    };
+  }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>
