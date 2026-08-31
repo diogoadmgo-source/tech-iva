@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -98,6 +98,97 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "api_keys_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_findings: {
+        Row: {
+          cclasstrib: string | null
+          classe: Database["public"]["Enums"]["audit_finding_class"]
+          classificacao: string | null
+          competencia: string | null
+          created_at: string
+          cst: string | null
+          encontrado: Json | null
+          esperado: Json | null
+          id: string
+          invoice_id: string | null
+          invoice_item_id: string
+          memoria: Json | null
+          resolvido_em: string | null
+          resolvido_por: string | null
+          rule_version: string
+          severidade: Database["public"]["Enums"]["alert_severity"]
+          status: Database["public"]["Enums"]["audit_finding_status"]
+          tenant_id: string
+          uf: string | null
+          valor_risco_cents: number
+        }
+        Insert: {
+          cclasstrib?: string | null
+          classe: Database["public"]["Enums"]["audit_finding_class"]
+          classificacao?: string | null
+          competencia?: string | null
+          created_at?: string
+          cst?: string | null
+          encontrado?: Json | null
+          esperado?: Json | null
+          id?: string
+          invoice_id?: string | null
+          invoice_item_id: string
+          memoria?: Json | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          rule_version: string
+          severidade?: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["audit_finding_status"]
+          tenant_id: string
+          uf?: string | null
+          valor_risco_cents?: number
+        }
+        Update: {
+          cclasstrib?: string | null
+          classe?: Database["public"]["Enums"]["audit_finding_class"]
+          classificacao?: string | null
+          competencia?: string | null
+          created_at?: string
+          cst?: string | null
+          encontrado?: Json | null
+          esperado?: Json | null
+          id?: string
+          invoice_id?: string | null
+          invoice_item_id?: string
+          memoria?: Json | null
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          rule_version?: string
+          severidade?: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["audit_finding_status"]
+          tenant_id?: string
+          uf?: string | null
+          valor_risco_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_findings_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_findings_invoice_item_id_fkey"
+            columns: ["invoice_item_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_findings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -282,6 +373,84 @@ export type Database = {
           received_at?: string
           subscription_id?: string | null
           tenant_id?: string | null
+        }
+        Relationships: []
+      }
+      calc_classtrib_aplicavel: {
+        Row: {
+          ano: number
+          cclasstrib: string
+          checked_at: string
+          codigo: string
+          rule_version: string
+          tipo: string
+          valido: boolean
+        }
+        Insert: {
+          ano: number
+          cclasstrib: string
+          checked_at?: string
+          codigo: string
+          rule_version: string
+          tipo: string
+          valido: boolean
+        }
+        Update: {
+          ano?: number
+          cclasstrib?: string
+          checked_at?: string
+          codigo?: string
+          rule_version?: string
+          tipo?: string
+          valido?: boolean
+        }
+        Relationships: []
+      }
+      calc_classtrib_matriz: {
+        Row: {
+          bruto: Json | null
+          cclasstrib: string
+          credito_adquirente_cbs: boolean | null
+          credito_adquirente_ibs: boolean | null
+          cst: string | null
+          descricao: string | null
+          pct_reducao_cbs: number | null
+          pct_reducao_ibs_mun: number | null
+          pct_reducao_ibs_uf: number | null
+          possui_reducao: boolean | null
+          rule_version: string
+          tipo_aliquota: string | null
+          tipos_dfe: Json | null
+        }
+        Insert: {
+          bruto?: Json | null
+          cclasstrib: string
+          credito_adquirente_cbs?: boolean | null
+          credito_adquirente_ibs?: boolean | null
+          cst?: string | null
+          descricao?: string | null
+          pct_reducao_cbs?: number | null
+          pct_reducao_ibs_mun?: number | null
+          pct_reducao_ibs_uf?: number | null
+          possui_reducao?: boolean | null
+          rule_version: string
+          tipo_aliquota?: string | null
+          tipos_dfe?: Json | null
+        }
+        Update: {
+          bruto?: Json | null
+          cclasstrib?: string
+          credito_adquirente_cbs?: boolean | null
+          credito_adquirente_ibs?: boolean | null
+          cst?: string | null
+          descricao?: string | null
+          pct_reducao_cbs?: number | null
+          pct_reducao_ibs_mun?: number | null
+          pct_reducao_ibs_uf?: number | null
+          possui_reducao?: boolean | null
+          rule_version?: string
+          tipo_aliquota?: string | null
+          tipos_dfe?: Json | null
         }
         Relationships: []
       }
@@ -4195,6 +4364,33 @@ export type Database = {
           },
         ]
       }
+      v_audit_resumo: {
+        Row: {
+          cclasstrib: string | null
+          classe: Database["public"]["Enums"]["audit_finding_class"] | null
+          classificacao: string | null
+          competencia: string | null
+          cst: string | null
+          encontrado_exemplo: Json | null
+          esperado_exemplo: Json | null
+          exemplo_id: string | null
+          itens: number | null
+          primeiro_achado: string | null
+          rule_version: string | null
+          severidade: Database["public"]["Enums"]["alert_severity"] | null
+          tenant_id: string | null
+          valor_risco_cents: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_findings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_credit_offer: {
@@ -4246,6 +4442,10 @@ export type Database = {
       arranjo_tem_split: {
         Args: { p: Database["public"]["Enums"]["arranjo_pagamento"] }
         Returns: boolean
+      }
+      audit_overview: {
+        Args: { p_desde?: string; p_tenant: string }
+        Returns: Json
       }
       auth_scopes: { Args: never; Returns: unknown[] }
       billing_events_scope: {
@@ -4966,6 +5166,14 @@ export type Database = {
         | "dinheiro"
         | "outro"
         | "desconhecido"
+      audit_finding_class:
+        | "ausencia_grupo"
+        | "par_invalido"
+        | "classificacao_indevida"
+        | "valor_divergente"
+        | "beneficio_nao_usado"
+        | "credito_em_risco"
+      audit_finding_status: "aberto" | "aceito" | "ignorado" | "corrigido"
       cash_event_kind:
         | "tax_out"
         | "credit_in"
@@ -5150,6 +5358,15 @@ export const Constants = {
         "outro",
         "desconhecido",
       ],
+      audit_finding_class: [
+        "ausencia_grupo",
+        "par_invalido",
+        "classificacao_indevida",
+        "valor_divergente",
+        "beneficio_nao_usado",
+        "credito_em_risco",
+      ],
+      audit_finding_status: ["aberto", "aceito", "ignorado", "corrigido"],
       cash_event_kind: [
         "tax_out",
         "credit_in",
