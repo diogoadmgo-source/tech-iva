@@ -415,7 +415,7 @@ async function solicitarNaReceita(
 export type DownloadDiag = {
   status: number | null;
   ok: boolean;
-  caminho_token: "guardado" | "novo";
+  caminho_token: "guardado" | "novo" | "sem_token";
   headers: Record<string, string>;
   corpo_recorte?: string;
   em: string;
@@ -444,28 +444,19 @@ function headersDiag(res: Response): Record<string, string> {
   return out;
 }
 
-/** Passo 3: baixa o JSON do extrato. Um único acesso por tíquete. */
-async function baixarNaReceita(
-  tiquete: string,
-  token: string,
-  caminhoToken: "guardado" | "novo",
+/**
+ * Faz o GET de download e monta o `DownloadDiag`. Compartilhado pelos dois
+ * caminhos de download (v1 por tíquete+Bearer, v2 por URL pré-assinada) —
+ * a única diferença real entre eles é o header e o rótulo do `caminho_token`.
+ */
+async function executarDownload(
+  url: string,
+  headers: Record<string, string>,
+  caminhoToken: DownloadDiag["caminho_token"],
 ): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
-  const base = apiBase();
-  if (!base) {
-    throw new ApuracaoGatewayError(
-      "not_configured",
-      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
-    );
-  }
   let res: Response;
   try {
-    res = await withTimeout((signal) =>
-      fetch(`${base}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        signal,
-      }),
-    );
+    res = await withTimeout((signal) => fetch(url, { method: "GET", headers, signal }));
   } catch (error) {
     throw transporte(error, "download");
   }
@@ -478,50 +469,10 @@ async function baixarNaReceita(
     headers: headersDiag(res),
     em: new Date().toISOString(),
   };
-  if (!res.ok) {
-    // Recorte do corpo de erro: é o que explica a recusa sem gastar cota.
-    diag.corpo_recorte = text.slice(0, 1000);
-    const err = erroDaReceita(res.status, body) as ApuracaoGatewayError & { diag?: DownloadDiag };
-    err.diag = diag;
-    throw err;
-  }
-  if (!body) {
-    diag.corpo_recorte = text.slice(0, 1000);
-    const err = new ApuracaoGatewayError(
-      "error",
-      "A Receita devolveu um corpo inesperado.",
-    ) as ApuracaoGatewayError & { diag?: DownloadDiag };
-    err.diag = diag;
-    throw err;
-  }
-  return { body, diag };
-}
-
-/**
- * Passo 3 na v2: a URL já carrega a autorização, então vai SEM o nosso Bearer.
- * Mandar o Authorization junto de uma URL pré-assinada faz alguns provedores
- * recusarem a requisição.
- */
-async function baixarPorUrlAssinada(
-  url: string,
-): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
-  let res: Response;
-  try {
-    res = await withTimeout((signal) => fetch(url, { method: "GET", signal }));
-  } catch (error) {
-    throw transporte(error, "download");
-  }
-  const text = await res.text();
-  const body = corpoJson(text);
-  const diag: DownloadDiag = {
-    status: res.status,
-    ok: res.ok,
-    caminho_token: "guardado",
-    headers: headersDiag(res),
-    em: new Date().toISOString(),
-  };
   if (!res.ok || !body) {
-    // A URL some do recorte: ela É a credencial do download.
+    // Recorte do corpo de erro: é o que explica a recusa sem gastar cota. Na
+    // v2 a URL é a credencial — o recorte é sempre do corpo de resposta da
+    // Receita, nunca da URL chamada.
     diag.corpo_recorte = text.slice(0, 1000);
     const err = (res.ok
       ? new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.")
@@ -530,6 +481,38 @@ async function baixarPorUrlAssinada(
     throw err;
   }
   return { body, diag };
+}
+
+/** Passo 3 (v1): baixa o JSON do extrato pelo tíquete. Um único acesso por tíquete. */
+async function baixarNaReceita(
+  tiquete: string,
+  token: string,
+  caminhoToken: "guardado" | "novo",
+): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
+  const base = apiBase();
+  if (!base) {
+    throw new ApuracaoGatewayError(
+      "not_configured",
+      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
+    );
+  }
+  return executarDownload(
+    `${base}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`,
+    { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    caminhoToken,
+  );
+}
+
+/**
+ * Passo 3 (v2): a URL já carrega a autorização, então vai SEM o nosso Bearer.
+ * Mandar o Authorization junto de uma URL pré-assinada faz alguns provedores
+ * recusarem a requisição. Por isso o diag registra `"sem_token"` — não existe
+ * token guardado nem novo neste caminho.
+ */
+async function baixarPorUrlAssinada(
+  url: string,
+): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
+  return executarDownload(url, {}, "sem_token");
 }
 
 /**
