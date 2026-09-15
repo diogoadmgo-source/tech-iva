@@ -19,6 +19,8 @@
  */
 
 import { sealSecret, unsealSecret } from "@/lib/credentials.server";
+import { urlSituacao, type Ambiente } from "@/lib/rtc-v2/enderecos";
+import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
 
 const TIMEOUT_MS = 45_000;
 
@@ -73,6 +75,12 @@ function tokenUrl(): string | null {
 function apiPrefix(): string {
   const raw = (process.env["RTC_API_PREFIX"] ?? "rtc").trim().replace(/^\/+|\/+$/g, "");
   return /^[a-z0-9-]+$/.test(raw) ? raw : "rtc";
+}
+
+/** `RTC_API_PREFIX` valia na v1; na v2 vira a escolha do caminho. */
+function ambienteAtual(): Ambiente {
+  const raw = (process.env["RTC_API_PREFIX"] ?? "").trim();
+  return raw.startsWith("prr") ? "restrita" : "producao";
 }
 
 
@@ -513,6 +521,38 @@ async function baixarPorUrlAssinada(
   url: string,
 ): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
   return executarDownload(url, {}, "sem_token");
+}
+
+/**
+ * Acompanha a solicitação sem depender do webhook. Este endereço NÃO entra no
+ * limite de 4 chamadas por dia — o limite é do endpoint de abertura. É o
+ * caminho principal de recuperação quando o retorno não chega.
+ */
+export async function consultarSituacao(
+  tiquete: string,
+  token: string,
+): Promise<{ estado: string; retorno: Retorno }> {
+  const base = apiBase();
+  if (!base) {
+    throw new ApuracaoGatewayError("not_configured", "Ambiente sem endereço da API da Receita.");
+  }
+  const url = urlSituacao(base, ambienteAtual(), tiquete);
+  let res: Response;
+  try {
+    res = await withTimeout((signal) =>
+      fetch(url, {
+        method: "GET",
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        signal,
+      }),
+    );
+  } catch (error) {
+    throw transporte(error, "situacao");
+  }
+  const body = corpoJson(await res.text());
+  if (!res.ok) throw erroDaReceita(res.status, body);
+  const estado = String((body?.["estado"] as string | undefined) ?? "DESCONHECIDO");
+  return { estado, retorno: lerRetorno(body) };
 }
 
 /**
@@ -960,15 +1000,111 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   return { ok: true, id: apuracaoId, debitos };
 }
 
+type LinhaAguardandoSituacao = {
+  id: string;
+  tenant_id: string;
+  solicitado_em: string;
+  tiquete_solicitacao: string;
+  /** Coluna da Tarefa 4 — pode nem existir ainda (ver `select("*")` abaixo). */
+  tea_segundos?: number | null;
+};
+
+/**
+ * Acompanha, pela consulta de situação, uma linha `solicitada` que já tem
+ * `tiquete_solicitacao` mas ainda não recebeu o webhook (sem `url_assinada`).
+ * Não depende do nosso endereço ser alcançável pela Receita — é o caminho
+ * principal de recuperação quando o retorno se perde.
+ *
+ * Espaçamento: `tea_segundos` (tempo estimado de atendimento, da resposta da
+ * abertura) evita consultar antes da hora — chamada garantidamente inútil.
+ * A coluna só existe a partir da Tarefa 4; ausente ou nula é lida como zero,
+ * ou seja, sem espaçamento.
+ */
+async function acompanharSituacao(
+  admin: AdminClient,
+  row: LinhaAguardandoSituacao,
+): Promise<ProcessarResult | null> {
+  const teaSegundos = Number(row.tea_segundos ?? 0);
+  const esperaAte =
+    new Date(row.solicitado_em).getTime() + (Number.isFinite(teaSegundos) ? teaSegundos : 0) * 1000;
+  if (Date.now() < esperaAte) return null;
+
+  let credential: Credential;
+  try {
+    credential = await loadApiKey(admin, row.tenant_id);
+  } catch {
+    return null; // sem credencial agora: tenta de novo na próxima rodada
+  }
+
+  let estado: string;
+  let retorno: Retorno;
+  try {
+    const { token } = await accessToken(credential.apiKey);
+    ({ estado, retorno } = await consultarSituacao(row.tiquete_solicitacao, token));
+  } catch (e) {
+    console.error("[rtc-apuracao] falha ao consultar situação", {
+      apuracao: row.id,
+      erro: (e as Error).message,
+    });
+    return null; // falha de transporte: não marca erro na linha, tenta de novo depois
+  }
+
+  if (estado === "CONCLUIDA" && retorno.tipo === "url") {
+    await table(admin, "rtc_apuracao")
+      .update({ url_assinada: retorno.url, url_assinada_expira_em: retorno.expiraEm })
+      .eq("id", row.id);
+    return processarApuracao(row.id);
+  }
+
+  if (estado === "ERRO") {
+    const motivo =
+      retorno.tipo === "erro"
+        ? (retorno.mensagem ?? retorno.codigo ?? "a Receita não informou o motivo")
+        : "a Receita sinalizou erro sem detalhe";
+    await marcarErro(admin, row.id, `A Receita recusou a apuração: ${motivo}`);
+    return { ok: false, id: row.id, motivo };
+  }
+
+  // PENDENTE / EM_PROCESSAMENTO / estado desconhecido: nada a fazer ainda,
+  // salvo o prazo de processamento da Receita (240 min) já ter estourado — sem
+  // isto a linha fica pendente para sempre.
+  const PRAZO_MS = 240 * 60 * 1000;
+  const idade = Date.now() - new Date(row.solicitado_em).getTime();
+  if (idade > PRAZO_MS) {
+    const motivo = "A Receita passou dos 240 minutos de processamento.";
+    await marcarErro(admin, row.id, motivo);
+    return { ok: false, id: row.id, motivo };
+  }
+  return null;
+}
+
 /** Fila de recuperação: tíquetes recebidos que ainda não foram baixados. */
 export async function processarPendentes(tenantId?: string): Promise<ProcessarResult[]> {
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+  const out: ProcessarResult[] = [];
+
+  // v2: acompanha pela consulta de situação as linhas que ainda não receberam
+  // o webhook. `select("*")` em vez de nomear `tea_segundos` de propósito: a
+  // coluna só existe a partir da Tarefa 4, e nomeá-la aqui quebraria esta
+  // consulta antes disso.
+  let aguardandoQuery = table(admin, "rtc_apuracao")
+    .select("*")
+    .eq("status", "solicitada")
+    .not("tiquete_solicitacao", "is", null)
+    .is("url_assinada", null);
+  if (tenantId) aguardandoQuery = aguardandoQuery.eq("tenant_id", tenantId);
+  const { data: aguardando, error: erroAguardando } = await aguardandoQuery;
+  if (erroAguardando) throw new Error(erroAguardando.message);
+  for (const row of (aguardando ?? []) as LinhaAguardandoSituacao[]) {
+    const resultado = await acompanharSituacao(admin, row);
+    if (resultado) out.push(resultado);
+  }
+
   const { data, error } = await rpc(admin)("rtc_apuracao_pendentes_download", {});
   if (error) throw new Error(error.message);
   const rows = ((data ?? []) as Array<{ id: string; tenant_id: string }>).filter(
     (row) => !tenantId || row.tenant_id === tenantId,
   );
-  const out: ProcessarResult[] = [];
   for (const r of rows) out.push(await processarApuracao(r.id));
   return out;
 }
