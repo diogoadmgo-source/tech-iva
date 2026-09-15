@@ -37,7 +37,7 @@ function BrandScreen() {
   const shell = useShellData(tenantId);
   const mutations = useTenantMutations(tenantId);
 
-  const [form, setForm] = useState<Brand>({ name: "", logo_url: "", color: "#2563EB" });
+  const [form, setForm] = useState<Brand>({ name: "", logo_url: "", color: "#009DC0" });
 
   const tenant = shell.data?.tenant;
   const role = shell.data?.role ?? null;
@@ -49,7 +49,7 @@ function BrandScreen() {
     setForm({
       name: brand.name ?? tenant.name,
       logo_url: brand.logo_url ?? "",
-      color: brand.color ?? "#2563EB",
+      color: brand.color ?? "#009DC0",
     });
   }, [tenant]);
 
@@ -131,7 +131,7 @@ function BrandScreen() {
                 <input
                   id="brand-color"
                   type="color"
-                  value={form.color ?? "#2563EB"}
+                  value={form.color ?? "#009DC0"}
                   onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
                   className="size-9 cursor-pointer rounded-md border border-border bg-transparent"
                 />
@@ -153,7 +153,7 @@ function BrandScreen() {
           <div className="overflow-hidden rounded-lg border border-border">
             <div
               className="flex items-center gap-3 px-4 py-3"
-              style={{ backgroundColor: form.color ?? "#2563EB" }}
+              style={{ backgroundColor: form.color ?? "#009DC0" }}
             >
               {form.logo_url ? (
                 <img src={form.logo_url} alt="Logo do canal" className="h-7 w-auto" />
@@ -172,7 +172,7 @@ function BrandScreen() {
               <div className="space-y-3 p-4">
                 <div className="h-3 w-32 rounded bg-muted" />
                 <div className="h-16 rounded-lg border border-border bg-surface-2" />
-                <Button size="sm" style={{ backgroundColor: form.color ?? "#2563EB" }}>
+                <Button size="sm" style={{ backgroundColor: form.color ?? "#009DC0" }}>
                   Ação primária
                 </Button>
               </div>

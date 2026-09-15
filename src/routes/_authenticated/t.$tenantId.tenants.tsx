@@ -524,7 +524,7 @@ function EditTenantDialog({
   const [name, setName] = useState("");
   const [status, setStatus] = useState<TenantStatus>("active");
   const [brandName, setBrandName] = useState("");
-  const [color, setColor] = useState("#2563EB");
+  const [color, setColor] = useState("#009DC0");
   const [logoUrl, setLogoUrl] = useState("");
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
@@ -534,7 +534,7 @@ function EditTenantDialog({
     setName(node.name);
     setStatus(node.status);
     setBrandName(node.brand?.name ?? "");
-    setColor(node.brand?.color ?? "#2563EB");
+    setColor(node.brand?.color ?? "#009DC0");
     setLogoUrl(node.brand?.logo_url ?? "");
   }
 

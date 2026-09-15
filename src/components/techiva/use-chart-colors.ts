@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 const FALLBACK = {
-  border: "#252b3b",
-  muted: "#8b93a7",
-  primary: "#2563eb",
+  border: "#1d526f",
+  muted: "#9aadb7",
+  primary: "#009dc0",
   flowIn: "#22c55e",
   flowOut: "#f97316",
 };
