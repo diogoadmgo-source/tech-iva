@@ -1834,6 +1834,7 @@ export type Database = {
       rtc_apuracao: {
         Row: {
           access_token_ref: string | null
+          api_versao: number
           chamada_diag: Json | null
           competencia: string
           creditos_cents: number | null
@@ -1852,22 +1853,27 @@ export type Database = {
           pagamentos_cents: number | null
           payload: Json | null
           recebido_em: string | null
+          recurso: string
           resultado_cents: number | null
           saldo_atualizado_cents: number | null
           saldo_cents: number | null
           situacao: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em: string
           status: string
+          tea_segundos: number | null
           tenant_id: string
           tiquete: string | null
           tiquete_download: string | null
           tiquete_solicitacao: string | null
+          url_assinada: string | null
+          url_assinada_expira_em: string | null
           webhook_payload: Json | null
           webhook_recebido_em: string | null
           webhook_ref: string | null
         }
         Insert: {
           access_token_ref?: string | null
+          api_versao?: number
           chamada_diag?: Json | null
           competencia: string
           creditos_cents?: number | null
@@ -1886,22 +1892,27 @@ export type Database = {
           pagamentos_cents?: number | null
           payload?: Json | null
           recebido_em?: string | null
+          recurso?: string
           resultado_cents?: number | null
           saldo_atualizado_cents?: number | null
           saldo_cents?: number | null
           situacao?: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em?: string
           status?: string
+          tea_segundos?: number | null
           tenant_id: string
           tiquete?: string | null
           tiquete_download?: string | null
           tiquete_solicitacao?: string | null
+          url_assinada?: string | null
+          url_assinada_expira_em?: string | null
           webhook_payload?: Json | null
           webhook_recebido_em?: string | null
           webhook_ref?: string | null
         }
         Update: {
           access_token_ref?: string | null
+          api_versao?: number
           chamada_diag?: Json | null
           competencia?: string
           creditos_cents?: number | null
@@ -1920,16 +1931,20 @@ export type Database = {
           pagamentos_cents?: number | null
           payload?: Json | null
           recebido_em?: string | null
+          recurso?: string
           resultado_cents?: number | null
           saldo_atualizado_cents?: number | null
           saldo_cents?: number | null
           situacao?: Database["public"]["Enums"]["apuracao_situacao"] | null
           solicitado_em?: string
           status?: string
+          tea_segundos?: number | null
           tenant_id?: string
           tiquete?: string | null
           tiquete_download?: string | null
           tiquete_solicitacao?: string | null
+          url_assinada?: string | null
+          url_assinada_expira_em?: string | null
           webhook_payload?: Json | null
           webhook_recebido_em?: string | null
           webhook_ref?: string | null
@@ -4990,7 +5005,13 @@ export type Database = {
         Returns: Json
       }
       rtc_apuracao_solicitar: {
-        Args: { p_competencia: string; p_origem?: string; p_tenant: string }
+        Args: {
+          p_api_versao?: number
+          p_competencia: string
+          p_origem?: string
+          p_recurso?: string
+          p_tenant: string
+        }
         Returns: Json
       }
       rtc_apuracao_upsert: {
@@ -5003,9 +5024,17 @@ export type Database = {
         Args: { p_cnpj: string; p_kind: string }
         Returns: Json
       }
-      rtc_quota_status: { Args: { p_tenant: string }; Returns: Json }
+      rtc_quota_status: {
+        Args: { p_limite?: number; p_tenant: string }
+        Returns: Json
+      }
       rtc_quota_take: {
-        Args: { p_cnpj: string; p_kind: string; p_origem?: string }
+        Args: {
+          p_cnpj: string
+          p_kind: string
+          p_limite?: number
+          p_origem?: string
+        }
         Returns: Json
       }
       rule_reprocess_progress: { Args: { p_id: string }; Returns: Json }
