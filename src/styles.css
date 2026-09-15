@@ -553,8 +553,8 @@
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(38rem 26rem at 28% 30%, oklch(0.55 0.22 264 / 26%), transparent 70%),
-    radial-gradient(32rem 22rem at 74% 18%, oklch(0.62 0.13 226 / 18%), transparent 72%);
+    radial-gradient(38rem 26rem at 28% 30%, oklch(0.645 0.118 221 / 26%), transparent 70%),
+    radial-gradient(32rem 22rem at 74% 18%, oklch(0.329 0.078 249 / 32%), transparent 72%);
   filter: blur(6px);
   animation: aurora-drift 26s ease-in-out infinite;
   will-change: transform, opacity;
@@ -572,7 +572,7 @@
     z-index: -1;
     pointer-events: none;
     border-radius: 999px;
-    background: radial-gradient(closest-side, oklch(0.55 0.22 264 / 22%), transparent 70%);
+    background: radial-gradient(closest-side, oklch(0.645 0.118 221 / 22%), transparent 70%);
     filter: blur(28px);
     animation: halo-breathe 9s ease-in-out infinite;
     will-change: transform, opacity;
@@ -589,7 +589,7 @@
     height: 1px;
     z-index: 2;
     pointer-events: none;
-    background-image: linear-gradient(to right, transparent, oklch(0.85 0.12 264 / 90%), transparent);
+    background-image: linear-gradient(to right, transparent, oklch(0.78 0.105 221 / 90%), transparent);
     background-size: 60% 100%;
     background-repeat: no-repeat;
     background-position: -100% 0;
@@ -617,7 +617,7 @@ textarea:-webkit-autofill,
 select:-webkit-autofill {
   -webkit-text-fill-color: var(--foreground);
   caret-color: var(--foreground);
-  box-shadow: 0 0 0 1000px var(--surface-2, oklch(0.26 0.026 265)) inset;
+  box-shadow: 0 0 0 1000px var(--surface-2, oklch(0.292 0.068 249)) inset;
   transition: background-color 9999s ease-in-out 0s;
 }
 
@@ -659,14 +659,14 @@ select:-webkit-autofill {
 }
 
 .ambient button[type="submit"]:not(:disabled) {
-  box-shadow: 0 8px 24px -14px oklch(0.55 0.22 264 / 70%);
+  box-shadow: 0 8px 24px -14px oklch(0.645 0.118 221 / 70%);
 }
 
 .ambient button[type="submit"]:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow:
-    0 12px 30px -12px oklch(0.55 0.22 264 / 80%),
-    0 0 0 1px oklch(0.7 0.16 264 / 35%);
+    0 12px 30px -12px oklch(0.645 0.118 221 / 80%),
+    0 0 0 1px oklch(0.735 0.12 221 / 35%);
 }
 
 .ambient button[type="submit"]:not(:disabled):active {
@@ -719,7 +719,7 @@ select:-webkit-autofill {
     transition: opacity 260ms ease-out;
     background: radial-gradient(
       18rem 18rem at var(--mx, 50%) var(--my, 0%),
-      oklch(0.62 0.2 264 / 22%),
+      oklch(0.645 0.118 221 / 22%),
       transparent 70%
     );
   }
@@ -741,7 +741,7 @@ select:-webkit-autofill {
     background-image: linear-gradient(
       to right,
       transparent,
-      oklch(0.78 0.14 264 / 85%),
+      oklch(0.78 0.105 221 / 85%),
       transparent
     );
     background-size: 60% 100%;
@@ -762,7 +762,7 @@ select:-webkit-autofill {
 @utility cta-lift {
   position: relative;
   overflow: hidden;
-  box-shadow: 0 10px 26px -16px oklch(0.55 0.22 264 / 75%);
+  box-shadow: 0 10px 26px -16px oklch(0.645 0.118 221 / 75%);
   transition:
     transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 200ms ease-out,
@@ -781,8 +781,8 @@ select:-webkit-autofill {
   &:hover {
     transform: translateY(-1px);
     box-shadow:
-      0 16px 34px -14px oklch(0.55 0.22 264 / 85%),
-      0 0 0 1px oklch(0.72 0.16 264 / 40%);
+      0 16px 34px -14px oklch(0.645 0.118 221 / 85%),
+      0 0 0 1px oklch(0.735 0.12 221 / 40%);
   }
 
   &:hover::after {
@@ -824,7 +824,7 @@ select:-webkit-autofill {
   border: 1px solid oklch(1 0 0 / 8%);
   background:
     linear-gradient(180deg, oklch(1 0 0 / 3.5%), oklch(1 0 0 / 0%) 42%),
-    var(--surface-1, oklch(0.23 0.024 265));
+    var(--surface-1, oklch(0.255 0.064 249));
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 5%) inset,
     0 2px 6px -3px oklch(0 0 0 / 45%),
@@ -839,11 +839,11 @@ select:-webkit-autofill {
 @utility panel-hover {
   &:hover {
     transform: translateY(-2px);
-    border-color: oklch(0.62 0.2 264 / 38%);
+    border-color: oklch(0.645 0.118 221 / 38%);
     box-shadow:
       0 1px 0 0 oklch(1 0 0 / 7%) inset,
       0 18px 40px -24px oklch(0 0 0 / 85%),
-      0 0 0 1px oklch(0.62 0.2 264 / 14%);
+      0 0 0 1px oklch(0.645 0.118 221 / 14%);
   }
 }
 
@@ -854,8 +854,8 @@ select:-webkit-autofill {
   border-radius: var(--radius-2xl);
   border: 1px solid oklch(1 0 0 / 10%);
   background:
-    radial-gradient(38rem 20rem at 12% -30%, oklch(0.62 0.2 264 / 16%), transparent 70%),
-    linear-gradient(180deg, oklch(0.255 0.026 265), oklch(0.215 0.024 265));
+    radial-gradient(38rem 20rem at 12% -30%, oklch(0.645 0.118 221 / 16%), transparent 70%),
+    linear-gradient(180deg, oklch(0.29 0.068 249), oklch(0.235 0.058 249));
   box-shadow:
     0 1px 0 0 oklch(1 0 0 / 7%) inset,
     0 3px 10px -4px oklch(0 0 0 / 55%),
@@ -868,7 +868,7 @@ select:-webkit-autofill {
     top: 0;
     height: 1px;
     pointer-events: none;
-    background: linear-gradient(to right, transparent, oklch(0.72 0.16 264 / 60%), transparent);
+    background: linear-gradient(to right, transparent, oklch(0.735 0.12 221 / 60%), transparent);
   }
 }
 
@@ -880,7 +880,7 @@ select:-webkit-autofill {
   gap: 0.5rem;
   border-radius: 9999px;
   border: 1px solid oklch(1 0 0 / 10%);
-  background: var(--surface-2, oklch(0.26 0.026 265));
+  background: var(--surface-2, oklch(0.292 0.068 249));
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   line-height: 1rem;
@@ -894,7 +894,7 @@ select:-webkit-autofill {
 
   &:hover {
     transform: translateY(-1px);
-    border-color: oklch(0.62 0.2 264 / 50%);
+    border-color: oklch(0.645 0.118 221 / 50%);
     color: var(--foreground);
   }
 }
