@@ -620,6 +620,48 @@ async function gravarChamada(
     .eq("id", apuracaoId);
 }
 
+type NivelNota = "info" | "aviso" | "erro";
+
+/**
+ * Registro NOSSO — não é resposta da Receita — guardado junto do diagnóstico da
+ * apuração, sob uma chave própria. Existe para os casos em que a linha segue
+ * viva sabendo menos do que parece: escrita que falhou, resposta que veio
+ * incompleta. Sem isto, some sem deixar rastro.
+ *
+ * Nunca lança e nunca decide o fluxo: se nem esta escrita passar, resta o
+ * console. E nunca recebe a URL assinada — é segredo de 48 h.
+ */
+async function registrarNota(
+  admin: AdminClient,
+  apuracaoId: string,
+  chave: string,
+  nivel: NivelNota,
+  dados: Record<string, unknown>,
+) {
+  const linha = { apuracao: apuracaoId, nota: chave, ...dados };
+  if (nivel === "erro") console.error("[rtc-apuracao]", linha);
+  else if (nivel === "aviso") console.warn("[rtc-apuracao]", linha);
+  else console.info("[rtc-apuracao]", linha);
+  try {
+    const { data } = await table(admin, "rtc_apuracao")
+      .select("chamada_diag")
+      .eq("id", apuracaoId)
+      .maybeSingle();
+    const atual = (data?.chamada_diag ?? {}) as Record<string, unknown>;
+    await table(admin, "rtc_apuracao")
+      .update({
+        chamada_diag: { ...atual, [chave]: { nivel, em: new Date().toISOString(), ...dados } },
+      })
+      .eq("id", apuracaoId);
+  } catch (e) {
+    console.error("[rtc-apuracao] falha ao registrar nota", {
+      apuracao: apuracaoId,
+      nota: chave,
+      erro: (e as Error).message,
+    });
+  }
+}
+
 async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: DownloadDiag | undefined) {
   if (!diag) return;
   console.info("[rtc-apuracao] download", {
@@ -805,13 +847,37 @@ async function abrirSolicitacao(
 
     // O 201 da v2 traz `tiqueteSolicitacao` e `tEASegundos`: é o que permite
     // acompanhar pela consulta de situação sem depender do webhook chegar.
-    // Na v1 a resposta não traz nenhum dos dois e nada é gravado aqui.
-    const abertura = lerAbertura(resposta);
-    const marcas: Record<string, unknown> = {};
-    if (abertura.tiquete) marcas["tiquete_solicitacao"] = abertura.tiquete;
-    if (abertura.teaSegundos !== null) marcas["tea_segundos"] = abertura.teaSegundos;
-    if (Object.keys(marcas).length > 0) {
-      await table(admin, "rtc_apuracao").update(marcas).eq("id", row.id);
+    //
+    // Só a v2 grava, e o `if` é explícito de propósito: o que a v1 devolve no
+    // 201 não foi verificado, e uma linha v1 com `tiquete_solicitacao` entraria
+    // na fila de acompanhamento da v2 — consultada no endereço v2 com um
+    // tíquete v1 e condenada ao erro de prazo. A fila também filtra por
+    // `api_versao`; as duas guardas dizem a mesma intenção de dois lados.
+    if (opcoes.apiVersao === 2) {
+      const abertura = lerAbertura(resposta);
+      const marcas: Record<string, unknown> = {};
+      if (abertura.tiquete) marcas["tiquete_solicitacao"] = abertura.tiquete;
+      if (abertura.teaSegundos !== null) marcas["tea_segundos"] = abertura.teaSegundos;
+
+      let erroMarcas: string | null = null;
+      if (Object.keys(marcas).length > 0) {
+        const marcado = await table(admin, "rtc_apuracao").update(marcas).eq("id", row.id);
+        // NÃO lança: a solicitação já foi aberta e a chamada do dia já foi gasta
+        // na Receita — morrer aqui jogaria fora o que já foi feito. Fica
+        // registrado, e o webhook segue como caminho de retorno.
+        if (marcado.error) erroMarcas = String(marcado.error.message);
+      }
+
+      // Registra a distinção que o 201 sozinho não mostra: com o tíquete
+      // gravado dá para acompanhar pela consulta de situação; sem ele (201 sem
+      // `tiqueteSolicitacao`, ou escrita falhada) só resta esperar o webhook.
+      const podeAcompanhar = Boolean(abertura.tiquete) && erroMarcas === null;
+      await registrarNota(admin, row.id, "abertura_v2", podeAcompanhar ? "info" : "aviso", {
+        acompanhamento: podeAcompanhar ? "situacao" : "so_webhook",
+        tiquete_solicitacao: abertura.tiquete ? "recebido" : "ausente",
+        tea_segundos: abertura.teaSegundos,
+        ...(erroMarcas ? { erro_gravacao: erroMarcas } : {}),
+      });
     }
 
     // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
@@ -1169,10 +1235,42 @@ async function acompanharSituacao(
     return null; // falha de transporte: não marca erro na linha, tenta de novo depois
   }
 
-  if (estado === "CONCLUIDA" && retorno.tipo === "url") {
-    await table(admin, "rtc_apuracao")
+  if (estado === "CONCLUIDA") {
+    if (retorno.tipo !== "url") {
+      // Concluída sem URL assinada: não há o que baixar e esperar não muda
+      // isso. Erro na hora, dizendo o que veio — cair no ramo de espera lá
+      // embaixo trocaria este motivo pelo de 240 minutos, que descreve um
+      // problema que não é este.
+      // Quando o corpo traz um erro, ele é o motivo — melhor que "retorno erro".
+      const detalhe =
+        retorno.tipo === "erro"
+          ? (retorno.mensagem ?? retorno.codigo ?? "sem detalhe")
+          : `retorno ${retorno.tipo}`;
+      const motivo = `A Receita concluiu a solicitação sem URL assinada (${detalhe}).`;
+      await registrarNota(admin, row.id, "situacao_concluida_sem_url", "erro", {
+        retorno: retorno.tipo,
+        estado,
+      });
+      await marcarErro(admin, row.id, motivo);
+      return { ok: false, id: row.id, motivo };
+    }
+
+    const gravado = await table(admin, "rtc_apuracao")
       .update({ url_assinada: retorno.url, url_assinada_expira_em: retorno.expiraEm })
       .eq("id", row.id);
+    if (gravado.error) {
+      // A URL não ficou gravada. Seguir para `processarApuracao` — que relê a
+      // linha do banco — faria a apuração morrer dizendo que não há URL nem
+      // tíquete, que é a falha errada: a Receita entregou, nós é que não
+      // guardamos. A linha fica como está (`solicitada`) e a próxima rodada
+      // consulta a situação de novo: a consulta não gasta a cota de abertura e
+      // a URL continua lá do lado da Receita.
+      const motivo = `Falha ao gravar a URL assinada da apuração: ${gravado.error.message}`;
+      await registrarNota(admin, row.id, "gravacao_url_assinada", "erro", {
+        erro: String(gravado.error.message),
+      });
+      return { ok: false, id: row.id, motivo };
+    }
     return processarApuracao(row.id);
   }
 
@@ -1204,12 +1302,19 @@ export async function processarPendentes(tenantId?: string): Promise<ProcessarRe
   const out: ProcessarResult[] = [];
 
   // v2: acompanha pela consulta de situação as linhas que ainda não receberam
-  // o webhook. `select("*")` em vez de nomear `tea_segundos` de propósito: a
-  // coluna só existe a partir da Tarefa 4, e nomeá-la aqui quebraria esta
-  // consulta antes disso.
+  // o webhook.
+  //
+  // O filtro por `api_versao` é o que segura esta fila do lado da v2: sem ele,
+  // uma linha v1 aberta e ainda sem webhook entraria aqui e seria consultada no
+  // endereço v2 com um tíquete v1 — mexendo em v1 que já roda em produção. A
+  // abertura só marca `tiquete_solicitacao` na v2; este filtro é a outra metade
+  // da mesma guarda. A coluna vem da 0226, junto com `tea_segundos` e com a
+  // assinatura nova de `rtc_apuracao_solicitar` que a abertura (v1 inclusive)
+  // já exige — se a 0226 não estiver aplicada, nada deste arquivo funciona.
   let aguardandoQuery = table(admin, "rtc_apuracao")
     .select("*")
     .eq("status", "solicitada")
+    .eq("api_versao", 2)
     .not("tiquete_solicitacao", "is", null)
     .is("url_assinada", null);
   if (tenantId) aguardandoQuery = aguardandoQuery.eq("tenant_id", tenantId);
