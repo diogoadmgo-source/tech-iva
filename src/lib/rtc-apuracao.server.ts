@@ -498,6 +498,41 @@ async function baixarNaReceita(
 }
 
 /**
+ * Passo 3 na v2: a URL já carrega a autorização, então vai SEM o nosso Bearer.
+ * Mandar o Authorization junto de uma URL pré-assinada faz alguns provedores
+ * recusarem a requisição.
+ */
+async function baixarPorUrlAssinada(
+  url: string,
+): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
+  let res: Response;
+  try {
+    res = await withTimeout((signal) => fetch(url, { method: "GET", signal }));
+  } catch (error) {
+    throw transporte(error, "download");
+  }
+  const text = await res.text();
+  const body = corpoJson(text);
+  const diag: DownloadDiag = {
+    status: res.status,
+    ok: res.ok,
+    caminho_token: "guardado",
+    headers: headersDiag(res),
+    em: new Date().toISOString(),
+  };
+  if (!res.ok || !body) {
+    // A URL some do recorte: ela É a credencial do download.
+    diag.corpo_recorte = text.slice(0, 1000);
+    const err = (res.ok
+      ? new ApuracaoGatewayError("error", "A Receita devolveu um corpo inesperado.")
+      : erroDaReceita(res.status, body)) as ApuracaoGatewayError & { diag?: DownloadDiag };
+    err.diag = diag;
+    throw err;
+  }
+  return { body, diag };
+}
+
+/**
  * Acumula o diagnóstico das etapas anteriores ao download em `chamada_diag`,
  * sob a chave da etapa. Escreve por merge para o diagnóstico da solicitação não
  * apagar o do token quando as duas rodam na mesma tentativa.
@@ -810,15 +845,27 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
   const { data: row, error } = await table(admin, "rtc_apuracao")
-    .select("id, tenant_id, competencia, status, tiquete_download, access_token_ref, payload")
+    .select(
+      "id, tenant_id, competencia, status, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
+    )
     .eq("id", apuracaoId)
     .maybeSingle();
   if (error) return { ok: false, id: apuracaoId, motivo: error.message };
   if (!row) return { ok: false, id: apuracaoId, motivo: "Apuração inexistente." };
   if (row.status === "disponivel") return { ok: true, id: apuracaoId, debitos: 0 };
-  if (!row.tiquete_download && !row.payload) {
+  if (!row.tiquete_download && !row.payload && !row.url_assinada) {
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
+
+  // v2: a linha já veio com URL pré-assinada e ela ainda não expirou (48 h) —
+  // baixa direto por ela, sem token nosso. Passado o prazo, cai no caminho v1
+  // (se houver tiquete_download) para não travar uma apuração já vencida.
+  const urlAssinada = row.url_assinada as string | null;
+  const urlAssinadaExpiraEm = row.url_assinada_expira_em as string | null;
+  const urlAssinadaValida =
+    Boolean(urlAssinada) &&
+    Boolean(urlAssinadaExpiraEm) &&
+    new Date(urlAssinadaExpiraEm as string).getTime() > Date.now();
 
   // O download é identificado só pelo tíquete (um acesso por tíquete) e exige
   // apenas um Bearer válido — o manual não vincula o tíquete ao token da
@@ -828,7 +875,29 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   // UMA vez. O download não consome cota de solicitação.
 
   let payload = row.payload as Record<string, unknown> | null;
-  if (!payload) {
+  if (!payload && urlAssinadaValida) {
+    try {
+      const resultado = await baixarPorUrlAssinada(urlAssinada as string);
+      payload = resultado.body;
+      await gravarDiag(admin, apuracaoId, resultado.diag);
+      // Um único download: persiste o JSON bruto ANTES de parsear, como no v1.
+      const saved = await table(admin, "rtc_apuracao")
+        .update({ payload, download_em: new Date().toISOString() })
+        .eq("id", apuracaoId);
+      if (saved.error) throw new Error(saved.error.message);
+    } catch (e) {
+      const err = e as ApuracaoGatewayError & { diag?: DownloadDiag };
+      await gravarDiag(admin, apuracaoId, err.diag);
+      await marcarErro(admin, apuracaoId, `Download da apuração: ${err.message}`);
+      return { ok: false, id: apuracaoId, motivo: err.message };
+    }
+  } else if (!payload && !row.tiquete_download) {
+    // URL assinada expirou (ou nunca veio) e não há tíquete v1 de reserva:
+    // não há por onde baixar. Erro explícito — nunca um número estimado.
+    const motivo = "URL assinada expirada e nenhum tíquete de download disponível.";
+    await marcarErro(admin, apuracaoId, motivo);
+    return { ok: false, id: apuracaoId, motivo };
+  } else if (!payload) {
     let credential: Credential;
     try {
       credential = await loadApiKey(admin, row.tenant_id as string);
