@@ -29,7 +29,7 @@ export function PlanGem({
       width={816}
       height={816}
       style={{ width: size, height: size }}
-      className={cn("shrink-0 select-none object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.45)]", className)}
+      className={cn("shrink-0 select-none object-contain drop-shadow-[0_4px_10px_color-mix(in_oklab,var(--foreground)_20%,transparent)]", className)}
     />
   );
 }
