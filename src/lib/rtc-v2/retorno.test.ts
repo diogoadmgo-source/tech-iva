@@ -17,6 +17,18 @@ describe("leitura do retorno da Receita", () => {
     });
   });
 
+  it("aceita url assinada sem expiração — o campo é opcional no retorno", () => {
+    // Quem decide se ela ainda vale é `urlAssinadaUtilizavel` (rtc-v2/validade),
+    // que sem expiração declarada usa o piso de 48 h da abertura. Aqui só se
+    // registra que o corpo é legítimo e `expiraEm` fica nulo.
+    expect(lerRetorno({ urlAssinada: "https://s3.exemplo/a.json?x=1" })).toEqual({
+      tipo: "url",
+      url: "https://s3.exemplo/a.json?x=1",
+      expiraEm: null,
+      tiquete: null,
+    });
+  });
+
   it("reconhece o retorno v1 com tíquete de download", () => {
     expect(lerRetorno({ tiqueteDownload: "D-9" })).toEqual({ tipo: "tiquete", tiquete: "D-9" });
     expect(lerRetorno({ tiquete: "D-9" })).toEqual({ tipo: "tiquete", tiquete: "D-9" });

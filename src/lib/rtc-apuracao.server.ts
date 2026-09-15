@@ -27,6 +27,7 @@ import { sealSecret, unsealSecret } from "@/lib/credentials.server";
 import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
+import { urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
 
 const TIMEOUT_MS = 45_000;
 
@@ -981,7 +982,7 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 
   const { data: row, error } = await table(admin, "rtc_apuracao")
     .select(
-      "id, tenant_id, competencia, status, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
+      "id, tenant_id, competencia, status, solicitado_em, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
     )
     .eq("id", apuracaoId)
     .maybeSingle();
@@ -995,12 +996,16 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   // v2: a linha já veio com URL pré-assinada e ela ainda não expirou (48 h) —
   // baixa direto por ela, sem token nosso. Passado o prazo, cai no caminho v1
   // (se houver tiquete_download) para não travar uma apuração já vencida.
+  //
+  // `urlAssinadaExpiraEm` é opcional no retorno da Receita: ausente, ele NÃO
+  // invalida a URL — vale o piso `solicitado_em + 48 h` (ver rtc-v2/validade).
   const urlAssinada = row.url_assinada as string | null;
-  const urlAssinadaExpiraEm = row.url_assinada_expira_em as string | null;
-  const urlAssinadaValida =
-    Boolean(urlAssinada) &&
-    Boolean(urlAssinadaExpiraEm) &&
-    new Date(urlAssinadaExpiraEm as string).getTime() > Date.now();
+  const urlAssinadaValida = urlAssinadaUtilizavel({
+    url: urlAssinada,
+    expiraEm: row.url_assinada_expira_em as string | null,
+    solicitadoEm: row.solicitado_em as string | null,
+    agora: Date.now(),
+  });
 
   // O download é identificado só pelo tíquete (um acesso por tíquete) e exige
   // apenas um Bearer válido — o manual não vincula o tíquete ao token da
@@ -1027,9 +1032,12 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       return { ok: false, id: apuracaoId, motivo: err.message };
     }
   } else if (!payload && !row.tiquete_download) {
-    // URL assinada expirou (ou nunca veio) e não há tíquete v1 de reserva:
-    // não há por onde baixar. Erro explícito — nunca um número estimado.
-    const motivo = "URL assinada expirada e nenhum tíquete de download disponível.";
+    // Não há por onde baixar: erro explícito — nunca um número estimado. A
+    // mensagem separa os dois casos, porque "expirada" só é verdade quando
+    // havia URL e o prazo dela passou.
+    const motivo = urlAssinada
+      ? "URL assinada expirada e nenhum tíquete de download disponível."
+      : "Sem URL assinada e sem tíquete de download: nada a baixar.";
     await marcarErro(admin, apuracaoId, motivo);
     return { ok: false, id: apuracaoId, motivo };
   } else if (!payload) {
