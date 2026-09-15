@@ -21,6 +21,10 @@ export function reaisParaCentavos(v: unknown): number {
   // real jamais chegam perto de 2^53 centavos, e barrar nesse ponto faria a
   // função devolver 0 (silenciosamente incorreto) em vez do valor arredondado
   // que o próprio JS já produziria. Só descartamos o que não é finito.
+  // Acima de Number.MAX_SAFE_INTEGER (2^53-1) a conversão PERDE PRECISÃO: o
+  // valor volta arredondado para o double mais próximo, não exato. Aceitável
+  // porque nenhum documento fiscal real chega perto dessa faixa — mas quem
+  // depender de exatidão em valores fora dela está avisado.
   if (!Number.isFinite(total)) return 0;
   return sinal === "-" ? -total : total;
 }

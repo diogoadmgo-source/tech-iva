@@ -7,6 +7,16 @@ import { reaisParaCentavos } from "./valores";
  * objeto ou lista, escala dos valores, e o vocabulário de `origem` e
  * `documento`.
  *
+ * CAMPO DE MAIOR RISCO: `cbs`. Este leitor assume `cbs` como OBJETO plano
+ * (`{ apurado, excedente, inexigivel, suspenso, extinto, saldoDevedor }`).
+ * Se a Receita mandar `cbs` como LISTA, `obj()` devolve `{}` para um array e
+ * TODOS os `*_cents` da linha saem zerados — sem lançar, sem avisar. Isso
+ * não aparece como erro nem em teste nem em produção: aparece como zero
+ * onde deveria haver valor. Ao conferir o primeiro arquivo real: se
+ * qualquer linha tiver todos os `*_cents` em zero, suspeitar primeiro de
+ * `cbs` ter mudado de forma, antes de supor que o débito/crédito é mesmo
+ * zero.
+ *
  * Achata o arquivo v2 (`apuracao[].debitos[]`) em linhas, carregando o período
  * de apuração para dentro de cada uma. Créditos têm estrutura IDÊNTICA — a
  * única diferença é o nome da lista — por isso a função recebe qual ler.

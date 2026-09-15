@@ -11,10 +11,21 @@ describe("reais para centavos", () => {
 
   it("aceita texto, que é como o JSON pode trazer", () => {
     expect(reaisParaCentavos("18.29")).toBe(1829);
-    // Acima de 2^53 o próprio JS já arredonda, e é esse valor arredondado
-    // (não zero) que a função deve devolver. Ver comentário em valores.ts.
-    // eslint-disable-next-line no-loss-of-precision -- perda proposital
-    expect(reaisParaCentavos("1234567890123456.78")).toBe(123456789012345678);
+  });
+
+  it("converte valor grande porem exato, dentro do alcance seguro", () => {
+    // 90 trilhoes de reais em centavos ainda cabe em Number.MAX_SAFE_INTEGER;
+    // nenhum documento fiscal real chega perto disso.
+    expect(reaisParaCentavos("99999999.99")).toBe(9999999999);
+    expect(reaisParaCentavos("12345678901.23")).toBe(1234567890123);
+  });
+
+  it("acima do alcance seguro, o valor perde precisao — documentado, nao silencioso", () => {
+    // Nao e caso real: serve para fixar o comportamento por escrito, para
+    // ninguem supor exatidao onde o JavaScript nao oferece.
+    const fora = reaisParaCentavos("1234567890123456.78");
+    expect(Number.isSafeInteger(fora)).toBe(false);
+    expect(fora).toBeGreaterThan(Number.MAX_SAFE_INTEGER);
   });
 
   it("trata ausência como zero, nunca como NaN", () => {
