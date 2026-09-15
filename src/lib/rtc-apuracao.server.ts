@@ -7,10 +7,15 @@
  *      -> src/routes/api/public/rtc.apuracao.$ref.tsx
  *   3. GET/POST download do JSON usando o tíquete e ingestão -> este arquivo
  *
- * Falamos DIRETO com a API da Receita (apuracao-cbs v1), sem proxy no meio:
- * OAuth client_credentials no /token e Bearer nas duas chamadas. O endereço vem
- * de RTC_API_URL (produção por padrão) e o prefixo de RTC_API_PREFIX (`rtc` ou
+ * Falamos DIRETO com a API da Receita, sem proxy no meio: OAuth
+ * client_credentials no /token e Bearer nas duas chamadas. O endereço vem de
+ * RTC_API_URL (produção por padrão) e o prefixo de RTC_API_PREFIX (`rtc` ou
  * `prr-rtc` na produção restrita).
+ *
+ * As duas versões convivem enquanto a Receita não encerrar a antiga:
+ *   v1 `POST /{prefixo}/apuracao-cbs/v1/{cnpj8}`, 2 aberturas por dia;
+ *   v2 `POST /apuracao-cbs[-prr]/v2/{recurso}/{cnpj8}`, 4 por dia, com o
+ *      recurso no endereço e acompanhamento pela consulta de situação.
 
  *
  * REGRA DO PROJETO PRESERVADA: nenhum valor fiscal é produzido aqui. Este módulo
@@ -19,7 +24,8 @@
  */
 
 import { sealSecret, unsealSecret } from "@/lib/credentials.server";
-import { urlSituacao, type Ambiente } from "@/lib/rtc-v2/enderecos";
+import { lerAbertura } from "@/lib/rtc-v2/abertura";
+import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
 
 const TIMEOUT_MS = 45_000;
@@ -83,7 +89,17 @@ function ambienteAtual(): Ambiente {
   return raw.startsWith("prr") ? "restrita" : "producao";
 }
 
-
+/** Sem endereço não há chamada: erro explícito, nunca uma URL montada no escuro. */
+function baseObrigatoria(): string {
+  const base = apiBase();
+  if (!base) {
+    throw new ApuracaoGatewayError(
+      "not_configured",
+      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
+    );
+  }
+  return base;
+}
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
@@ -371,25 +387,20 @@ function erroDaReceita(status: number, body: Record<string, unknown> | null): Ap
   return new ApuracaoGatewayError("error", `A Receita recusou a chamada: ${detalhe}`, status);
 }
 
-/** Passo 1: solicita a apuração de débitos da CBS informando o webhook de retorno. */
-async function solicitarNaReceita(
-  cnpj: string,
+/**
+ * Passo 1, comum às duas versões: POST de abertura com a `urlRetorno` no corpo
+ * e o Bearer no cabeçalho. Só o endereço muda entre v1 e v2 — por isso ele
+ * chega pronto, montado por quem sabe a versão.
+ */
+async function postSolicitacao(
+  url: string,
   urlRetorno: string,
   token: string,
 ): Promise<{ body: Record<string, unknown>; diag: ChamadaDiag }> {
-  const base = apiBase();
-  if (!base) {
-    throw new ApuracaoGatewayError(
-      "not_configured",
-      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
-    );
-  }
-  // O endpoint filtra pelo CNPJ básico (8 dígitos, com zeros à esquerda).
-  const cnpj8 = cnpj.replace(/\D/g, "").slice(0, 8).padStart(8, "0");
   let res: Response;
   try {
     res = await withTimeout((signal) =>
-      fetch(`${base}/${apiPrefix()}/apuracao-cbs/v1/${cnpj8}`, {
+      fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ urlRetorno }),
@@ -402,7 +413,7 @@ async function solicitarNaReceita(
   const text = await res.text();
   const body = corpoJson(text);
   // Esta é a chamada que consome a cota: o corpo fica guardado em sucesso e em
-  // falha, porque repetir para descobrir o motivo custa uma das 2 do dia.
+  // falha, porque repetir para descobrir o motivo custa uma das chamadas do dia.
   const diag: ChamadaDiag = {
     etapa: "solicitar",
     status: res.status,
@@ -413,6 +424,43 @@ async function solicitarNaReceita(
   };
   if (res.status !== 201 && !res.ok) throw comDiag(erroDaReceita(res.status, body), diag);
   return { body: body ?? {}, diag };
+}
+
+/** Passo 1 (v1): solicita a apuração de débitos da CBS no endereço antigo. */
+async function solicitarNaReceita(
+  cnpj: string,
+  urlRetorno: string,
+  token: string,
+): Promise<{ body: Record<string, unknown>; diag: ChamadaDiag }> {
+  // O endpoint filtra pelo CNPJ básico (8 dígitos, com zeros à esquerda).
+  const cnpj8 = cnpj.replace(/\D/g, "").slice(0, 8).padStart(8, "0");
+  return postSolicitacao(
+    `${baseObrigatoria()}/${apiPrefix()}/apuracao-cbs/v1/${cnpj8}`,
+    urlRetorno,
+    token,
+  );
+}
+
+/**
+ * Passo 1 (v2): o recurso passou a fazer parte do endereço, e o ambiente também
+ * (`apuracao-cbs` / `apuracao-cbs-prr`). O endereço é montado por `urlRecurso`,
+ * que é função pura e testada — remontar na mão aqui já mandou pedido para o
+ * ambiente errado uma vez, e cada erro desses queima uma das 4 chamadas do dia.
+ *
+ * Exportada porque é a fronteira com a Receita: o teste do servidor de mentira
+ * prova aqui o endereço, o corpo e o cabeçalho, sem precisar de banco.
+ */
+export async function abrirNaReceitaV2(
+  cnpj: string,
+  recurso: Recurso,
+  urlRetorno: string,
+  token: string,
+): Promise<{ body: Record<string, unknown>; diag: ChamadaDiag }> {
+  return postSolicitacao(
+    urlRecurso(baseObrigatoria(), ambienteAtual(), recurso, cnpj),
+    urlRetorno,
+    token,
+  );
 }
 
 /**
@@ -497,15 +545,8 @@ async function baixarNaReceita(
   token: string,
   caminhoToken: "guardado" | "novo",
 ): Promise<{ body: Record<string, unknown>; diag: DownloadDiag }> {
-  const base = apiBase();
-  if (!base) {
-    throw new ApuracaoGatewayError(
-      "not_configured",
-      "Ambiente sem endereço da API da Receita configurado (RTC_API_URL).",
-    );
-  }
   return executarDownload(
-    `${base}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`,
+    `${baseObrigatoria()}/${apiPrefix()}/download/v1/${encodeURIComponent(tiquete)}`,
     { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     caminhoToken,
   );
@@ -532,11 +573,7 @@ export async function consultarSituacao(
   tiquete: string,
   token: string,
 ): Promise<{ estado: string; retorno: Retorno }> {
-  const base = apiBase();
-  if (!base) {
-    throw new ApuracaoGatewayError("not_configured", "Ambiente sem endereço da API da Receita.");
-  }
-  const url = urlSituacao(base, ambienteAtual(), tiquete);
+  const url = urlSituacao(baseObrigatoria(), ambienteAtual(), tiquete);
   let res: Response;
   try {
     res = await withTimeout((signal) =>
@@ -691,15 +728,23 @@ export type SolicitarResult =
   | { ok: false; motivo: string; reason?: GatewayUnavailableReason };
 
 /**
+ * O que separa a abertura v1 da v2: o recurso pedido e a versão da API. Tudo o
+ * mais — cota, segredo do webhook, token, diagnóstico, estorno em falha — é o
+ * mesmo caminho, e continua sendo um só código.
+ */
+type OpcoesAbertura = { recurso: Recurso; apiVersao: 1 | 2 };
+
+/**
  * Registra a solicitação (debita cota, gera o segredo do webhook) e chama a
  * Receita já com a URL de retorno deste ambiente. Se a chamada externa falhar,
  * a linha vira `erro` na hora — nada fica em "solicitada" para sempre.
  */
-export async function solicitarApuracao(
+async function abrirSolicitacao(
   tenantId: string,
   competencia: string,
   origin: string,
-  origem = "manual",
+  origem: string,
+  opcoes: OpcoesAbertura,
 ): Promise<SolicitarResult> {
   const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
 
@@ -707,6 +752,8 @@ export async function solicitarApuracao(
     p_tenant: tenantId,
     p_competencia: competencia,
     p_origem: origem,
+    p_recurso: opcoes.recurso,
+    p_api_versao: opcoes.apiVersao,
   });
   if (error) return { ok: false, motivo: error.message };
 
@@ -747,14 +794,24 @@ export async function solicitarApuracao(
     const { token, diag: diagToken } = await accessToken(credential.apiKey);
     await gravarChamada(admin, row.id, diagToken);
     tokenRef = await guardarToken(admin, tenantId, row.id, token);
-    const { body: resposta, diag: diagSolicitar } = await solicitarNaReceita(
-      cnpj,
-      urlRetorno,
-      token,
-    );
+    const { body: resposta, diag: diagSolicitar } =
+      opcoes.apiVersao === 2
+        ? await abrirNaReceitaV2(cnpj, opcoes.recurso, urlRetorno, token)
+        : await solicitarNaReceita(cnpj, urlRetorno, token);
     await gravarChamada(admin, row.id, diagSolicitar);
 
     await logUse(admin, credential.id, "apuracao.solicitar", true);
+
+    // O 201 da v2 traz `tiqueteSolicitacao` e `tEASegundos`: é o que permite
+    // acompanhar pela consulta de situação sem depender do webhook chegar.
+    // Na v1 a resposta não traz nenhum dos dois e nada é gravado aqui.
+    const abertura = lerAbertura(resposta);
+    const marcas: Record<string, unknown> = {};
+    if (abertura.tiquete) marcas["tiquete_solicitacao"] = abertura.tiquete;
+    if (abertura.teaSegundos !== null) marcas["tea_segundos"] = abertura.teaSegundos;
+    if (Object.keys(marcas).length > 0) {
+      await table(admin, "rtc_apuracao").update(marcas).eq("id", row.id);
+    }
 
     // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
     const tiquete =
@@ -779,6 +836,61 @@ export async function solicitarApuracao(
     await estornarCota(admin, cnpj, err.reason);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
+}
+
+/**
+ * Abertura na v1. Segue viva enquanto a Receita não encerrar a versão antiga —
+ * e continua sendo o único caminho para competências fechadas, que a v2 não
+ * atende (lá a janela é incremental).
+ */
+export async function solicitarApuracao(
+  tenantId: string,
+  competencia: string,
+  origin: string,
+  origem = "manual",
+): Promise<SolicitarResult> {
+  return abrirSolicitacao(tenantId, competencia, origin, origem, {
+    recurso: "debitos",
+    apiVersao: 1,
+  });
+}
+
+/**
+ * Competência da abertura v2. A v2 não recebe competência: a janela é
+ * incremental (8 dias) e, na primeira consulta, volta ao dia 1º do mês
+ * corrente. A linha é gravada nessa competência — no fuso de São Paulo, não no
+ * do servidor, senão na virada do mês três horas de UTC gravam o mês errado.
+ */
+function competenciaCorrente(): string {
+  const partes = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).formatToParts(new Date());
+  const ano = partes.find((p) => p.type === "year")?.value ?? "0000";
+  const mes = partes.find((p) => p.type === "month")?.value ?? "01";
+  return `${ano}-${mes}-01`;
+}
+
+/**
+ * Abertura na v2, por recurso. Cada recurso (`debitos`, `creditos`,
+ * `pagamentos`, `recolhimentos`) é uma solicitação própria e consome uma das 4
+ * chamadas do dia — a cota é do endpoint de abertura, não do recurso.
+ *
+ * O acompanhamento não depende do webhook: o `tiqueteSolicitacao` do 201 fica
+ * gravado na linha e `processarPendentes` segue por ele pela consulta de
+ * situação, respeitando o `tea_segundos` também guardado aqui.
+ */
+export async function abrirSolicitacaoV2(
+  tenantId: string,
+  recurso: Recurso,
+  origin: string,
+  origem = "manual",
+): Promise<SolicitarResult> {
+  return abrirSolicitacao(tenantId, competenciaCorrente(), origin, origem, {
+    recurso,
+    apiVersao: 2,
+  });
 }
 
 export type TesteCredencialResult = {
