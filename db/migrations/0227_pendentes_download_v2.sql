@@ -1,11 +1,8 @@
 -- 0227_pendentes_download_v2.sql — ESPELHO da migration a aplicar no banco.
 --
--- ATENÇÃO, antes de aplicar: `rtc_apuracao_pendentes_download` não tinha
--- espelho em db/migrations; o corpo abaixo foi reescrito a partir do filtro
--- confirmado no banco (status='tiquete_recebido' and tiquete_download is not
--- null and payload is null and webhook_recebido_em > now() - interval
--- '24 hours') e da assinatura de retorno já publicada em types.ts
--- (id, tenant_id, competencia, cnpj, tiquete). Confira contra o que está lá:
+-- `rtc_apuracao_pendentes_download` não tinha espelho em db/migrations. O corpo
+-- abaixo foi conferido contra a função viva (filtro, assinatura de retorno e
+-- ordenação); para reconferir depois de aplicar:
 --   select pg_get_functiondef(oid) from pg_proc
 --    where proname = 'rtc_apuracao_pendentes_download' and pronamespace = 'public'::regnamespace;
 --
@@ -37,20 +34,29 @@
 -- segredo de 48 h por mais uma superfície. `tiquete` passa a vir NULL nas
 -- linhas v2: é a leitura correta (não há tíquete) e nenhum consumidor o lê.
 --
--- Do corpo original só o filtro é fato confirmado. `language sql` e o
--- `order by solicitado_em` (mais antiga primeiro) são escolha desta reescrita:
--- confira o functiondef antes de aplicar. Se a ORDEM das colunas de retorno no
--- banco não for a de baixo, o `create or replace` recusa ("cannot change return
--- type"); nesse caso é ajustar a ordem aqui, não dropar a função — o drop leva
--- junto os grants.
+-- ───────────────────────── por que o drop antes ─────────────────────────
+-- `create or replace` não aceita mudar o tipo de retorno: qualquer diferença na
+-- lista de colunas — até a ordem entre `cnpj` e `competencia` — devolve
+-- "cannot change return type of existing function" (42P13) e a migration não
+-- aplica. O drop, como na 0226, garante que o que fica no banco é exatamente o
+-- que está escrito aqui, sem depender de a definição viva bater coluna a
+-- coluna. O preço é conhecido e está pago logo abaixo: o drop leva junto os
+-- grants, por isso o `revoke`/`grant` é reemitido depois do `create`.
+--
+-- A lista de colunas segue a da função viva, `(id, tenant_id, cnpj,
+-- competencia, tiquete)` — não há motivo para mexer nela, e assim quem chama
+-- por posição (nenhum consumidor hoje, mas psql e testes manuais o fazem)
+-- continua vendo a mesma coisa.
 
-create or replace function public.rtc_apuracao_pendentes_download()
-returns table (id uuid, tenant_id uuid, competencia date, cnpj text, tiquete text)
+drop function if exists public.rtc_apuracao_pendentes_download();
+
+create function public.rtc_apuracao_pendentes_download()
+returns table (id uuid, tenant_id uuid, cnpj text, competencia date, tiquete text)
 language sql
 security definer
 set search_path to 'public', 'extensions'
 as $function$
-  select a.id, a.tenant_id, a.competencia, t.cnpj, a.tiquete_download
+  select a.id, a.tenant_id, t.cnpj, a.competencia, a.tiquete_download
     from public.rtc_apuracao a
     join public.tenants t on t.id = a.tenant_id
    where a.status = 'tiquete_recebido'
@@ -60,7 +66,12 @@ as $function$
      -- 48 h, a validade da URL assinada, contadas do retorno — ou da abertura,
      -- quando o retorno não veio por webhook.
      and coalesce(a.webhook_recebido_em, a.solicitado_em) > now() - interval '48 hours'
-   order by a.solicitado_em;
+     -- Mesma chave do `where`, para as duas versões ordenarem pelo mesmo
+     -- critério: a linha v2 que chegou pela consulta de situação não tem
+     -- `webhook_recebido_em`. `a.id` desempata — sem ele, linhas do mesmo
+     -- instante saem em ordem indefinida, que pode mudar de execução para
+     -- execução.
+   order by coalesce(a.webhook_recebido_em, a.solicitado_em), a.id;
 $function$;
 
 revoke all on function public.rtc_apuracao_pendentes_download() from public, anon, authenticated;
