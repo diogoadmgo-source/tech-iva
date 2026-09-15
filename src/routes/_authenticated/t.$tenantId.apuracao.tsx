@@ -107,10 +107,14 @@ function ApuracaoPage() {
   const divergente = disponivel && d.divergente;
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
-  // Com 2 consultas por dia, a data da última e o que resta são decisivos para
-  // o usuário decidir se gasta uma — por isso vivem no cabeçalho.
+  // Com poucas consultas por dia (a Receita define o limite — 2 na API v1),
+  // a data da última e o que resta são decisivos para o usuário decidir se
+  // gasta uma — por isso vivem no cabeçalho.
   const restantes = quota.data?.restantes ?? 0;
-  const limiteDia = quota.data?.limite ?? 2;
+  // Sem dado ainda, não cravamos um número: a tela mostra "…" até a resposta
+  // chegar (ver uso abaixo). Cravar 2 aqui mentiria no dia em que o limite
+  // real vier 4 da v2.
+  const limiteDia = quota.data?.limite;
   const ultimaConsulta = (lista.data ?? []).reduce<string | null>((maior, a) => {
     const em = a.recebido_em;
     if (!em) return maior;
@@ -141,8 +145,8 @@ function ApuracaoPage() {
 
   /**
    * Prova a credencial sem gastar consulta: roda só o passo do acesso, que não
-   * entra no limite de 2 por dia. Existe para o usuário descobrir que a chave
-   * caiu ANTES de queimar uma das duas.
+   * entra no limite diário de consultas. Existe para o usuário descobrir que a
+   * chave caiu ANTES de queimar uma consulta do dia.
    */
   const testarCredencial = (
     <Button
@@ -283,7 +287,7 @@ function ApuracaoPage() {
                   restantes === 0 ? "text-flow-out" : "text-foreground"
                 }`}
               >
-                {quota.isLoading ? "…" : `${restantes} de ${limiteDia}`}
+                {quota.isLoading || limiteDia === undefined ? "…" : `${restantes} de ${limiteDia}`}
               </span>
             </span>
           </>
@@ -528,18 +532,20 @@ function ApuracaoPage() {
               <p>{quota.data?.mensagem ?? "Verificando a cota diária definida pela Receita Federal."}</p>
               <p>
                 Este limite é da Receita Federal, não do TECH-IVA. Usamos 1 consulta automática por
-                dia e deixamos a outra reservada para você.
+                dia e deixamos sempre a última reservada para você.
               </p>
             </>
           }
           bodyClassName="flex flex-wrap items-center justify-between gap-3 p-4"
         >
           <p className="text-sm font-medium">
-            {quota.isLoading
+            {/* Mesma dupla restantes/limite do cabeçalho, na mesma ordem — os dois
+                textos contavam coisas diferentes antes ("1 de 2" aqui podia
+                conviver com "2 de 2" lá) e um usuário lia isso como o sistema se
+                contradizendo. */}
+            {quota.isLoading || limiteDia === undefined
               ? "Verificando cota do dia…"
-              : (quota.data?.restantes ?? 0) > 0
-                ? `Consulta ${Math.min((quota.data?.usadas ?? 0) + 1, quota.data?.limite ?? 2)} de ${quota.data?.limite ?? 2} disponíveis hoje`
-                : `0 de ${quota.data?.limite ?? 2} consultas disponíveis hoje`}
+              : `${restantes} de ${limiteDia} consultas disponíveis hoje`}
           </p>
 
           <div className="flex flex-wrap items-center gap-2">
