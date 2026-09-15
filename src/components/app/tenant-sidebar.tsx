@@ -107,9 +107,9 @@ export function TenantSidebar({
         {/* Marca: lockup TECH-IVA centralizado (ou o símbolo, quando recolhida) */}
         <div className="flex h-14 items-center justify-center px-3">
           {collapsed ? (
-            <BrandIcon className="size-8 shrink-0 drop-shadow-[0_0_10px_rgba(37,99,235,0.35)]" />
+            <BrandIcon className="size-8 shrink-0 drop-shadow-[0_0_10px_color-mix(in_oklab,var(--primary)_35%,transparent)]" />
           ) : (
-            <BrandLogo className="h-6 w-auto drop-shadow-[0_0_12px_rgba(37,99,235,0.28)]" />
+            <BrandLogo className="h-6 w-auto drop-shadow-[0_0_12px_color-mix(in_oklab,var(--primary)_28%,transparent)]" />
           )}
         </div>
 
