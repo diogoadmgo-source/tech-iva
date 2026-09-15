@@ -51,8 +51,22 @@ function texto(v: unknown): string | null {
   if (typeof v === "number" && Number.isFinite(v)) return BigInt(Math.trunc(v)).toString();
   return null;
 }
+/**
+ * Converte para inteiro, com `-1` como sentinela de "não informado / ilegível
+ * — nunca um código de negócio da Receita". `-1` nunca é um `origem` ou
+ * `documento` válido, então é seguro para essa finalidade.
+ *
+ * Cuidado ao mexer aqui: `origem: 0` é um código NORMAL de verdade (conforme
+ * a documentação — 20-22 devolução, 30-32 cancelamento, 50-55 perecimento).
+ * `Number("")` e `Number(undefined)` tratados ingenuamente (`Number(String(v
+ * ?? "").trim())`) dão `0`, não `NaN` — então ausência colidiria em silêncio
+ * com o código "normal" legítimo. Por isso ausência (`null`/`undefined`/
+ * string vazia) é tratada ANTES do fallback, de forma explícita.
+ */
 function inteiro(v: unknown): number {
-  const n = typeof v === "number" ? v : Number(String(v ?? "").trim());
+  if (v === null || v === undefined) return -1;
+  if (typeof v === "string" && !v.trim()) return -1;
+  const n = typeof v === "number" ? v : Number(String(v).trim());
   return Number.isFinite(n) ? Math.trunc(n) : -1;
 }
 

@@ -67,4 +67,44 @@ describe("leitor de débitos v2", () => {
     };
     expect(lerDebitosV2(comNumero)[0]?.chave).toBe("35269");
   });
+
+  it("distingue origem/documento ausente do código 0, que é legítimo", () => {
+    // origem: 0 é NORMAL de verdade (documentação da Receita); ausência não
+    // pode virar 0 por acidente de `Number("") === 0` — vira -1 (sentinela).
+    const base = ARQUIVO.apuracao[0]!.debitos[0]!;
+    const semOrigem = { ...base } as Record<string, unknown>;
+    delete semOrigem["origem"];
+    const linhaSemOrigem = lerDebitosV2({
+      ...ARQUIVO,
+      apuracao: [{ pa: "09/2026", debitos: [semOrigem] }],
+    })[0];
+    expect(linhaSemOrigem?.origem).toBe(-1);
+    expect(linhaSemOrigem?.origem).not.toBe(0);
+
+    const semDocumento = { ...base } as Record<string, unknown>;
+    delete semDocumento["documento"];
+    const linhaSemDocumento = lerDebitosV2({
+      ...ARQUIVO,
+      apuracao: [{ pa: "09/2026", debitos: [semDocumento] }],
+    })[0];
+    expect(linhaSemDocumento?.documento).toBe(-1);
+
+    const comOrigemNula = lerDebitosV2({
+      ...ARQUIVO,
+      apuracao: [{ pa: "09/2026", debitos: [{ ...base, origem: null }] }],
+    })[0];
+    expect(comOrigemNula?.origem).toBe(-1);
+
+    const comOrigemTexto = lerDebitosV2({
+      ...ARQUIVO,
+      apuracao: [{ pa: "09/2026", debitos: [{ ...base, origem: "abc" }] }],
+    })[0];
+    expect(comOrigemTexto?.origem).toBe(-1);
+
+    const comOrigemZero = lerDebitosV2({
+      ...ARQUIVO,
+      apuracao: [{ pa: "09/2026", debitos: [{ ...base, origem: 0 }] }],
+    })[0];
+    expect(comOrigemZero?.origem).toBe(0);
+  });
 });

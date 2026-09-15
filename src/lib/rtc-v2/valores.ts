@@ -10,6 +10,15 @@
  */
 export function reaisParaCentavos(v: unknown): number {
   if (v === null || v === undefined) return 0;
+  // NÃO CORRIGIR AGORA — só reconferir em outubro: `number` e `string` tomam
+  // caminhos diferentes daqui pra frente. `v.toFixed(2)` ARREDONDA a terceira
+  // casa (reaisParaCentavos(1.006) === 101), enquanto o texto é truncado mais
+  // abaixo via `.slice(0, 2)` (reaisParaCentavos("1.006") === 100). Mesmo
+  // valor lógico, resultado diferente conforme o tipo de origem. Só se
+  // manifesta se a Receita mandar mais de duas casas decimais, o que
+  // violaria o contrato `number(18,2)` publicado — por isso não é uma
+  // correção urgente, mas é o tipo de coisa que só aparece comparando
+  // número vs. texto no arquivo real.
   const bruto = typeof v === "number" ? v.toFixed(2) : String(v).trim();
   if (!bruto) return 0;
   const m = /^(-?)(\d+)(?:[.,](\d*))?$/.exec(bruto);

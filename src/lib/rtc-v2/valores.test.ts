@@ -13,6 +13,14 @@ describe("reais para centavos", () => {
     expect(reaisParaCentavos("18.29")).toBe(1829);
   });
 
+  it("trata decimal único como casa das dezenas de centavo, não das unidades", () => {
+    // Trava de regressão: "1.5" tem de virar 150 centavos (R$ 1,50), não 15
+    // (que seria R$ 0,15). O preenchimento com `${decimal}00`.slice(0, 2)
+    // já cobre isso — este teste só impede que uma futura mudança quebre.
+    expect(reaisParaCentavos("1.5")).toBe(150);
+    expect(reaisParaCentavos(1.5)).toBe(150);
+  });
+
   it("converte valor grande porem exato, dentro do alcance seguro", () => {
     // 90 trilhoes de reais em centavos ainda cabe em Number.MAX_SAFE_INTEGER;
     // nenhum documento fiscal real chega perto disso.
