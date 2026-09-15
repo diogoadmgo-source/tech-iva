@@ -458,7 +458,7 @@ Esta é a que mais reduz risco. Hoje, se o nosso endereço não for alcançável
 - Consome: `lerRetorno` da Tarefa 2 (a resposta de `situacao` tem os mesmos campos).
 - Produz: `urlRecurso(base, ambiente, recurso, cnpj8)` e `urlSituacao(base, ambiente, tiquete)`;
   `type Ambiente = "producao" | "restrita"`; `type Recurso = "debitos" | "creditos" | "pagamentos" | "recolhimentos"`.
-  E em `rtc-apuracao.server.ts`: `consultarSituacao(tiquete, token): Promise<Retorno & { estado: string }>`.
+  E em `rtc-apuracao.server.ts`: `consultarSituacao(tiquete, token): Promise<{ estado: string; retorno: Retorno }>` — o `estado` é o campo próprio da resposta (`PENDENTE` / `EM_PROCESSAMENTO` / `CONCLUIDA` / `ERRO`) e o `retorno` é o resultado de `lerRetorno` sobre o mesmo corpo. São dois eixos distintos, por isso campos separados e não interseção de tipos.
 
 - [ ] **Passo 1: escrever o teste que falha**
 
@@ -657,7 +657,11 @@ Junta as três anteriores: abrir a solicitação no endereço v2, com a `urlReto
 -- mesma tabela, e o leitor não sabe qual formato aplicar.
 alter table public.rtc_apuracao
   add column if not exists recurso text not null default 'debitos',
-  add column if not exists api_versao smallint not null default 1;
+  add column if not exists api_versao smallint not null default 1,
+  add column if not exists tea_segundos int;
+
+comment on column public.rtc_apuracao.tea_segundos is
+  'Tempo estimado de atendimento devolvido no 201 da abertura v2. Usado para so consultar a situacao depois que ele passar.';
 
 alter table public.rtc_apuracao
   drop constraint if exists rtc_apuracao_recurso_ck;

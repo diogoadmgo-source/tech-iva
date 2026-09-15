@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { refValido } from "@/lib/rtc-v2/refvalido";
+
 /**
  * Webhook de retorno da apuração de débitos da CBS (RTC / Receita Federal).
  *
@@ -16,10 +18,21 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/api/public/rtc/apuracao/$ref")({
   server: {
     handlers: {
+      HEAD: async ({ params }) => {
+        /*
+         * A Receita valida a urlRetorno com HEAD antes de processar; se não
+         * responder, "a solicitação é cancelada com erro" e a chamada do dia
+         * é gasta à toa. Responde só pelo FORMATO da referência, sem tocar o
+         * banco: assim não revela se uma referência existe, e não fica de pé
+         * um caminho de varredura.
+         */
+        const ref = (params as { ref?: string }).ref ?? "";
+        return new Response(null, { status: refValido(ref) ? 200 : 404 });
+      },
       POST: async ({ request, params }) => {
         const ref = (params as { ref?: string }).ref ?? "";
         // formato fixo: 24 bytes em hex. Barra qualquer varredura antes do banco.
-        if (!/^[0-9a-f]{48}$/.test(ref)) {
+        if (!refValido(ref)) {
           return new Response("Referência inválida", { status: 404 });
         }
 
