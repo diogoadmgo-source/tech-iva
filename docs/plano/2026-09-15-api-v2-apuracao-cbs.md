@@ -657,7 +657,11 @@ Junta as três anteriores: abrir a solicitação no endereço v2, com a `urlReto
 -- mesma tabela, e o leitor não sabe qual formato aplicar.
 alter table public.rtc_apuracao
   add column if not exists recurso text not null default 'debitos',
-  add column if not exists api_versao smallint not null default 1;
+  add column if not exists api_versao smallint not null default 1,
+  add column if not exists tea_segundos int;
+
+comment on column public.rtc_apuracao.tea_segundos is
+  'Tempo estimado de atendimento devolvido no 201 da abertura v2. Usado para so consultar a situacao depois que ele passar.';
 
 alter table public.rtc_apuracao
   drop constraint if exists rtc_apuracao_recurso_ck;
