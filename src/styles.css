@@ -143,6 +143,11 @@
   }
 }
 
+@utility brand-mark {
+  /* O arquivo original tem lettering branco; no tema claro a marca assume o azul profundo. */
+  filter: brightness(0) saturate(100%) invert(18%) sepia(31%) saturate(1450%) hue-rotate(168deg) brightness(88%) contrast(101%);
+}
+
 /* ==========================================================================
    TECH-IVA — light premium (Inter + JetBrains Mono)
    A paleta clara HOSPCOM é a aparência padrão e também o fallback de `.dark`.
