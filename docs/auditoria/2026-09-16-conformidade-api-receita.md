@@ -69,21 +69,21 @@ O campo `download_em` está vazio: **nunca baixamos nada**. Mesmo assim, 20h50 d
 
 ## 4. Falhas nossas, que a documentação não causou
 
-**a) O diagnóstico apaga a tentativa anterior.**
+**a) O diagnóstico apaga a tentativa anterior.** — ✅ CORRIGIDO em 16/09 (migração 0230).
 Cada nova tentativa sobrescreve a anterior. A falha das 20:13 — a única que
 importava — foi perdida quando reprocessamos hoje. Num recurso que custa 1 de 2 por
 dia, o histórico tem que acumular, não substituir.
 
-**b) O banco de produção não pode ser reconstruído pelo repositório.**
+**b) O banco de produção não pode ser reconstruído pelo repositório.** — ✅ CORRIGIDO em 16/09: as 10 migrações que faltavam foram trazidas do próprio banco.
 As migrações no projeto param em agosto (nº 0159). Produção está na 0229. Tudo que
 foi feito nos últimos dias existe só no servidor. Se a base cair, não há de onde
 levantar.
 
-**c) A versão 2 está construída e desligada.**
+**c) A versão 2 está construída e desligada.** — ✅ RESOLVIDO em 16/09, mas não como eu propus: a v2 só entra no ar em outubro, e não há credencial do ambiente de teste. Em vez de ligar, ganhou um interruptor único (`RTC_API_VERSAO=2`), desligado por padrão. Ver docs/rtc-ligar-v2-outubro-2026.md.
 `abrirSolicitacaoV2`, `lerDebitosV2` e `lerCreditosV2` não têm nenhum chamador.
 Nenhum botão da tela alcança a versão 2. Foi construída, testada e não ligada.
 
-**d) O limite de 8 downloads por dia não é contado** (item 10 acima).
+**d) O limite de 8 downloads por dia não é contado** (item 10 acima). — ⬜ EM ABERTO. Só passa a doer quando a fila de recuperação virar automática; hoje ela só roda por clique.
 
 ---
 
@@ -96,3 +96,18 @@ Nenhum botão da tela alcança a versão 2. Foi construída, testada e não liga
 3. **Guardar todas as tentativas**, não só a última.
 4. **Trazer as migrações para o repositório** antes de qualquer coisa nova.
 5. **Ligar a versão 2** na tela, ou assumir que ela não existe.
+
+---
+
+## 6. Situação em 16/09/2026, fim do dia
+
+Os quatro itens da seção 4 (falhas nossas) foram fechados, menos a contagem de
+downloads, que fica registrada e sem urgência.
+
+O que **não** se conserta com código, e é o que importa carregar daqui:
+
+- O tíquete é bala única. Uma tentativa de download, e só.
+- O limite de velocidade no endereço de autenticação existe e não está em
+  manual nenhum.
+- Diante de duas leituras da mesma documentação, projetar para a restritiva.
+  Foi não fazer isso que custou a consulta de 15/09.
