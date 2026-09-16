@@ -27,7 +27,7 @@ import { sealSecret, unsealSecret } from "@/lib/credentials.server";
 import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
-import { urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
+import { tokenGuardadoUtilizavel, urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
 import { versaoDaAbertura } from "@/lib/rtc-v2/versao";
 
 const TIMEOUT_MS = 45_000;
@@ -828,6 +828,41 @@ async function apagarToken(admin: AdminClient, apuracaoId: string, ref: string |
 }
 
 /**
+ * Qual token usar no download, decidido ANTES de tocar no tíquete.
+ *
+ * O manual é explícito no Passo 3: "um único acesso por tíquete". Então o
+ * download tem UMA tentativa — e por isso a escolha do token não pode ser por
+ * tentativa e erro. Enquanto nenhum tíquete foi gasto, pegar outro token é de
+ * graça; depois da primeira tentativa, não há segunda chance.
+ *
+ * A idade do token sai de `solicitado_em`: ele foi obtido segundos antes da
+ * abertura. Sem token guardado, guardado ilegível, ou solicitação velha demais,
+ * pega um novo.
+ */
+async function tokenParaDownload(
+  admin: AdminClient,
+  credencial: Credential,
+  ref: string | null,
+  solicitadoEm: string | null,
+): Promise<{ valor: string; caminho: "guardado" | "novo"; diag?: ChamadaDiag }> {
+  // O `ref &&` é redundante com a regra — `tokenGuardadoUtilizavel` já recusa
+  // referência vazia — mas é o que deixa o TypeScript enxergar o estreitamento.
+  if (ref && tokenGuardadoUtilizavel({ ref, solicitadoEm, agora: Date.now() })) {
+    try {
+      return { valor: await lerToken(admin, ref), caminho: "guardado" };
+    } catch (e) {
+      // Guardado ilegível não é motivo para desistir: nenhum tíquete foi gasto
+      // ainda, então trocar por um novo aqui não custa nada.
+      console.warn("[rtc-apuracao] token guardado ilegivel, pegando novo", {
+        erro: (e as Error).message,
+      });
+    }
+  }
+  const { token, diag } = await accessToken(credencial.apiKey);
+  return { valor: token, caminho: "novo", diag };
+}
+
+/**
  * Só existe consulta quando a Receita responde — erro ou sucesso. Se a tentativa
  * morreu antes disso (sem credencial, ambiente não configurado, serviço fora do
  * ar), a cota diária é devolvida: o contador da Receita também não contou.
@@ -1212,31 +1247,27 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     const tiquete = String(row.tiquete_download);
     let diag: DownloadDiag | undefined;
     try {
-      let resultado: { body: Record<string, unknown>; diag: DownloadDiag } | null = null;
-
-      if (row.access_token_ref) {
-        try {
-          const guardado = await lerToken(admin, row.access_token_ref as string);
-          resultado = await baixarNaReceita(tiquete, guardado, "guardado");
-        } catch (e) {
-          const err = e as ApuracaoGatewayError & { diag?: DownloadDiag };
-          diag = err.diag;
-          const expirado = err.status === 401 || err.status === 403;
-          // Só o 401/403 justifica um token novo. Outros erros (429, 5xx) são
-          // do serviço e repetir não ajuda.
-          if (!expirado) throw err;
-          console.info("[rtc-apuracao] token guardado recusado, tentando token novo", {
-            apuracao: apuracaoId,
-            status: err.status,
-          });
-        }
-      }
-
-      if (!resultado) {
-        const { token: novo, diag: diagToken } = await accessToken(credential.apiKey);
-        await gravarChamada(admin, apuracaoId, diagToken);
-        resultado = await baixarNaReceita(tiquete, novo, "novo");
-      }
+      /*
+       * UMA tentativa, e só. O manual, Passo 3: "um único acesso por tíquete".
+       *
+       * Aqui havia o contrário: em 401 ou 403 o código concluía "token vencido"
+       * e repetia o download com um token novo. Mas a Receita devolve 401
+       * TAMBÉM para tíquete morto — o corpo de 16/09 foi exatamente
+       * "Tíquete inexistente ou download já realizado." Olhando só o número do
+       * erro, os dois casos são iguais, e a repetição gastava o único acesso
+       * permitido para depois falhar de novo.
+       *
+       * Agora o token é escolhido ANTES: enquanto nenhum tíquete foi gasto,
+       * trocar de token é de graça. Depois, não há segunda chance.
+       */
+      const token = await tokenParaDownload(
+        admin,
+        credential,
+        (row.access_token_ref as string | null) ?? null,
+        (row.solicitado_em as string | null) ?? null,
+      );
+      if (token.diag) await gravarChamada(admin, apuracaoId, token.diag);
+      const resultado = await baixarNaReceita(tiquete, token.valor, token.caminho);
 
       payload = resultado.body;
       diag = resultado.diag;

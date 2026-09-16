@@ -21,7 +21,7 @@ fui no código ver o que ele faz. Sem suposição: onde havia prova no banco, el
 | 8 | Estourou a cota, vem erro 429 | Tratado | ✅ |
 | 9 | Baixar em `/rtc/download/v1/{tiquete}` | Igual | ✅ |
 | 10 | **8 downloads por dia** | **Ninguém conta.** Existe o mecanismo, não é usado | ❌ |
-| 11 | **Um único acesso por tíquete** | O código pode tentar duas vezes (token guardado, depois token novo) | ⚠️ |
+| 11 | **Um único acesso por tíquete** | Uma tentativa, e só. O token é escolhido antes de tocar no tíquete | ✅ corrigido 16/09 |
 | 12 | O arquivo fica 24 horas disponível | Assumido como verdade — **a realidade desmentiu** (item 3 abaixo) | ❌ |
 | 13 | Devolve JSON com a lista de débitos | Lido e gravado antes de interpretar | ✅ |
 | 14 | Só Débitos existe hoje | Respeitado | ✅ |
@@ -96,6 +96,39 @@ Nenhum botão da tela alcança a versão 2. Foi construída, testada e não liga
 3. **Guardar todas as tentativas**, não só a última.
 4. **Trazer as migrações para o repositório** antes de qualquer coisa nova.
 5. **Ligar a versão 2** na tela, ou assumir que ela não existe.
+
+---
+
+## 5b. A causa raiz, achada depois — e a pior de todas
+
+O item 11 da tabela não era um detalhe. Era **a explicação do incidente**.
+
+O código fazia assim: tentava o download com o token guardado; se levasse 401 ou
+403, concluía "token vencido", pegava um token novo e **tentava o download de
+novo, com o mesmo tíquete**.
+
+Só que a Receita devolve 401 **também para tíquete morto** — o corpo de 16/09 foi
+literalmente `Tíquete inexistente ou download já realizado.` Olhando só o número
+do erro, os dois casos são idênticos.
+
+Então, em 15/09 às 20:13:52, o que aconteceu foi:
+
+1. Download com o token guardado → 401
+2. Código conclui "token vencido" e pede outro no `/token` → **429, limite de
+   velocidade**
+3. Erro registrado: "não foi possível obter o token"
+
+A primeira tentativa já tinha gasto o único acesso permitido. A repetição não
+tinha como dar certo — ela existia justamente para gastar o que não podia ser
+gasto duas vezes.
+
+**Isto não foi lacuna de documentação.** O manual diz "um único acesso por
+tíquete", em letras claras, no Passo 3. O código fazia duas.
+
+Corrigido: o token é decidido **antes** de tocar no tíquete (enquanto nada foi
+gasto, trocar de token é de graça), e o download tem uma tentativa só. A regra
+virou função pura com teste — `tokenGuardadoUtilizavel` em
+`src/lib/rtc-v2/validade.ts`.
 
 ---
 

@@ -63,3 +63,40 @@ export function urlAssinadaUtilizavel(entrada: EntradaUrlAssinada): boolean {
   if (expira === null) return true;
   return expira > entrada.agora;
 }
+
+/**
+ * Validade do token de acesso da Receita. O manual (Passo 1) diz 1 hora;
+ * descontamos 5 minutos de folga.
+ *
+ * A folga não é preciosismo: o download é de UM ÚNICO acesso por tíquete, e a
+ * escolha do token acontece antes da única tentativa. Perto do limite, trocar
+ * por um token novo é de graça; descobrir tarde demais custa o tíquete e a
+ * consulta do dia junto.
+ */
+export const VALIDADE_TOKEN_MS = 55 * 60 * 1000;
+
+export type EntradaTokenGuardado = {
+  /** Referência do token cifrado; ausente significa que não há token guardado. */
+  ref: string | null | undefined;
+  /** Abertura da solicitação: o token foi obtido segundos antes dela. */
+  solicitadoEm: string | null | undefined;
+  /** Agora explícito: quem chama passa `Date.now()`; o teste passa o que quiser. */
+  agora: number;
+};
+
+/**
+ * Dá para confiar no token guardado, sem gastar o tíquete para descobrir?
+ *
+ * Só `true` quando há referência E dá para PROVAR que ele é novo o bastante.
+ * Sem `solicitado_em` legível não há como provar, e a resposta é `false` — ao
+ * contrário de `urlAssinadaUtilizavel`, onde a dúvida joga a favor de tentar.
+ * A assimetria é proposital: lá, desistir joga fora um segredo de 48 h que
+ * ninguém deu como morto; aqui, insistir gasta o único acesso ao tíquete.
+ */
+export function tokenGuardadoUtilizavel(entrada: EntradaTokenGuardado): boolean {
+  const ref = typeof entrada.ref === "string" ? entrada.ref.trim() : "";
+  if (!ref) return false;
+  const abertura = instante(entrada.solicitadoEm);
+  if (abertura === null) return false;
+  return entrada.agora - abertura < VALIDADE_TOKEN_MS;
+}
