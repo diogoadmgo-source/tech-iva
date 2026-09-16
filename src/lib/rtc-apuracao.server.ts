@@ -290,8 +290,61 @@ function comDiag(err: ApuracaoGatewayError, chamada: ChamadaDiag): ErroComDiag {
   return e;
 }
 
+/** Espera curta entre tentativas do /token quando a Receita devolve 429. */
+function dormir(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Segundos pedidos no `Retry-After`, limitados para não travar a requisição. */
+function esperaRetryAfter(res: Response): number {
+  const bruto = res.headers.get("retry-after");
+  const seg = bruto ? Number.parseInt(bruto, 10) : Number.NaN;
+  if (!Number.isFinite(seg) || seg <= 0) return 2_000;
+  return Math.min(seg, 5) * 1_000;
+}
+
+/**
+ * Cache do access_token por credencial. O /token não consome a cota diária de
+ * apuração, mas tem limite de requisições próprio: pedir um token novo em cada
+ * etapa (solicitar, baixar, testar) é o que produz o 429. Guardamos até pouco
+ * antes de expirar; a chave é um resumo da credencial, nunca a credencial.
+ */
+const tokenCache = new Map<string, { token: string; expiraEm: number; diag: ChamadaDiag }>();
+
+function chaveCache(credential: string, url: string): string {
+  let h = 0;
+  const material = `${url}|${credential}`;
+  for (let i = 0; i < material.length; i++) h = (h * 31 + material.charCodeAt(i)) | 0;
+  return `${url}#${h}`;
+}
+
 /** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
 async function accessToken(credential: string): Promise<{ token: string; diag: ChamadaDiag }> {
+  const cacheUrl = tokenUrl();
+  const chave = cacheUrl ? chaveCache(credential, cacheUrl) : null;
+  if (chave) {
+    const guardado = tokenCache.get(chave);
+    if (guardado && guardado.expiraEm > Date.now()) {
+      return { token: guardado.token, diag: guardado.diag };
+    }
+    if (guardado) tokenCache.delete(chave);
+  }
+  const novo = await pedirToken(credential);
+  if (chave) {
+    tokenCache.set(chave, {
+      token: novo.token,
+      // Margem de 60s antes do vencimento informado pela Receita.
+      expiraEm: Date.now() + Math.max(30, novo.expiraEmSeg - 60) * 1_000,
+      diag: novo.diag,
+    });
+  }
+  return { token: novo.token, diag: novo.diag };
+}
+
+async function pedirToken(
+  credential: string,
+): Promise<{ token: string; expiraEmSeg: number; diag: ChamadaDiag }> {
+
   const url = tokenUrl();
   if (!url) {
     throw new ApuracaoGatewayError(
