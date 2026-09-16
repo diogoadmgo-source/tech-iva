@@ -594,9 +594,57 @@ export async function consultarSituacao(
 }
 
 /**
+ * Escreve UMA tentativa no diagnóstico da apuração, pela RPC da 0230.
+ *
+ * A RPC faz três coisas numa transação só: acrescenta a entrada ao `historico`
+ * (lista append-only, 50 últimas) e atualiza `download_diag` ou a chave
+ * correspondente de `chamada_diag` com a MESMA entrada. É isso que conserta o
+ * incidente de 15/09: antes, reprocessar apagava o diagnóstico da tentativa
+ * anterior, e a falha original — a que explicava a perda do tíquete — sumia.
+ *
+ * Também acaba com o SELECT+UPDATE que havia aqui: eram duas idas ao banco, e
+ * duas tentativas simultâneas se sobrescreviam.
+ *
+ * Devolve `false` quando a escrita não passou — inclusive quando o banco ainda
+ * não tem a 0230. Quem chama decide o que fazer; nunca lança, porque perder o
+ * diagnóstico não pode derrubar o fluxo que estava sendo diagnosticado.
+ */
+async function registrarDiag(
+  admin: AdminClient,
+  apuracaoId: string,
+  destino: "download" | "chamada",
+  chave: string,
+  entrada: Record<string, unknown>,
+): Promise<boolean> {
+  try {
+    const { error } = await rpc(admin)("rtc_apuracao_registrar_diag", {
+      p_id: apuracaoId,
+      p_destino: destino,
+      p_chave: chave,
+      p_entrada: entrada,
+    });
+    if (error) {
+      console.warn("[rtc-apuracao] historico nao gravado", {
+        apuracao: apuracaoId,
+        chave,
+        erro: error.message,
+      });
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("[rtc-apuracao] historico nao gravado", {
+      apuracao: apuracaoId,
+      chave,
+      erro: (e as Error).message,
+    });
+    return false;
+  }
+}
+
+/**
  * Acumula o diagnóstico das etapas anteriores ao download em `chamada_diag`,
- * sob a chave da etapa. Escreve por merge para o diagnóstico da solicitação não
- * apagar o do token quando as duas rodam na mesma tentativa.
+ * sob a chave da etapa, e no `historico`.
  */
 async function gravarChamada(
   admin: AdminClient,
@@ -610,6 +658,10 @@ async function gravarChamada(
     status: diag.status,
     ok: diag.ok,
   });
+  if (await registrarDiag(admin, apuracaoId, "chamada", diag.etapa, diag)) return;
+  // Banco ainda sem a 0230: mantém o comportamento antigo — só a última
+  // tentativa de cada etapa, sem histórico. Remover quando a 0230 estiver
+  // aplicada em todos os ambientes.
   const { data } = await table(admin, "rtc_apuracao")
     .select("chamada_diag")
     .eq("id", apuracaoId)
@@ -642,16 +694,17 @@ async function registrarNota(
   if (nivel === "erro") console.error("[rtc-apuracao]", linha);
   else if (nivel === "aviso") console.warn("[rtc-apuracao]", linha);
   else console.info("[rtc-apuracao]", linha);
+  const nota = { nivel, em: new Date().toISOString(), ...dados };
   try {
+    if (await registrarDiag(admin, apuracaoId, "chamada", chave, nota)) return;
+    // Banco ainda sem a 0230 — ver gravarChamada.
     const { data } = await table(admin, "rtc_apuracao")
       .select("chamada_diag")
       .eq("id", apuracaoId)
       .maybeSingle();
     const atual = (data?.chamada_diag ?? {}) as Record<string, unknown>;
     await table(admin, "rtc_apuracao")
-      .update({
-        chamada_diag: { ...atual, [chave]: { nivel, em: new Date().toISOString(), ...dados } },
-      })
+      .update({ chamada_diag: { ...atual, [chave]: nota } })
       .eq("id", apuracaoId);
   } catch (e) {
     console.error("[rtc-apuracao] falha ao registrar nota", {
@@ -662,6 +715,11 @@ async function registrarNota(
   }
 }
 
+/**
+ * Diagnóstico do download. Vai para o `historico` e para `download_diag`.
+ * Era aqui que a sobrescrita mais doía: o download é o passo que perde o
+ * tíquete, e o motivo da primeira falha é o que decide se vale tentar de novo.
+ */
 async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: DownloadDiag | undefined) {
   if (!diag) return;
   console.info("[rtc-apuracao] download", {
@@ -670,6 +728,8 @@ async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: Download
     ok: diag.ok,
     caminho_token: diag.caminho_token,
   });
+  if (await registrarDiag(admin, apuracaoId, "download", "download", diag)) return;
+  // Banco ainda sem a 0230 — ver gravarChamada.
   await table(admin, "rtc_apuracao").update({ download_diag: diag }).eq("id", apuracaoId);
 }
 
