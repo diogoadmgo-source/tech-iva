@@ -28,6 +28,7 @@ import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
 import { urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
+import { versaoDaAbertura } from "@/lib/rtc-v2/versao";
 
 const TIMEOUT_MS = 45_000;
 
@@ -88,6 +89,22 @@ function apiPrefix(): string {
 function ambienteAtual(): Ambiente {
   const raw = (process.env["RTC_API_PREFIX"] ?? "").trim();
   return raw.startsWith("prr") ? "restrita" : "producao";
+}
+
+/**
+ * ESTE É O INTERRUPTOR DA V2. A v2 entra no ar em outubro/2026; até lá, tudo
+ * segue pela v1. Ligar é `RTC_API_VERSAO=2` no ambiente — só isso, sem mexer
+ * em código.
+ *
+ * O padrão é desligado de propósito: enquanto a Receita não abrir a v2, um
+ * pedido no endereço novo volta com erro E queima uma das consultas do dia. O
+ * risco é assimétrico, então o silêncio significa v1.
+ *
+ * Quem decide de fato, pedido a pedido, é `versaoDaAbertura` — porque mesmo com
+ * a v2 ligada, competência fechada continua na v1.
+ */
+function v2Ligada(): boolean {
+  return (process.env["RTC_API_VERSAO"] ?? "").trim() === "2";
 }
 
 /** Sem endereço não há chamada: erro explícito, nunca uma URL montada no escuro. */
@@ -966,9 +983,17 @@ async function abrirSolicitacao(
 }
 
 /**
- * Abertura na v1. Segue viva enquanto a Receita não encerrar a versão antiga —
- * e continua sendo o único caminho para competências fechadas, que a v2 não
- * atende (lá a janela é incremental).
+ * Abertura de débitos pedida pela tela. É o ÚNICO ponto que escolhe a versão da
+ * API — de propósito: espalhar essa decisão é como se manda pedido para o
+ * endereço errado, e cada erro desses custa uma consulta do dia.
+ *
+ * A escolha em si é `versaoDaAbertura`, função pura e testada. Resumo da regra:
+ * v1 enquanto a v2 não estiver ligada, e v1 também para competência fechada,
+ * que a v2 não atende. A v1 segue viva enquanto a Receita não encerrá-la.
+ *
+ * Na v2 a competência pedida é ignorada: lá a janela é incremental e a linha é
+ * gravada no mês corrente. Por isso `versaoDaAbertura` só devolve 2 quando a
+ * competência pedida JÁ é o mês corrente — nunca há troca silenciosa de período.
  */
 export async function solicitarApuracao(
   tenantId: string,
@@ -976,6 +1001,14 @@ export async function solicitarApuracao(
   origin: string,
   origem = "manual",
 ): Promise<SolicitarResult> {
+  const corrente = competenciaCorrente();
+  const versao = versaoDaAbertura(competencia, corrente, v2Ligada());
+  if (versao === 2) {
+    return abrirSolicitacao(tenantId, corrente, origin, origem, {
+      recurso: "debitos",
+      apiVersao: 2,
+    });
+  }
   return abrirSolicitacao(tenantId, competencia, origin, origem, {
     recurso: "debitos",
     apiVersao: 1,
