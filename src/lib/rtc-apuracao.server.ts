@@ -1232,7 +1232,10 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
       }
 
       if (!resultado) {
-        const { token: novo, diag: diagToken } = await accessToken(credential.apiKey);
+        const { token: novo, diag: diagToken } = await accessToken(credential.apiKey, {
+          renovar: true,
+        });
+
         await gravarChamada(admin, apuracaoId, diagToken);
         resultado = await baixarNaReceita(tiquete, novo, "novo");
       }
