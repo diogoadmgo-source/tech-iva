@@ -362,7 +362,9 @@ async function pedirToken(
   const tentativas: Array<{ modo: ModoAuth; status: number | null; erro?: string }> = [];
   let ultimo: { diag: ChamadaDiag; erro: ApuracaoGatewayError } | null = null;
 
-  for (const modo of modos) {
+  let retries429 = 0;
+  for (let i = 0; i < modos.length; i++) {
+    const modo = modos[i] as ModoAuth;
     const { headers, body } = requisicaoToken(credential, modo);
     let res: Response;
     try {
@@ -383,8 +385,13 @@ async function pedirToken(
 
     if (res.ok) {
       let token: string | undefined;
+      let expiraEmSeg = 300;
       try {
-        token = (JSON.parse(text) as { access_token?: string }).access_token;
+        const corpo = JSON.parse(text) as { access_token?: string; expires_in?: number };
+        token = corpo.access_token;
+        if (Number.isFinite(corpo.expires_in) && (corpo.expires_in as number) > 0) {
+          expiraEmSeg = corpo.expires_in as number;
+        }
       } catch {
         token = undefined;
       }
@@ -393,7 +400,7 @@ async function pedirToken(
         tentativas.push({ modo, status: res.status });
         diag.tentativas = tentativas;
         console.info("[rtc-apuracao] token obtido", { modo });
-        return { token, diag };
+        return { token, expiraEmSeg, diag };
       }
       // 200 sem access_token: o corpo não traz token para vazar e é a única
       // pista de que o formato da resposta mudou.
@@ -412,6 +419,26 @@ async function pedirToken(
     tentativas.push({ modo, status: res.status, erro: detalhe });
     console.error("[rtc-apuracao] token recusado", { modo, status: res.status, detalhe });
 
+    // 429 não é credencial errada: é limite de requisições do próprio /token.
+    // Espera o que a Receita pedir (no máximo 5s) e repete o MESMO modo.
+    if (res.status === 429) {
+      if (retries429 < 2) {
+        retries429 += 1;
+        await dormir(esperaRetryAfter(res));
+        i -= 1;
+        continue;
+      }
+      diag.tentativas = tentativas;
+      throw comDiag(
+        new ApuracaoGatewayError(
+          "rate_limited",
+          "A Receita está limitando as requisições neste momento. Tente novamente em instantes — nenhuma consulta da cota diária foi usada.",
+          429,
+        ),
+        diag,
+      );
+    }
+
     const autenticacao = res.status === 400 || res.status === 401 || res.status === 403;
     const erro = new ApuracaoGatewayError(
       "no_credential",
@@ -422,6 +449,7 @@ async function pedirToken(
     ultimo = { diag, erro };
     if (!autenticacao) break;
   }
+
 
   const final = ultimo as { diag: ChamadaDiag; erro: ApuracaoGatewayError };
   final.diag.tentativas = tentativas;
