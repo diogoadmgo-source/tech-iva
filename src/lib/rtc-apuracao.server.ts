@@ -319,16 +319,21 @@ function chaveCache(credential: string, url: string): string {
 }
 
 /** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
-async function accessToken(credential: string): Promise<{ token: string; diag: ChamadaDiag }> {
+async function accessToken(
+  credential: string,
+  opts?: { renovar?: boolean },
+): Promise<{ token: string; diag: ChamadaDiag }> {
   const cacheUrl = tokenUrl();
   const chave = cacheUrl ? chaveCache(credential, cacheUrl) : null;
   if (chave) {
     const guardado = tokenCache.get(chave);
-    if (guardado && guardado.expiraEm > Date.now()) {
+    // `renovar` é o caminho do 401: o token guardado já não serve.
+    if (!opts?.renovar && guardado && guardado.expiraEm > Date.now()) {
       return { token: guardado.token, diag: guardado.diag };
     }
     if (guardado) tokenCache.delete(chave);
   }
+
   const novo = await pedirToken(credential);
   if (chave) {
     tokenCache.set(chave, {
