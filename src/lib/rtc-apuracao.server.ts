@@ -31,7 +31,13 @@ import { urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
 
 const TIMEOUT_MS = 45_000;
 
-export type GatewayUnavailableReason = "not_configured" | "no_credential" | "unreachable" | "error";
+export type GatewayUnavailableReason =
+  | "not_configured"
+  | "no_credential"
+  | "unreachable"
+  | "rate_limited"
+  | "error";
+
 
 export class ApuracaoGatewayError extends Error {
   constructor(
