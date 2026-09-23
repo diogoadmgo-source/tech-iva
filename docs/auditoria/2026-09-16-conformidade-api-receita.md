@@ -75,6 +75,18 @@ importava — foi perdida quando reprocessamos hoje. Num recurso que custa 1 de 
 dia, o histórico tem que acumular, não substituir.
 
 **b) O banco de produção não pode ser reconstruído pelo repositório.** — ✅ CORRIGIDO em 16/09: as 10 migrações que faltavam foram trazidas do próprio banco.
+
+> **Correção, 23/09:** eu exagerei este item. Olhei só `supabase/migrations/` e
+> não vi que existe uma segunda pasta, `db/migrations/`, com 77 arquivos. Seis
+> das dez que eu chamei de "faltando" já estavam lá, escritas à mão, com outro
+> nome. Só quatro estavam realmente em lugar nenhum.
+>
+> O problema de fundo continuava real — a pasta que as ferramentas leem estava
+> incompleta, e nada reconstruía o banco a partir dela. Mas "existia só no
+> servidor" estava errado para seis delas.
+>
+> Em 23/09 o usuário decidiu: `supabase/migrations/` é a fonte da verdade. Ver
+> `db/migrations/LEIA-ME.md`.
 As migrações no projeto param em agosto (nº 0159). Produção está na 0229. Tudo que
 foi feito nos últimos dias existe só no servidor. Se a base cair, não há de onde
 levantar.
