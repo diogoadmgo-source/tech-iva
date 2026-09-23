@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 
 import { supabase } from "@/integrations/supabase/client";
+import { hojeEmSaoPaulo } from "@/lib/datas";
 import { rtcCalculate, rtcEngineStatus, rtcValidate } from "@/lib/rtc-calc.functions";
 
 /**
@@ -355,8 +356,16 @@ export const UF_LIST = [
   "RJ","RN","RO","RR","RS","SC","SE","SP","TO",
 ] as const;
 
+/**
+ * Data padrão do fato gerador na tela do simulador.
+ *
+ * Era `new Date().toISOString().slice(0, 10)` — o dia em UTC. Como São Paulo é
+ * UTC-3, das 21h à meia-noite isso devolvia o dia SEGUINTE, e a data do fato
+ * gerador decide quais regras a calculadora oficial aplica. Às 21h30 de 31/12 a
+ * simulação saía com as regras do ano seguinte.
+ */
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return hojeEmSaoPaulo();
 }
 
 /** "1.234,56" | "1234.56" -> centavos. Entrada do usuário, não cálculo fiscal. */

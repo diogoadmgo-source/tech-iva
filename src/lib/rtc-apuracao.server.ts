@@ -24,6 +24,7 @@
  */
 
 import { sealSecret, unsealSecret } from "@/lib/credentials.server";
+import { mesCorrenteEmSaoPaulo } from "@/lib/datas";
 import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
@@ -1149,14 +1150,7 @@ export async function solicitarApuracao(
  * do servidor, senão na virada do mês três horas de UTC gravam o mês errado.
  */
 function competenciaCorrente(): string {
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-  }).formatToParts(new Date());
-  const ano = partes.find((p) => p.type === "year")?.value ?? "0000";
-  const mes = partes.find((p) => p.type === "month")?.value ?? "01";
-  return `${ano}-${mes}-01`;
+  return mesCorrenteEmSaoPaulo();
 }
 
 /**
