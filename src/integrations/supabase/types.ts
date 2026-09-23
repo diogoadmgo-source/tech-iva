@@ -4751,6 +4751,7 @@ export type Database = {
         Returns: Json
       }
       get_alert_prefs: { Args: { p_tenant: string }; Returns: Json }
+      has_any_membership: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           p_roles: Database["public"]["Enums"]["member_role"][]
