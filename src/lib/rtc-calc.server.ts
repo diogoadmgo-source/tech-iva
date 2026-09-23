@@ -295,10 +295,40 @@ function tribute(node: Record<string, unknown> | null, pKey: string, vKey: strin
   };
 }
 
-function normalizeCalc(raw: Record<string, unknown>, baseCents: number, municipioPadrao: boolean): CalcResult {
+/**
+ * Traduz a resposta do motor oficial para o formato da tela.
+ *
+ * Exportada só para teste: é aqui que um campo com nome diferente do esperado
+ * vira número errado com CARA DE OFICIAL, que é o pior defeito possível neste
+ * arquivo.
+ *
+ * A leitura desce seis níveis (`objetos[0].tribCalc.IBSCBS.gIBSCBS.gCBS.vCBS`).
+ * Sem a guarda abaixo, qualquer renome em qualquer um deles fazia TODOS os
+ * tributos lerem zero — e como `vBC` cai de volta para a base digitada, a tela
+ * mostrava a base certa, imposto R$ 0,00, e o selo "motor oficial". Silencioso,
+ * confiante e errado.
+ *
+ * Isso contraria a REGRA DURA do topo do arquivo. Motor que responde algo que
+ * não entendemos é motor indisponível, não imposto zero.
+ */
+export function normalizeCalc(raw: Record<string, unknown>, baseCents: number, municipioPadrao: boolean): CalcResult {
   const objetos = Array.isArray(raw["objetos"]) ? (raw["objetos"] as Record<string, unknown>[]) : [];
   const obj = objetos[0] ?? {};
-  const tribCalc = pick(obj, "tribCalc") ?? {};
+  const tribCalcNode = pick(obj, "tribCalc");
+  /*
+   * A guarda é no ENVELOPE (`objetos[0]` e `tribCalc`), não nos tributos.
+   * De propósito: operação legitimamente imune ou isenta pode vir com os grupos
+   * zerados, ou sem algum deles, e isso é resultado válido. O que não pode
+   * acontecer é não existir sequer o objeto calculado — aí não houve cálculo
+   * nenhum para ler.
+   */
+  if (!objetos.length || !tribCalcNode) {
+    throw new EngineUnavailableError(
+      "error",
+      "A calculadora oficial respondeu num formato que este sistema não reconhece. Nenhum valor foi calculado.",
+    );
+  }
+  const tribCalc = tribCalcNode;
   const ibscbs = pick(tribCalc, "IBSCBS") ?? {};
   const g = pick(ibscbs, "gIBSCBS") ?? {};
   const gUF = pick(g, "gIBSUF"), gMun = pick(g, "gIBSMun"), gCBS = pick(g, "gCBS");
