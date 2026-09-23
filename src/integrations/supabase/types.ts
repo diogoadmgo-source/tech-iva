@@ -1842,6 +1842,7 @@ export type Database = {
           download_diag: Json | null
           download_em: string | null
           erro: string | null
+          historico: Json | null
           id: string
           intencao_ressarcimento: boolean
           natureza_resultado:
@@ -1881,6 +1882,7 @@ export type Database = {
           download_diag?: Json | null
           download_em?: string | null
           erro?: string | null
+          historico?: Json | null
           id?: string
           intencao_ressarcimento?: boolean
           natureza_resultado?:
@@ -1920,6 +1922,7 @@ export type Database = {
           download_diag?: Json | null
           download_em?: string | null
           erro?: string | null
+          historico?: Json | null
           id?: string
           intencao_ressarcimento?: boolean
           natureza_resultado?:
@@ -5003,6 +5006,15 @@ export type Database = {
       rtc_apuracao_receber_tiquete: {
         Args: { p_payload: Json; p_ref: string }
         Returns: Json
+      }
+      rtc_apuracao_registrar_diag: {
+        Args: {
+          p_chave: string
+          p_destino: string
+          p_entrada: Json
+          p_id: string
+        }
+        Returns: undefined
       }
       rtc_apuracao_solicitar: {
         Args: {
