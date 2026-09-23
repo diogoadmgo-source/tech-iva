@@ -32,7 +32,13 @@ import { versaoDaAbertura } from "@/lib/rtc-v2/versao";
 
 const TIMEOUT_MS = 45_000;
 
-export type GatewayUnavailableReason = "not_configured" | "no_credential" | "unreachable" | "error";
+export type GatewayUnavailableReason =
+  | "not_configured"
+  | "no_credential"
+  | "unreachable"
+  | "rate_limited"
+  | "error";
+
 
 export class ApuracaoGatewayError extends Error {
   constructor(
@@ -301,8 +307,66 @@ function comDiag(err: ApuracaoGatewayError, chamada: ChamadaDiag): ErroComDiag {
   return e;
 }
 
+/** Espera curta entre tentativas do /token quando a Receita devolve 429. */
+function dormir(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Segundos pedidos no `Retry-After`, limitados para não travar a requisição. */
+function esperaRetryAfter(res: Response): number {
+  const bruto = res.headers.get("retry-after");
+  const seg = bruto ? Number.parseInt(bruto, 10) : Number.NaN;
+  if (!Number.isFinite(seg) || seg <= 0) return 2_000;
+  return Math.min(seg, 5) * 1_000;
+}
+
+/**
+ * Cache do access_token por credencial. O /token não consome a cota diária de
+ * apuração, mas tem limite de requisições próprio: pedir um token novo em cada
+ * etapa (solicitar, baixar, testar) é o que produz o 429. Guardamos até pouco
+ * antes de expirar; a chave é um resumo da credencial, nunca a credencial.
+ */
+const tokenCache = new Map<string, { token: string; expiraEm: number; diag: ChamadaDiag }>();
+
+function chaveCache(credential: string, url: string): string {
+  let h = 0;
+  const material = `${url}|${credential}`;
+  for (let i = 0; i < material.length; i++) h = (h * 31 + material.charCodeAt(i)) | 0;
+  return `${url}#${h}`;
+}
+
 /** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
-async function accessToken(credential: string): Promise<{ token: string; diag: ChamadaDiag }> {
+async function accessToken(
+  credential: string,
+  opts?: { renovar?: boolean },
+): Promise<{ token: string; diag: ChamadaDiag }> {
+  const cacheUrl = tokenUrl();
+  const chave = cacheUrl ? chaveCache(credential, cacheUrl) : null;
+  if (chave) {
+    const guardado = tokenCache.get(chave);
+    // `renovar` é o caminho do 401: o token guardado já não serve.
+    if (!opts?.renovar && guardado && guardado.expiraEm > Date.now()) {
+      return { token: guardado.token, diag: guardado.diag };
+    }
+    if (guardado) tokenCache.delete(chave);
+  }
+
+  const novo = await pedirToken(credential);
+  if (chave) {
+    tokenCache.set(chave, {
+      token: novo.token,
+      // Margem de 60s antes do vencimento informado pela Receita.
+      expiraEm: Date.now() + Math.max(30, novo.expiraEmSeg - 60) * 1_000,
+      diag: novo.diag,
+    });
+  }
+  return { token: novo.token, diag: novo.diag };
+}
+
+async function pedirToken(
+  credential: string,
+): Promise<{ token: string; expiraEmSeg: number; diag: ChamadaDiag }> {
+
   const url = tokenUrl();
   if (!url) {
     throw new ApuracaoGatewayError(
@@ -320,7 +384,9 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
   const tentativas: Array<{ modo: ModoAuth; status: number | null; erro?: string }> = [];
   let ultimo: { diag: ChamadaDiag; erro: ApuracaoGatewayError } | null = null;
 
-  for (const modo of modos) {
+  let retries429 = 0;
+  for (let i = 0; i < modos.length; i++) {
+    const modo = modos[i] as ModoAuth;
     const { headers, body } = requisicaoToken(credential, modo);
     let res: Response;
     try {
@@ -341,8 +407,13 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
 
     if (res.ok) {
       let token: string | undefined;
+      let expiraEmSeg = 300;
       try {
-        token = (JSON.parse(text) as { access_token?: string }).access_token;
+        const corpo = JSON.parse(text) as { access_token?: string; expires_in?: number };
+        token = corpo.access_token;
+        if (Number.isFinite(corpo.expires_in) && (corpo.expires_in as number) > 0) {
+          expiraEmSeg = corpo.expires_in as number;
+        }
       } catch {
         token = undefined;
       }
@@ -351,7 +422,7 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
         tentativas.push({ modo, status: res.status });
         diag.tentativas = tentativas;
         console.info("[rtc-apuracao] token obtido", { modo });
-        return { token, diag };
+        return { token, expiraEmSeg, diag };
       }
       // 200 sem access_token: o corpo não traz token para vazar e é a única
       // pista de que o formato da resposta mudou.
@@ -370,6 +441,26 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
     tentativas.push({ modo, status: res.status, erro: detalhe });
     console.error("[rtc-apuracao] token recusado", { modo, status: res.status, detalhe });
 
+    // 429 não é credencial errada: é limite de requisições do próprio /token.
+    // Espera o que a Receita pedir (no máximo 5s) e repete o MESMO modo.
+    if (res.status === 429) {
+      if (retries429 < 2) {
+        retries429 += 1;
+        await dormir(esperaRetryAfter(res));
+        i -= 1;
+        continue;
+      }
+      diag.tentativas = tentativas;
+      throw comDiag(
+        new ApuracaoGatewayError(
+          "rate_limited",
+          "A Receita está limitando as requisições neste momento. Tente novamente em instantes — nenhuma consulta da cota diária foi usada.",
+          429,
+        ),
+        diag,
+      );
+    }
+
     const autenticacao = res.status === 400 || res.status === 401 || res.status === 403;
     const erro = new ApuracaoGatewayError(
       "no_credential",
@@ -380,6 +471,7 @@ async function accessToken(credential: string): Promise<{ token: string; diag: C
     ultimo = { diag, erro };
     if (!autenticacao) break;
   }
+
 
   const final = ultimo as { diag: ChamadaDiag; erro: ApuracaoGatewayError };
   final.diag.tentativas = tentativas;
@@ -1259,6 +1351,11 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
        *
        * Agora o token é escolhido ANTES: enquanto nenhum tíquete foi gasto,
        * trocar de token é de graça. Depois, não há segunda chance.
+       *
+       * O cache de token da correção do 429 (vinda pelo Lovable) fica por baixo
+       * disto: quando `tokenParaDownload` precisa de um token novo, `accessToken`
+       * devolve o guardado em memória se ainda valer. As duas correções se
+       * somam — uma evita martelar o /token, a outra evita gastar o tíquete.
        */
       const token = await tokenParaDownload(
         admin,

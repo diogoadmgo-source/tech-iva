@@ -4,13 +4,13 @@ import iconAsset from "@/assets/techiva-icon.png.asset.json";
 export const brandLogoUrl = logoAsset.url;
 export const brandIconUrl = iconAsset.url;
 
-/** Lockup completo (símbolo + wordmark TECH IVA%). Use sobre superfícies escuras. */
+/** Lockup completo (símbolo + wordmark TECH IVA%), adaptado ao tema claro. */
 export function BrandLogo({ className = "h-8 w-auto" }: { className?: string }) {
   return (
     <img
       src={brandLogoUrl}
       alt="TECH-IVA"
-      className={className}
+      className={`brand-mark ${className}`}
       loading="eager"
       decoding="async"
     />
@@ -26,6 +26,6 @@ export function BrandIcon({
   alt?: string;
 }) {
   return (
-    <img src={brandIconUrl} alt={alt} className={className} loading="lazy" decoding="async" />
+    <img src={brandIconUrl} alt={alt} className={`brand-mark ${className}`} loading="lazy" decoding="async" />
   );
 }
