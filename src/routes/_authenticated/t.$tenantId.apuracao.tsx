@@ -584,7 +584,12 @@ function ApuracaoPage() {
                 try {
                   const r = await pendentes.mutateAsync();
                   if (r.processadas > 0) toast.success(`${r.processadas} apuração(ões) baixada(s) da Receita.`);
-                  else if (r.falhas.length > 0) toast.error(r.falhas[0] ?? "Falha ao baixar a apuração.");
+                  // 60 s, como no teste da credencial: a mensagem pode ser o motivo
+                  // exato de a Receita recusar ou de o arquivo não ter sido
+                  // entendido (0234) — some rápido demais para ser lida em 4 s, e a
+                  // tela não a mostra em outro lugar.
+                  else if (r.falhas.length > 0)
+                    toast.error(r.falhas[0] ?? "Falha ao baixar a apuração.", { duration: 60_000 });
                   else toast.info("Nenhum retorno da Receita aguardando download.");
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : "Falha ao reprocessar.");

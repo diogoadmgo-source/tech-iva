@@ -616,6 +616,7 @@ from rtc_apuracao order by solicitado_em desc limit 1;
 | Resultado | Conclusão | Próximo passo |
 |---|---|---|
 | `download_em` preenchido | Hipótese confirmada: era cedo demais | Fase 4 do roteiro pode começar; ajustar a espera com o tempo real observado |
+| `download_em` preenchido, mas `status = 'erro'` com "Não entendemos o arquivo da Receita…" | O download funcionou; o arquivo real tem formato diferente do manual (0234) | Nada foi lançado e o arquivo está em `payload`. Ler o `payload`, ajustar `rtc_apuracao_ingest_json` ao formato real e rodar a ingestão de novo sobre ele no SQL Editor — sem nova consulta |
 | 401 com 10 min | Ainda cedo, ou hipótese errada | Repetir no dia seguinte com `ESPERA_MINIMA_DOWNLOAD_MS = 60 * 60 * 1000` |
 | 401 também com 60 min | Hipótese derrubada | Parar de ajustar tempo. Investigar a forma de enviar o tíquete (ele tem sufixo `.XXXXXXXX`) com a evidência do histórico — sem gastar consulta em palpite |
 
