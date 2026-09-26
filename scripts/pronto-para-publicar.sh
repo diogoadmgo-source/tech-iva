@@ -10,7 +10,11 @@ cd "$(git rev-parse --show-toplevel)"
 falhou=0
 
 echo "1/4 Conferindo o repositório remoto..."
-git fetch origin --quiet
+if git fetch origin --quiet; then
+  fetch_ok=1
+else
+  fetch_ok=0
+fi
 
 pendentes=""
 ignorados=""
@@ -23,9 +27,19 @@ while IFS= read -r linha; do
     pendentes="$pendentes$linha"$'\n'
     continue
   fi
-  # arquivo já versionado e modificado: se a única diferença é quebra de
-  # linha (ex.: src/routeTree.gen.ts é regravado com LF a cada teste),
-  # isso não é uma alteração de verdade — ignora.
+  case "$status" in
+    *R*|*C*)
+      # renomeação/cópia: "$arquivo" seria "antigo -> novo", que não bate
+      # com nenhum caminho real — nunca elegível para a isenção de quebra
+      # de linha, sempre conta como pendente.
+      pendentes="$pendentes$linha"$'\n'
+      continue
+      ;;
+  esac
+  # arquivo já versionado e modificado (sem ser renomeação/cópia): se a
+  # única diferença é quebra de linha (ex.: src/routeTree.gen.ts é
+  # regravado com LF a cada teste), isso não é uma alteração de verdade —
+  # ignora.
   if git diff --ignore-cr-at-eol --quiet -- "$arquivo" \
      && git diff --cached --ignore-cr-at-eol --quiet -- "$arquivo"; then
     ignorados="$ignorados  · ignorado (só quebra de linha): $arquivo"$'\n'
@@ -47,19 +61,24 @@ else
 fi
 
 echo "2/4 Conferindo se tudo foi enviado..."
-a_enviar=$(git rev-list --count origin/main..HEAD)
-a_trazer=$(git rev-list --count HEAD..origin/main)
-if [ "$a_enviar" -gt 0 ]; then
-  echo "  ✗ $a_enviar alteração(ões) gravada(s) aqui e NÃO enviada(s)."
-  echo "      O Lovable não as vê. Envie com: git push origin main"
+if [ "$fetch_ok" -eq 0 ]; then
+  echo "  ✗ Não consegui falar com o GitHub — não dá para garantir que tudo foi enviado."
   falhou=1
 else
-  echo "  ✓ Tudo o que está gravado aqui foi enviado"
-fi
-if [ "$a_trazer" -gt 0 ]; then
-  echo "  ✗ O remoto tem $a_trazer alteração(ões) que não estão aqui (provavelmente do Lovable)."
-  echo "      Traga com: git pull --no-rebase origin main"
-  falhou=1
+  a_enviar=$(git rev-list --count origin/main..HEAD)
+  a_trazer=$(git rev-list --count HEAD..origin/main)
+  if [ "$a_enviar" -gt 0 ]; then
+    echo "  ✗ $a_enviar alteração(ões) gravada(s) aqui e NÃO enviada(s)."
+    echo "      O Lovable não as vê. Envie com: git push origin main"
+    falhou=1
+  else
+    echo "  ✓ Tudo o que está gravado aqui foi enviado"
+  fi
+  if [ "$a_trazer" -gt 0 ]; then
+    echo "  ✗ O remoto tem $a_trazer alteração(ões) que não estão aqui (provavelmente do Lovable)."
+    echo "      Traga com: git pull --no-rebase origin main"
+    falhou=1
+  fi
 fi
 
 echo "3/4 Conferindo os tipos..."
