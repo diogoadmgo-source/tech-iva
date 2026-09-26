@@ -50,3 +50,22 @@ o que a Fase 2 mostra primeiro e se a Fase 6 é mesmo o canal.
   resposta = erro explícito, nunca zero.
 - **Ausente não é zero.** Valor que não sabemos aparece como "—", nunca R$ 0,00.
 - **Linguagem clara**, sem jargão, em tudo que o usuário lê.
+
+## Pendências registradas ao fechar a Fase 0 (25/09/2026)
+
+Achadas nas revisões e deixadas, de propósito, para a próxima fase. Nenhuma
+bloqueia o experimento da Receita.
+
+1. **Erro na leitura do arquivo da Receita some da tela.** O motivo aparece
+   num aviso de 60 segundos; depois a tela volta a dizer "ainda não
+   consultada" — falso, e convida a gastar a segunda consulta do dia. Mostrar o
+   erro gravado na linha da apuração.
+2. **"Usamos 1 consulta automática por dia"** (ajuda da tela de apuração) —
+   conferir se é verdade; hoje nada consulta nem baixa sozinho.
+3. **Nota nossa ainda não calculada vale 0 no banco** (item 12 da auditoria
+   de zeros) — vira plano próprio antes de qualquer empresa com notas reais
+   usar a conciliação.
+4. **Ainda viram zero na leitura do arquivo da Receita:** valores extinto /
+   não extinto ausentes; grupo ausente ao lado de grupo presente.
+5. **Decisões de produto** listadas na auditoria de zeros (itens 4, 9/10, 11 e
+   o e-mail semanal): qual número mostrar quando não sabemos.
