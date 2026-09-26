@@ -1325,9 +1325,10 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     /*
      * Experimento de 23/09 — ver src/lib/rtc-v2/espera.ts. Enquanto for cedo, o
      * tíquete NÃO é tocado: ele tem um único acesso. Nada é marcado como erro;
-     * a linha continua em 'tiquete_recebido' e a fila de download a pega
-     * depois. Vale também para o download automático que o recebimento dispara
-     * na hora — que é justamente o que queimava o tíquete.
+     * a linha continua em 'tiquete_recebido' e só sai dali quando alguém
+     * clicar em "Reprocessar retorno" depois da hora — nada roda a fila de
+     * download sozinho. Vale também para o download automático que o
+     * recebimento dispara na hora — que é justamente o que queimava o tíquete.
      */
     const espera = {
       recebidoEm: (row.webhook_recebido_em as string | null) ?? null,
