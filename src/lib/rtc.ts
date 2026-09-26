@@ -40,10 +40,12 @@ export type ApuracaoDivergencia =
   | {
       disponivel: true;
       competencia: string;
+      /** `null` = a Receita não informou o total; aí não há comparação (ver apuracao-comparacao.ts). */
       receita_debito_cents: number | null;
       nosso_debito_cents: number;
-      diferenca_cents: number;
-      divergente: boolean;
+      /** Receita − nós; `null` quando não dá para calcular (migração 0233). */
+      diferenca_cents: number | null;
+      divergente: boolean | null;
       recebido_em: string | null;
     };
 

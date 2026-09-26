@@ -52,6 +52,7 @@ import {
   useTestarCredencialRtc,
   type InvoiceRow,
 } from "@/lib/rtc";
+import { compararApuracao } from "@/lib/apuracao-comparacao";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/apuracao")({
   head: () => ({
@@ -104,7 +105,13 @@ function ApuracaoPage() {
   const ap = detalhe.data?.disponivel ? detalhe.data : null;
   const d = divergencia.data;
   const disponivel = d?.disponivel === true;
-  const divergente = disponivel && d.divergente;
+  // Ausente não é zero: sem o débito da Receita não há veredito — nem "diverge",
+  // nem "bate" (ver apuracao-comparacao.ts).
+  const comparacao = d?.disponivel === true ? compararApuracao(d) : null;
+  const divergente = comparacao?.estado === "diverge";
+  const semComparacao = comparacao?.estado === "sem_comparacao";
+  const diferencaCents =
+    comparacao && comparacao.estado !== "sem_comparacao" ? comparacao.diferencaCents : null;
   const podeConsultar = quota.data?.pode_manual !== false;
   const acumulado = creditoAcumulado(detalhe.data);
   // Com poucas consultas por dia (a Receita define o limite — 2 na API v1),
@@ -138,7 +145,7 @@ function ApuracaoPage() {
     return () => clearTimeout(t);
   }, [polling]);
 
-  const compareIcon = divergente ? AlertTriangle : CheckCircle2;
+  const compareIcon = semComparacao ? Info : divergente ? AlertTriangle : CheckCircle2;
   const naoConsultadaMsg = withPeriod(
     d && "mensagem" in d ? d.mensagem : "Apuração da Receita ainda não consultada para esta competência",
   );
@@ -367,19 +374,27 @@ function ApuracaoPage() {
                   <p className="text-xs font-medium text-muted-foreground">Divergência</p>
                   <p
                     className={`mt-1 font-mono tabular text-[2rem] leading-none font-semibold tracking-[-0.02em] sm:text-[2.5rem] ${
-                      divergente ? "text-flow-out" : "text-flow-in"
+                      diferencaCents === null
+                        ? "text-muted-foreground"
+                        : divergente
+                          ? "text-flow-out"
+                          : "text-flow-in"
                     }`}
                   >
-                    {formatCents(Math.abs(d.diferenca_cents))}
+                    {diferencaCents === null ? "—" : formatCents(Math.abs(diferencaCents))}
                   </p>
                   <div className="mt-3">
-                    <Semaphore level={divergente ? "crit" : "ok"} />
+                    {diferencaCents === null ? (
+                      <Semaphore level="info" label="Sem comparação" />
+                    ) : (
+                      <Semaphore level={divergente ? "crit" : "ok"} />
+                    )}
                   </div>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Débito apurado pela Receita</p>
                   <p className="mt-1 font-mono tabular text-lg">
-                    {formatCents(d.receita_debito_cents ?? 0)}
+                    {d.receita_debito_cents === null ? "—" : formatCents(d.receita_debito_cents)}
                   </p>
                 </div>
                 <div>
@@ -390,9 +405,9 @@ function ApuracaoPage() {
                 </div>
               </div>
 
-              {divergente && (
+              {divergente && diferencaCents !== null && (
                 <p className="mt-4 text-xs text-muted-foreground">
-                  {d.diferenca_cents > 0
+                  {diferencaCents > 0
                     ? "A Receita apurou mais do que calculamos: pode haver documento emitido que não chegou até nós."
                     : "Calculamos mais do que a Receita apurou: pode haver documento que a Receita ainda não processou, ou cancelamento/devolução."}{" "}
                   <InfoHint title="Como conferir">
@@ -402,9 +417,15 @@ function ApuracaoPage() {
                 </p>
               )}
 
-              {!divergente && (
+              {comparacao?.estado === "bate" && (
                 <p className="mt-4 text-sm text-flow-in">
                   Seu cálculo bate com a apuração da Receita nesta competência.
+                </p>
+              )}
+
+              {comparacao?.estado === "sem_comparacao" && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  {comparacao.motivo} A conferência nota a nota, logo abaixo, continua valendo.
                 </p>
               )}
         </section>
