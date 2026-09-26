@@ -32,6 +32,25 @@ fontes corrigiram o mesmo defeito no mesmo arquivo, de jeitos diferentes.
   (fora do controle de versão; a migração em si é que fica versionada em
   `supabase/migrations/`).
 
+## Ordem: publicar o código antes de colar mudanças do banco
+
+Regra: **sempre publique o código mais recente ANTES de colar uma migração**
+no SQL Editor. Migração nova costuma mudar o que o banco devolve (por exemplo,
+passar a devolver "sem valor" onde antes devolvia zero), e só o código novo
+sabe mostrar isso direito.
+
+A ordem desta rodada (Fase 0), passo a passo:
+
+1. Publicar a versão com a Tarefa 6 (commit `ae1b6eb` ou posterior), depois de
+   `bash scripts/pronto-para-publicar.sh` dizer **PRONTO PARA PUBLICAR**.
+2. Colar no SQL Editor as migrações 0231, 0232, 0233 e 0234 (arquivos em
+   `docs/colar-no-supabase/`). Entre si, a ordem não importa.
+3. Só então fazer a consulta do experimento (plano da Fase 0, Tarefa 4, Passo 9).
+
+Por quê: a versão publicada antes da Tarefa 6 mostraria "Seu cálculo bate com
+a apuração da Receita" sem ter comparado nada, assim que a primeira apuração
+chegasse.
+
 ## Verificação automática
 
 Todo envio para a `main` roda tipos e testes no GitHub

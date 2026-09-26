@@ -1,5 +1,9 @@
 -- 0233_apuracao_divergencia_ausente_nao_e_zero.sql
 --
+-- ATENÇÃO: aplicar só com o código da Tarefa 6 (commit ae1b6eb ou posterior)
+-- já publicado. A versão anterior diria "Seu cálculo bate com a apuração da
+-- Receita" sem ter comparado nada. Ordem completa: docs/fluxo-de-trabalho.md.
+--
 -- apuracao_divergencia fazia coalesce(v_receita.debitos_cents, 0) na diferença
 -- e no "divergente". Nenhuma rotina grava rtc_apuracao.debitos_cents (conferido
 -- em 23/09: nem rtc_apuracao_ingest_json, nem rtc_apuracao_upsert, nem o código

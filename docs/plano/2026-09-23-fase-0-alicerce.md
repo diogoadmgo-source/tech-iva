@@ -595,7 +595,10 @@ bash scripts/pronto-para-publicar.sh && git push origin main
 
 - [ ] **Passo 9: O experimento (usuário + assistente, no dia seguinte à publicação)**
 
-Pré-requisitos: código publicado **depois** de `pronto-para-publicar.sh` dizer PRONTO; migração 0231 aplicada (arquivo em `supabase/migrations/20260917120000_0231_fila_nao_repete_tiquete_gasto.sql`).
+Pré-requisitos, nesta ordem (ver `docs/fluxo-de-trabalho.md`, "Ordem: publicar o código antes de colar mudanças do banco"):
+
+- código com a Tarefa 6 publicado (commit `ae1b6eb` ou posterior), **depois** de `pronto-para-publicar.sh` dizer PRONTO;
+- migrações 0231, 0232, 0233 e 0234 aplicadas (arquivos em `docs/colar-no-supabase/`; a 0231 é `supabase/migrations/20260917120000_0231_fila_nao_repete_tiquete_gasto.sql`).
 
 1. Usuário: **uma** consulta. Não clicar em mais nada.
 2. Esperar 10 minutos. A mensagem na tela diz a partir de que horas.
