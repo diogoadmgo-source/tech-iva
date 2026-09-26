@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Arquivos prontos para colar no SQL Editor do Supabase (não versionados;
+# a migração de verdade fica em supabase/migrations/)
+docs/colar-no-supabase/
