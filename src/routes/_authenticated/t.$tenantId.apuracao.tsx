@@ -336,12 +336,17 @@ function ApuracaoPage() {
         {divergencia.isLoading ? (
           <Skeleton className="h-32 w-full" />
         ) : !disponivel ? (
-          <Panel title="Apuração ainda não consultada" icon={Info}>
+          <Panel
+            title="Apuração ainda não consultada"
+            icon={Info}
+            help={
+              <p>
+                A Receita responde de forma assíncrona: ao consultar, a estrutura completa da
+                apuração e a comparação com o seu cálculo aparecem aqui.
+              </p>
+            }
+          >
             <p className="text-sm text-muted-foreground">{naoConsultadaMsg}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              A Receita responde de forma assíncrona: ao consultar, a estrutura completa da apuração
-              e a comparação com o seu cálculo aparecem aqui.
-            </p>
             <div className="mt-4">{consultarReceita}</div>
           </Panel>
         ) : (

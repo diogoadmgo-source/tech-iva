@@ -552,10 +552,15 @@ function PricePage() {
                       />
                       <Row label="Itens abaixo do piso" value={String(totals?.below_floor ?? 0)} />
                     </dl>
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Piso = custo líquido do crédito na entrada, recomposto pela alíquota do ano e
-                      pelas despesas variáveis. O alvo aplica a margem sobre esse piso.
-                    </p>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span>Como o piso é calculado</span>
+                      <InfoHint title="Piso e alvo">
+                        <p>
+                          Piso = custo líquido do crédito na entrada, recomposto pela alíquota do
+                          ano e pelas despesas variáveis. O alvo aplica a margem sobre esse piso.
+                        </p>
+                      </InfoHint>
+                    </div>
                   </details>
                 </div>
               )}
