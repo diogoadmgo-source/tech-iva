@@ -17,6 +17,7 @@ import {
   type Paged,
 } from "@/lib/paginate";
 import { motivoDivergencia } from "@/lib/conciliacao-motivo";
+import { exigirLinhasAtualizadas } from "@/lib/conciliacao-linhas";
 
 /**
  * Integração RTC (Plataforma CBS — Manual RFB maio/2026).
@@ -565,7 +566,7 @@ export function useConciliacaoDocumentos(
         p_so_divergentes: soDivergentes,
       });
       if (error) throw new Error(error.message);
-      return (data ?? []) as ConciliacaoDoc[];
+      return exigirLinhasAtualizadas((data ?? []) as ConciliacaoDoc[]);
     },
   });
 }
@@ -618,7 +619,7 @@ async function fetchConciliacaoPage(
     p_search: q.search || null,
   });
   if (error) throw new Error(error.message);
-  const rows = (data ?? []) as ConciliacaoPageRow[];
+  const rows = exigirLinhasAtualizadas((data ?? []) as ConciliacaoPageRow[]);
   return {
     rows: rows.map(({ total_count: _ignored, ...r }) => r),
     total: rows[0]?.total_count ?? 0,
