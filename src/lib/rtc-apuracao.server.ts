@@ -27,6 +27,7 @@ import { sealSecret, unsealSecret } from "@/lib/credentials.server";
 import { mesCorrenteEmSaoPaulo } from "@/lib/datas";
 import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
+import { cedoDemaisParaBaixar, liberacaoDoDownload } from "@/lib/rtc-v2/espera";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
 import { tokenGuardadoUtilizavel, urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
 import { versaoDaAbertura } from "@/lib/rtc-v2/versao";
@@ -1262,7 +1263,7 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 
   const { data: row, error } = await table(admin, "rtc_apuracao")
     .select(
-      "id, tenant_id, competencia, status, solicitado_em, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
+      "id, tenant_id, competencia, status, solicitado_em, webhook_recebido_em, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
     )
     .eq("id", apuracaoId)
     .maybeSingle();
@@ -1321,6 +1322,35 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     await marcarErro(admin, apuracaoId, motivo);
     return { ok: false, id: apuracaoId, motivo };
   } else if (!payload) {
+    /*
+     * Experimento de 23/09 — ver src/lib/rtc-v2/espera.ts. Enquanto for cedo, o
+     * tíquete NÃO é tocado: ele tem um único acesso. Nada é marcado como erro;
+     * a linha continua em 'tiquete_recebido' e a fila de download a pega
+     * depois. Vale também para o download automático que o recebimento dispara
+     * na hora — que é justamente o que queimava o tíquete.
+     */
+    const espera = {
+      recebidoEm: (row.webhook_recebido_em as string | null) ?? null,
+      solicitadoEm: (row.solicitado_em as string | null) ?? null,
+      agora: Date.now(),
+    };
+    if (cedoDemaisParaBaixar(espera)) {
+      const libera = liberacaoDoDownload(espera) as number;
+      const hora = new Date(libera).toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      await registrarNota(admin, apuracaoId, "download_adiado", "info", {
+        libera_em: new Date(libera).toISOString(),
+      });
+      return {
+        ok: false,
+        id: apuracaoId,
+        motivo: `A Receita ainda está preparando o arquivo. Use "Reprocessar retorno" a partir das ${hora}.`,
+      };
+    }
+
     let credential: Credential;
     try {
       credential = await loadApiKey(admin, row.tenant_id as string);
