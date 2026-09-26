@@ -1,0 +1,27 @@
+name: Verificação
+
+# Roda em todo envio para a principal — inclusive os commits automáticos do
+# Lovable, que hoje não passam por verificação nenhuma — e em pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # O projeto trava versões em bun.lock; usar npm aqui criaria outra árvore.
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Instalar dependências (versões travadas)
+        run: bun install --frozen-lockfile
+
+      - name: Tipos
+        run: bunx tsc --noEmit -p tsconfig.json
+
+      - name: Testes
+        run: bunx vitest run
