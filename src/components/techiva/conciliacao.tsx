@@ -108,7 +108,8 @@ export function ConciliacaoPanel({
               passa a ser uma nota com nome e valor.
             </p>
             <p>
-              Linha sem valor no nosso cálculo é nota que a Receita tem e nós não recebemos.
+              “—” no nosso cálculo quer dizer que não temos o valor: ou a nota não chegou até nós,
+              ou chegou e ainda não foi calculada. A linha diz qual dos dois. “—” não é zero.
               “Ainda devido” é o que falta pagar naquele documento.
             </p>
             <p>
