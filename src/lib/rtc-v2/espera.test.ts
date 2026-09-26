@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  avisoAposSolicitar,
-  cedoDemaisParaBaixar,
-  ESPERA_MINIMA_DOWNLOAD_MS,
-  liberacaoDoDownload,
-  minutosDeEspera,
-} from "./espera";
+import {avisoAposSolicitar, cedoDemaisParaBaixar, ESPERA_MINIMA_DOWNLOAD_MS, liberacaoDoDownload} from "./espera";
 
 const RETORNO = "2026-09-23T11:59:49.000Z";
 const T0 = Date.parse(RETORNO);
@@ -53,22 +47,18 @@ describe("cedo demais para baixar?", () => {
 });
 
 describe("aviso depois de consultar a Receita", () => {
-  it("diz os minutos a partir da constante, sem número fixo", () => {
-    expect(minutosDeEspera()).toBe(Math.ceil(ESPERA_MINIMA_DOWNLOAD_MS / 60_000));
-    expect(avisoAposSolicitar()).toContain(`daqui a ${minutosDeEspera()} minuto`);
-  });
-
-  it("manda clicar em Reprocessar retorno uma vez, e não promete atualizar sozinha", () => {
+  // O aviso antigo mandava clicar em "Reprocessar retorno" em 10 minutos. Isso
+  // pressupunha que o comprovante da resposta ao pedido servia para baixar — não
+  // serve (26/09). Quem avisa que o arquivo está pronto é a Receita, pelo
+  // endereço de retorno, e ainda não sabemos quanto ela demora.
+  it("diz que é a Receita quem avisa, sem prometer prazo", () => {
     const aviso = avisoAposSolicitar();
-    expect(aviso).toContain('"Reprocessar retorno"');
-    expect(aviso).toContain("uma vez");
+    expect(aviso).toContain("a Receita avisa");
+    expect(aviso).not.toMatch(/daqui a d+ minuto/);
     expect(aviso).not.toMatch(/sozinh/);
   });
 
-  it("arredonda para cima e acerta o singular", () => {
-    expect(minutosDeEspera(90_000)).toBe(2);
-    expect(minutosDeEspera(60_000)).toBe(1);
-    expect(avisoAposSolicitar(60_000)).toContain("daqui a 1 minuto.");
-    expect(avisoAposSolicitar(10 * 60_000)).toContain("daqui a 10 minutos.");
+  it("protege a segunda consulta do dia", () => {
+    expect(avisoAposSolicitar()).toContain("Não faça outra consulta hoje");
   });
 });

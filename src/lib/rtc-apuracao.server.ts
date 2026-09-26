@@ -29,6 +29,7 @@ import { lerAbertura } from "@/lib/rtc-v2/abertura";
 import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
 import { cedoDemaisParaBaixar, liberacaoDoDownload } from "@/lib/rtc-v2/espera";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
+import { lerRespostaPedidoV1 } from "@/lib/rtc-v2/resposta-pedido";
 import { tokenGuardadoUtilizavel, urlAssinadaUtilizavel } from "@/lib/rtc-v2/validade";
 import { versaoDaAbertura } from "@/lib/rtc-v2/versao";
 
@@ -1086,14 +1087,41 @@ async function abrirSolicitacao(
       });
     }
 
-    // Alguns ambientes devolvem o tíquete já na resposta; se vier, adianta o passo 2.
-    const tiquete =
-      (resposta["tiqueteDownload"] as string | undefined) ??
-      (resposta["tiquete"] as string | undefined);
-    if (tiquete) {
+    /*
+     * O `tiquete` desta resposta é o do PEDIDO, não o de download. O manual,
+     * Passo 2: "Retorno: tíquete da solicitação". O de download chega depois,
+     * pelo endereço de retorno, quando a Receita termina o arquivo.
+     *
+     * Aqui havia o contrário: o código tratava esse `tiquete` como de download,
+     * chamava ele mesmo `rtc_apuracao_receber_tiquete` — fingindo ser a
+     * Receita — e tentava baixar. Isso (1) gastava a tentativa com o comprovante
+     * errado: 401 "Tíquete inexistente" em 15/09, 23/09 e 26/09; e (2) apagava
+     * o `webhook_ref`, fechando o endereço de retorno para a chamada verdadeira
+     * da Receita. Os registros de 26/09 provaram: a única chamada ao retorno em
+     * 24 horas foi a nossa, 73 ms depois do 201.
+     *
+     * Agora o comprovante do pedido só é guardado como o que é. A linha fica em
+     * `solicitada`, com o endereço de retorno aberto, esperando a Receita. Só um
+     * campo explicitamente de download (`tiqueteDownload`) ainda adianta o
+     * passo — ver `lerRespostaPedidoV1`.
+     */
+    const lida = lerRespostaPedidoV1(resposta);
+    if (opcoes.apiVersao === 1 && lida.tiqueteSolicitacao) {
+      // Seguro para a fila da v2: ela filtra `api_versao = 2`.
+      const marcado = await table(admin, "rtc_apuracao")
+        .update({ tiquete_solicitacao: lida.tiqueteSolicitacao })
+        .eq("id", row.id);
+      // Não lança: o pedido já foi aceito e a consulta do dia já foi gasta.
+      if (marcado.error) {
+        await registrarNota(admin, row.id, "tiquete_solicitacao_nao_gravado", "aviso", {
+          erro: String(marcado.error.message),
+        });
+      }
+    }
+    if (lida.tiqueteDownload) {
       await rpc(admin)("rtc_apuracao_receber_tiquete", {
         p_ref: row.webhook_ref,
-        p_payload: resposta,
+        p_payload: { tiqueteDownload: lida.tiqueteDownload, origem: "resposta_do_pedido" },
       });
       void processarApuracao(row.id).catch(() => undefined);
     }

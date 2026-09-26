@@ -47,21 +47,15 @@ export function cedoDemaisParaBaixar(e: EntradaEspera): boolean {
   return libera !== null && e.agora < libera;
 }
 
-/** A espera em minutos inteiros, arredondada para cima — é o que a tela diz. */
-export function minutosDeEspera(esperaMs: number = ESPERA_MINIMA_DOWNLOAD_MS): number {
-  return Math.ceil(esperaMs / 60_000);
-}
-
 /**
- * Aviso depois de "Consultar Receita" (v1). Antes a tela prometia atualizar
- * sozinha — não atualiza: nada baixa o arquivo por conta própria, só o botão
- * "Reprocessar retorno", e antes da espera ele não toca no tíquete. Os minutos
- * saem da constante acima, para o aviso nunca desmentir a regra.
+ * Aviso depois de "Consultar Receita" (v1).
  *
- * A tela não sabe se a abertura foi v1 ou v2; a v2 só liga em outubro e, até
- * lá, este é o texto certo para as duas.
+ * Antes mandava clicar em "Reprocessar retorno" em 10 minutos. Isso só fazia
+ * sentido se o comprovante da resposta ao pedido servisse para baixar — e não
+ * serve (26/09): ele é o do pedido. O de download chega pelo endereço de
+ * retorno quando a Receita termina o arquivo, e ainda não sabemos quanto isso
+ * demora. O aviso não promete prazo e protege a segunda consulta do dia.
  */
-export function avisoAposSolicitar(esperaMs: number = ESPERA_MINIMA_DOWNLOAD_MS): string {
-  const m = minutosDeEspera(esperaMs);
-  return `Solicitação enviada. A Receita prepara o arquivo: clique uma vez em "Reprocessar retorno" daqui a ${m} ${m === 1 ? "minuto" : "minutos"}.`;
+export function avisoAposSolicitar(): string {
+  return "Solicitação enviada. Agora a Receita avisa quando o arquivo estiver pronto — ainda não sabemos quanto isso demora. Não faça outra consulta hoje: esta continua aberta por até 24 horas.";
 }
