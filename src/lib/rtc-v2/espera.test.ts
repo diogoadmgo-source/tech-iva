@@ -54,7 +54,7 @@ describe("aviso depois de consultar a Receita", () => {
   it("diz que é a Receita quem avisa, sem prometer prazo", () => {
     const aviso = avisoAposSolicitar();
     expect(aviso).toContain("a Receita avisa");
-    expect(aviso).not.toMatch(/daqui a d+ minuto/);
+    expect(aviso).not.toMatch(/daqui a [0-9]+ minuto/);
     expect(aviso).not.toMatch(/sozinh/);
   });
 

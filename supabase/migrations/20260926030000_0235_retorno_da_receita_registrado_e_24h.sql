@@ -1,6 +1,10 @@
 -- 0235_retorno_da_receita_registrado_e_24h.sql
 --
--- APLICAR SÓ COM O CÓDIGO DO MESMO COMMIT PUBLICADO (ver docs/fluxo-de-trabalho.md).
+-- ORDEM DESTA MIGRAÇÃO: COLAR ANTES DE PUBLICAR o código do mesmo commit, e ninguém
+-- clica em "Consultar Receita" entre os dois passos. Motivo: o código novo chama
+-- esta função com um terceiro parâmetro (p_meta) que só existe depois dela; já o
+-- código antigo chama com dois, e o p_meta tem valor padrão — então banco novo
+-- com código antigo funciona, e o inverso daria erro 500 no retorno da Receita.
 --
 -- Descoberta de 26/09/2026: a Receita NUNCA tinha chamado o nosso endereço de
 -- retorno. O "retorno em 1 segundo com o mesmo tíquete" era o próprio código:
@@ -35,6 +39,8 @@ create table if not exists public.rtc_webhook_recebido (
   ref         text,
   payload     jsonb,
   aceito      boolean not null default false,
+  meta        jsonb,
+  erro        text,
   apuracao_id uuid references public.rtc_apuracao(id) on delete set null,
   recebido_em timestamptz not null default now()
 );
@@ -49,7 +55,12 @@ comment on table public.rtc_webhook_recebido is
 alter table public.rtc_webhook_recebido enable row level security;
 revoke all on table public.rtc_webhook_recebido from public, anon, authenticated;
 
-create or replace function public.rtc_apuracao_receber_tiquete(p_ref text, p_payload jsonb)
+-- A assinatura ganha p_meta (quem chamou; e "somente_registrar" para corpo fora do
+-- formato). Assinatura nova = drop + create, e o drop leva as permissões:
+-- reemitidas abaixo, iguais às de antes (execute só para service_role).
+drop function if exists public.rtc_apuracao_receber_tiquete(text, jsonb);
+
+create function public.rtc_apuracao_receber_tiquete(p_ref text, p_payload jsonb, p_meta jsonb default null)
 returns jsonb
 language plpgsql
 security definer
@@ -63,9 +74,19 @@ DECLARE
 BEGIN
   -- Primeiro registra, depois decide: a chamada fica guardada mesmo se for
   -- recusada logo abaixo.
-  INSERT INTO public.rtc_webhook_recebido (ref, payload)
-  VALUES (p_ref, p_payload)
+  INSERT INTO public.rtc_webhook_recebido (ref, payload, meta)
+  VALUES (p_ref, p_payload, p_meta)
   RETURNING id INTO v_log;
+
+  -- Corpo fora do formato esperado: só registra. Não casa com a solicitação,
+  -- para um conteúdo que não entendemos não consumir o endereço de retorno.
+  IF p_meta->>'somente_registrar' = 'true' THEN
+    RETURN jsonb_build_object('ok', false, 'registrado', true);
+  END IF;
+
+  -- Daqui em diante, qualquer erro é capturado: sem isto, a exceção desfaria
+  -- também o registro acima, e a chamada sumiria sem rastro.
+  BEGIN
 
   SELECT * INTO v
     FROM public.rtc_apuracao
@@ -115,11 +136,15 @@ BEGIN
   );
 
   RETURN jsonb_build_object('ok', true, 'id', v.id);
+  EXCEPTION WHEN OTHERS THEN
+    UPDATE public.rtc_webhook_recebido SET erro = SQLERRM WHERE id = v_log;
+    RETURN jsonb_build_object('ok', false, 'erro', SQLERRM);
+  END;
 END;
 $function$;
 
-revoke all on function public.rtc_apuracao_receber_tiquete(text, jsonb) from public, anon, authenticated;
-grant execute on function public.rtc_apuracao_receber_tiquete(text, jsonb) to service_role;
+revoke all on function public.rtc_apuracao_receber_tiquete(text, jsonb, jsonb) from public, anon, authenticated;
+grant execute on function public.rtc_apuracao_receber_tiquete(text, jsonb, jsonb) to service_role;
 
 create or replace function public.rtc_apuracao_expirar_pendentes()
 returns integer

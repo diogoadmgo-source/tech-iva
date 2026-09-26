@@ -2,12 +2,14 @@
  * Quanto esperar entre o retorno da Receita e o download (API v1).
  *
  * EXPERIMENTO de 23/09/2026 — não é regra da documentação. O manual da v1 não
- * diz quanto esperar. O que se sabe: o retorno chega em menos de 1 s e traz o
- * MESMO tíquete da resposta do pedido — é aviso de recebimento, não de arquivo
- * pronto. Em 23/09 cada tíquete foi tocado uma única vez e ainda assim voltou
- * 401 "Tíquete inexistente ou download já realizado". A v2 criou um endereço de
- * situação e um tempo estimado de atendimento, o que só faz sentido se for
- * preciso esperar.
+ * diz quanto esperar.
+ *
+ * CORREÇÃO de 26/09: a premissa que motivou esta espera estava errada. O
+ * "retorno em menos de 1 s com o mesmo tíquete" era o nosso próprio código
+ * fingindo ser a Receita, com o comprovante do PEDIDO — não o de download (ver
+ * rtc-v2/resposta-pedido.ts). Com isso corrigido, o download só acontece depois
+ * do retorno verdadeiro da Receita, e esta espera vira só uma folga de
+ * segurança, barata: custa minutos, e o comprovante tem um único acesso.
  *
  * Como o tíquete tem UM acesso, baixar cedo demais o perde. Esperar custa
  * minutos; errar custa a consulta do dia. O valor mora aqui e só aqui, para ser

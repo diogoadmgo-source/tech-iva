@@ -1055,7 +1055,8 @@ async function abrirSolicitacao(
     // O 201 da v2 traz `tiqueteSolicitacao` e `tEASegundos`: é o que permite
     // acompanhar pela consulta de situação sem depender do webhook chegar.
     //
-    // Só a v2 grava, e o `if` é explícito de propósito: o que a v1 devolve no
+    // Aqui só a v2 (a v1 grava o comprovante do pedido logo abaixo, ver
+    // lerRespostaPedidoV1). Histórico: o `if` era explícito porque o que a v1 devolve no
     // 201 não foi verificado, e uma linha v1 com `tiquete_solicitacao` entraria
     // na fila de acompanhamento da v2 — consultada no endereço v2 com um
     // tíquete v1 e condenada ao erro de prazo. A fila também filtra por
@@ -1356,7 +1357,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
      * a linha continua em 'tiquete_recebido' e só sai dali quando alguém
      * clicar em "Reprocessar retorno" depois da hora — nada roda a fila de
      * download sozinho. Vale também para o download automático que o
-     * recebimento dispara na hora — que é justamente o que queimava o tíquete.
+     * recebimento dispara na hora. (Em 26/09 descobriu-se que o que queimava o
+     * tíquete era outra coisa: o comprovante do pedido usado como de download.)
      */
     const espera = {
       recebidoEm: (row.webhook_recebido_em as string | null) ?? null,
@@ -1581,7 +1583,8 @@ export async function processarPendentes(tenantId?: string): Promise<ProcessarRe
   // O filtro por `api_versao` é o que segura esta fila do lado da v2: sem ele,
   // uma linha v1 aberta e ainda sem webhook entraria aqui e seria consultada no
   // endereço v2 com um tíquete v1 — mexendo em v1 que já roda em produção. A
-  // abertura só marca `tiquete_solicitacao` na v2; este filtro é a outra metade
+  // abertura marca `tiquete_solicitacao` também na v1 (desde 26/09), então este
+  // filtro por versão é o que segura a v1 fora desta fila — a outra metade
   // da mesma guarda. A coluna vem da 0226, junto com `tea_segundos` e com a
   // assinatura nova de `rtc_apuracao_solicitar` que a abertura (v1 inclusive)
   // já exige — se a 0226 não estiver aplicada, nada deste arquivo funciona.

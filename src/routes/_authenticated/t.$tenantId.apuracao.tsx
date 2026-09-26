@@ -216,10 +216,10 @@ function ApuracaoPage() {
       onClick={async () => {
         try {
           await request.mutateAsync(competencia);
-          // A auto-atualização fica ligada por 2 min, mas na v1 o arquivo só é
-          // baixado quando o usuário clica em "Reprocessar retorno" depois da
-          // espera (rtc-v2/espera.ts). O aviso diz isso, com os minutos da
-          // constante, e fica na tela até ser lido.
+          // A auto-atualização fica ligada por 2 min. Na v1 o arquivo só existe
+          // depois que a Receita chama o endereço de retorno — não sabemos quanto
+          // ela demora — e só é baixado quando alguém clica em "Reprocessar
+          // retorno". O aviso não promete prazo e fica na tela até ser lido.
           setPolling(true);
           toast.success(avisoAposSolicitar(), { duration: 60_000 });
         } catch (error) {
