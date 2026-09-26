@@ -30,9 +30,10 @@
 -- 3. `rtc_apuracao_expirar_pendentes` passa a usar as mesmas 24 horas (hoje
 --    nada a chama sozinho — não há pg_cron —, mas não pode desmentir a regra).
 --
--- `create or replace` basta nas duas funções: assinatura e retorno não mudam.
--- Permissões reemitidas iguais às de 26/09: execute só para service_role
--- (postgres é o dono).
+-- `rtc_apuracao_receber_tiquete` ganha um parâmetro (p_meta), então é drop +
+-- create; `rtc_apuracao_expirar_pendentes` não muda de assinatura (create or
+-- replace). Permissões reemitidas iguais às de 26/09: execute só para
+-- service_role (postgres é o dono).
 
 create table if not exists public.rtc_webhook_recebido (
   id          bigint generated always as identity primary key,
@@ -44,6 +45,12 @@ create table if not exists public.rtc_webhook_recebido (
   apuracao_id uuid references public.rtc_apuracao(id) on delete set null,
   recebido_em timestamptz not null default now()
 );
+
+-- Se uma versão anterior desta migração já tiver criado a tabela sem estas
+-- colunas, o "if not exists" acima a pularia e todo retorno falharia.
+alter table public.rtc_webhook_recebido
+  add column if not exists meta jsonb,
+  add column if not exists erro text;
 
 create index if not exists rtc_webhook_recebido_recebido_em_idx
   on public.rtc_webhook_recebido (recebido_em desc);
