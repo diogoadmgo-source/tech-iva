@@ -227,9 +227,14 @@ export function ConciliacaoPanel({
                 </thead>
                 <tbody>
                   {rows.map((doc) => {
-                    const diff = doc.diferenca_cents ?? 0;
-                    const semNosso = (doc.nosso_cents ?? 0) === 0 && (doc.receita_cents ?? 0) > 0;
-                    const level: SemaphoreLevel = diff === 0 ? "ok" : semNosso ? "crit" : "warn";
+                    // Ausente não é zero: `null` = não sabemos. Nota imune (nosso = 0)
+                    // não é "sem correspondente" — era vermelho crítico por engano.
+                    const diff = doc.diferenca_cents;
+                    const level: SemaphoreLevel = !doc.tem_correspondente
+                      ? "crit"
+                      : diff === 0
+                        ? "ok"
+                        : "warn";
                     return (
                       <tr key={doc.debito_id} className="row-hover border-b border-border/50">
                         <td className="px-3 py-2.5 align-top">
@@ -265,14 +270,14 @@ export function ConciliacaoPanel({
                           {formatCents(doc.receita_cents ?? 0)}
                         </td>
                         <td className="num px-3 py-2.5 align-top">
-                          {formatCents(doc.nosso_cents ?? 0)}
+                          {doc.nosso_cents === null ? "—" : formatCents(doc.nosso_cents)}
                         </td>
                         <td
                           className={`num px-3 py-2.5 align-top ${
-                            diff === 0 ? "" : diff > 0 ? "text-flow-out" : "text-primary"
+                            diff === null || diff === 0 ? "" : diff > 0 ? "text-flow-out" : "text-primary"
                           }`}
                         >
-                          {formatCents(diff)}
+                          {diff === null ? "—" : formatCents(diff)}
                         </td>
                       </tr>
                     );

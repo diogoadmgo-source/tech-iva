@@ -16,6 +16,7 @@ import {
   useRowCount,
   type Paged,
 } from "@/lib/paginate";
+import { motivoDivergencia } from "@/lib/conciliacao-motivo";
 
 /**
  * Integração RTC (Plataforma CBS — Manual RFB maio/2026).
@@ -545,6 +546,8 @@ export type ConciliacaoDoc = {
   nao_extinto_cents: number | null;
   situacao: string | null;
   grupo: "corrente" | "ajuste" | "extemporaneo" | null;
+  /** Existe nota nossa com a mesma chave. Vem do banco a partir da migração 0232. */
+  tem_correspondente: boolean;
 };
 
 export function useConciliacaoDocumentos(
@@ -727,16 +730,8 @@ export const GRUPO_LABEL: Record<string, string> = {
   extemporaneo: "Extemporâneo",
 };
 
-/** Motivo provável da divergência, em linguagem de quem confere nota. */
-export function motivoDivergencia(doc: ConciliacaoDoc): string {
-  const nosso = doc.nosso_cents ?? 0;
-  const diff = doc.diferenca_cents ?? 0;
-  if (nosso === 0) return "Nota na Receita sem correspondente aqui";
-  if (doc.situacao === "cancelado") return "Documento cancelado na Receita";
-  if (diff > 0) return "Receita apurou mais do que calculamos";
-  if (diff < 0) return "Calculamos mais do que a Receita apurou";
-  return "Valores iguais";
-}
+/** A regra mora em conciliacao-motivo.ts, pura e testada. */
+export { motivoDivergencia };
 
 /** CSV da conciliação — ponto-e-vírgula e valores em reais, pronto para o ERP. */
 export function conciliacaoCsv(rows: ConciliacaoDoc[]): string {
@@ -752,7 +747,8 @@ export function conciliacaoCsv(rows: ConciliacaoDoc[]): string {
     "grupo",
     "motivo",
   ].join(";");
-  const money = (c: number | null) => ((c ?? 0) / 100).toFixed(2).replace(".", ",");
+  // Célula vazia para desconhecido — "0,00" no CSV seria afirmar um valor que não temos.
+  const money = (c: number | null) => (c === null ? "" : (c / 100).toFixed(2).replace(".", ","));
   const txt = (v: string | null | undefined) => (v ?? "").replace(/;/g, ",");
   const body = rows
     .map((r) =>
