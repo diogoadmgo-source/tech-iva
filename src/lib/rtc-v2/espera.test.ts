@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { cedoDemaisParaBaixar, ESPERA_MINIMA_DOWNLOAD_MS, liberacaoDoDownload } from "./espera";
+import {
+  avisoAposSolicitar,
+  cedoDemaisParaBaixar,
+  ESPERA_MINIMA_DOWNLOAD_MS,
+  liberacaoDoDownload,
+  minutosDeEspera,
+} from "./espera";
 
 const RETORNO = "2026-09-23T11:59:49.000Z";
 const T0 = Date.parse(RETORNO);
@@ -43,5 +49,26 @@ describe("cedo demais para baixar?", () => {
     expect(
       cedoDemaisParaBaixar({ recebidoEm: RETORNO, solicitadoEm: null, agora: T0 + 24 * 3600_000 }),
     ).toBe(false);
+  });
+});
+
+describe("aviso depois de consultar a Receita", () => {
+  it("diz os minutos a partir da constante, sem número fixo", () => {
+    expect(minutosDeEspera()).toBe(Math.ceil(ESPERA_MINIMA_DOWNLOAD_MS / 60_000));
+    expect(avisoAposSolicitar()).toContain(`daqui a ${minutosDeEspera()} minuto`);
+  });
+
+  it("manda clicar em Reprocessar retorno uma vez, e não promete atualizar sozinha", () => {
+    const aviso = avisoAposSolicitar();
+    expect(aviso).toContain('"Reprocessar retorno"');
+    expect(aviso).toContain("uma vez");
+    expect(aviso).not.toMatch(/sozinh/);
+  });
+
+  it("arredonda para cima e acerta o singular", () => {
+    expect(minutosDeEspera(90_000)).toBe(2);
+    expect(minutosDeEspera(60_000)).toBe(1);
+    expect(avisoAposSolicitar(60_000)).toContain("daqui a 1 minuto.");
+    expect(avisoAposSolicitar(10 * 60_000)).toContain("daqui a 10 minutos.");
   });
 });

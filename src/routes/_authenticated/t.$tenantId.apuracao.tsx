@@ -53,6 +53,7 @@ import {
   type InvoiceRow,
 } from "@/lib/rtc";
 import { compararApuracao } from "@/lib/apuracao-comparacao";
+import { avisoAposSolicitar } from "@/lib/rtc-v2/espera";
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/apuracao")({
   head: () => ({
@@ -215,10 +216,12 @@ function ApuracaoPage() {
       onClick={async () => {
         try {
           await request.mutateAsync(competencia);
-          // Liga a auto-atualização: a Receita devolve o resultado via webhook e
-          // a tela preenche sozinha assim que ele chegar (sem recarregar).
+          // A auto-atualização fica ligada por 2 min, mas na v1 o arquivo só é
+          // baixado quando o usuário clica em "Reprocessar retorno" depois da
+          // espera (rtc-v2/espera.ts). O aviso diz isso, com os minutos da
+          // constante, e fica na tela até ser lido.
           setPolling(true);
-          toast.success("Solicitação enviada. A Receita retorna o resultado em seguida — a tela atualiza sozinha quando chegar.");
+          toast.success(avisoAposSolicitar(), { duration: 60_000 });
         } catch (error) {
           const message = error instanceof Error ? error.message : "Falha ao consultar.";
           toast.error(message === "forbidden" ? "Seu papel não permite consultar a Receita." : message);

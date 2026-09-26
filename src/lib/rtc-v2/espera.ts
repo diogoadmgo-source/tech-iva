@@ -46,3 +46,22 @@ export function cedoDemaisParaBaixar(e: EntradaEspera): boolean {
   const libera = liberacaoDoDownload(e);
   return libera !== null && e.agora < libera;
 }
+
+/** A espera em minutos inteiros, arredondada para cima — é o que a tela diz. */
+export function minutosDeEspera(esperaMs: number = ESPERA_MINIMA_DOWNLOAD_MS): number {
+  return Math.ceil(esperaMs / 60_000);
+}
+
+/**
+ * Aviso depois de "Consultar Receita" (v1). Antes a tela prometia atualizar
+ * sozinha — não atualiza: nada baixa o arquivo por conta própria, só o botão
+ * "Reprocessar retorno", e antes da espera ele não toca no tíquete. Os minutos
+ * saem da constante acima, para o aviso nunca desmentir a regra.
+ *
+ * A tela não sabe se a abertura foi v1 ou v2; a v2 só liga em outubro e, até
+ * lá, este é o texto certo para as duas.
+ */
+export function avisoAposSolicitar(esperaMs: number = ESPERA_MINIMA_DOWNLOAD_MS): string {
+  const m = minutosDeEspera(esperaMs);
+  return `Solicitação enviada. A Receita prepara o arquivo: clique uma vez em "Reprocessar retorno" daqui a ${m} ${m === 1 ? "minuto" : "minutos"}.`;
+}

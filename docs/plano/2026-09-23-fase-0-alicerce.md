@@ -601,8 +601,8 @@ Pré-requisitos, nesta ordem (ver `docs/fluxo-de-trabalho.md`, "Ordem: publicar 
 - migrações 0231, 0232, 0233 e 0234 aplicadas (arquivos em `docs/colar-no-supabase/`; a 0231 é `supabase/migrations/20260917120000_0231_fila_nao_repete_tiquete_gasto.sql`).
 
 1. Usuário: **uma** consulta. Não clicar em mais nada.
-2. Esperar 10 minutos. A mensagem na tela diz a partir de que horas.
-3. Usuário: clicar em "Reprocessar retorno" **uma vez**.
+2. Esperar os 10 minutos inteiros (o valor de `ESPERA_MINIMA_DOWNLOAD_MS`), contados da consulta. O aviso que aparece logo depois da consulta diz isso: "clique uma vez em "Reprocessar retorno" daqui a 10 minutos". Durante a espera a tela de Apuração **continua dizendo "ainda não consultada"** — é o esperado, nada chegou ainda e nada chega sozinho. Não há relógio na tela: marque a hora da consulta.
+3. Usuário: passados os 10 minutos, clicar em "Reprocessar retorno" **uma vez**. Se clicar antes da hora, aparece um aviso de erro "A Receita ainda está preparando o arquivo. Use "Reprocessar retorno" a partir das HH:MM." — nesse caso o tíquete não foi tocado; esperar até a hora dita e clicar de novo, uma vez.
 4. Assistente: ler o histórico completo:
 
 ```sql
