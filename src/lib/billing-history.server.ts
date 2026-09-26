@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/integrations/supabase/types";
 import type { PaddleEnv } from "@/lib/paddle.server";
+import { centavosDoPaddle } from "@/lib/paddle-valor";
 
 type Client = SupabaseClient<Database>;
 
@@ -18,8 +19,8 @@ export type InvoiceRow = {
   invoiceNumber: string | null;
   billedAt: string | null;
   status: string;
-  /** valor em centavos da moeda da cobrança */
-  amountCents: number;
+  /** valor em centavos da moeda da cobrança; `null` = o provedor não informou (tela mostra "—") */
+  amountCents: number | null;
   currency: string;
   environment: PaddleEnv;
 };
@@ -86,7 +87,7 @@ export async function fetchInvoices(
     invoiceNumber: tx.invoice_number ?? null,
     billedAt: tx.billed_at ?? tx.created_at ?? null,
     status: tx.status ?? "unknown",
-    amountCents: Number(tx.details?.totals?.grand_total ?? "0") || 0,
+    amountCents: centavosDoPaddle(tx.details?.totals?.grand_total),
     currency: tx.details?.totals?.currency_code ?? "BRL",
     environment: env,
   }));

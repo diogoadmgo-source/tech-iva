@@ -262,7 +262,7 @@ export function BillingHistorySection({ tenantId }: { tenantId: string }) {
                           <Badge variant={toneVariant(status.tone)}>{status.label}</Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono text-xs">
-                          {money(inv.amountCents, inv.currency)}
+                          {inv.amountCents === null ? "—" : money(inv.amountCents, inv.currency)}
                         </TableCell>
                       </TableRow>
                     );
