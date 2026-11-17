@@ -1,0 +1,11 @@
+# Ciclo de reversão 0240/0241 no Supabase local (17/11/2026, dentro de uma transação desfeita no final)
+# Banco local com as 143 versões e 60.656 relacionamentos sintéticos (só local).
+ANTES
+outros_objetos=436 outras_funcoes=158 outras_policies=65 modulo_tabelas=16 modulo_funcoes=22 modulo_policies=70 buckets=2 hist=143
+psql:ciclo-reversao.sql:44: NOTICE:  drop cascades to function tax_import_summary(tax_imports)
+psql:ciclo-reversao.sql:64: NOTICE:  drop cascades to constraint tax_cnpj_check
+psql:ciclo-reversao.sql:83: NOTICE:  buckets não removidos por SQL (Direct deletion from storage tables is not allowed. Use the Storage API instead.): remova pelo painel do Storage se quiser
+DEPOIS_DA_REVERSAO
+outros_objetos=436 outras_funcoes=158 outras_policies=65 modulo_tabelas=0 modulo_funcoes=0 modulo_policies=50 buckets=2 hist=141
+DEPOIS_DE_REINSTALAR
+outros_objetos=436 outras_funcoes=158 outras_policies=65 modulo_tabelas=16 modulo_funcoes=22 modulo_policies=70 buckets=2 hist=143
