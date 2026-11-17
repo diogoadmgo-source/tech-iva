@@ -6234,6 +6234,7 @@ export type Database = {
       tax_can_upload_evidence: { Args: { p_name: string }; Returns: boolean }
       tax_can_upload_import: { Args: { p_name: string }; Returns: boolean }
       tax_can_write: { Args: { p_tenant: string }; Returns: boolean }
+      tax_classify_compute: { Args: { p_cnpj: string }; Returns: Json }
       tax_cnpj_is_valid: { Args: { p: string }; Returns: boolean }
       tax_cnpj_strip: { Args: { p: string }; Returns: string }
       tax_import_add_items: {
@@ -6260,6 +6261,82 @@ export type Database = {
         Args: { v: Database["public"]["Tables"]["tax_imports"]["Row"] }
         Returns: Json
       }
+      tax_ingest_batch: {
+        Args: { p_rows: Json; p_run: string; p_source: string }
+        Returns: Json
+      }
+      tax_ingest_classify: {
+        Args: { p_after?: string; p_limit?: number; p_run: string }
+        Returns: Json
+      }
+      tax_ingest_file: {
+        Args: {
+          p_file_name: string
+          p_header: string[]
+          p_last_row: number
+          p_rows_matched: number
+          p_rows_scanned: number
+          p_run: string
+          p_sha256: string
+          p_size: number
+          p_status: string
+        }
+        Returns: number
+      }
+      tax_ingest_finish_run: {
+        Args: {
+          p_error?: string
+          p_metrics: Json
+          p_run: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      tax_ingest_guard: {
+        Args: { p_run: string }
+        Returns: {
+          bytes_downloaded: number | null
+          competencia: string
+          datasets: string[]
+          dry_run: boolean
+          duration_seconds: number | null
+          error: string | null
+          finished_at: string | null
+          github_run_url: string | null
+          id: string
+          metrics: Json
+          peak_disk_bytes: number | null
+          rows_matched: number | null
+          rows_scanned: number | null
+          runner_minutes: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["tax_source_run_status"]
+          targets_count: number | null
+          triggered_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tax_source_runs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      tax_ingest_start_run: {
+        Args: {
+          p_competencia: string
+          p_datasets: string[]
+          p_github_run_url?: string
+          p_triggered_by: string
+        }
+        Returns: Json
+      }
+      tax_ingest_summary: { Args: { p_run: string }; Returns: Json }
+      tax_ingest_targets: {
+        Args: { p_after?: string; p_limit?: number; p_run: string }
+        Returns: {
+          cnpj: string
+        }[]
+      }
       tax_is_platform_manager: { Args: never; Returns: boolean }
       tax_key_visible: {
         Args: {
@@ -6268,10 +6345,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      tax_normalize_ecf: {
+        Args: { p: string }
+        Returns: Database["public"]["Enums"]["tax_ecf_regime"]
+      }
       tax_parse_relationship: {
         Args: { p: string }
         Returns: Database["public"]["Enums"]["tax_relationship_kind"][]
       }
+      tax_portfolio_status: { Args: { p_tenant: string }; Returns: Json }
       tax_scope_tenants: { Args: never; Returns: string[] }
       tax_storage_tenant: { Args: { p_name: string }; Returns: string }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
