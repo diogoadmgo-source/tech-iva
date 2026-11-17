@@ -1,5 +1,7 @@
 -- ############################################################################
--- # BOOTSTRAP DE PRODUÇÃO — techiva-prod (ref rydatuiirsikmqebhqao)          #
+-- # BOOTSTRAP DE PRODUÇÃO (HISTÓRICO)                                       #
+-- # Escrito para o projeto techiva-prod, excluído em 17/11/2026. A produção  #
+-- # é o projeto Supabase lfufwoirpwlsdmststbr (ex-fluxa-dev).               #
 -- #                                                                          #
 -- # Roda UMA vez, depois de aplicar todas as db/migrations/*.sql.            #
 -- # NÃO contém dados fictícios, nem usuários de teste, nem notas de exemplo.  #
