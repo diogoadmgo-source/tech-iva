@@ -1,5 +1,10 @@
 # Fase 0 — Alicerce: plano de implementação
 
+> **Histórico (atualizado em 17/11/2026).** Este plano foi executado em setembro de 2026.
+> As instruções dele para colar migrações no SQL Editor **não valem mais**: o procedimento
+> vigente é o do Supabase CLI, em `supabase/migrations/README.md`. As migrações 0231 a 0234
+> já estão aplicadas no fluxa-dev e registradas no histórico.
+
 > **Para quem executa:** SUB-SKILL OBRIGATÓRIA: use superpowers:subagent-driven-development (recomendado) ou superpowers:executing-plans para executar tarefa por tarefa. Os passos usam caixas (`- [ ]`) para acompanhamento.
 
 **Objetivo:** deixar o sistema confiável de mexer — verificação automática a cada envio, publicação sem esquecimento, nenhum número inventado nos caminhos de dinheiro, e um experimento seguro para destravar a integração com a Receita.

@@ -14,6 +14,8 @@
  *      arquivo. É a mesma conta que o `supabase db push --dry-run` faz, sem a
  *      senha do CLI. O dry-run do CLI continua sendo a conferência oficial.
  *
+ * Dependência: o pacote `pg` está em devDependencies (package.json); rode `bun install` antes.
+ *
  * Uso:
  *   node scripts/migrations/verificar-historico.mjs                      # só o repositório
  *   node scripts/migrations/verificar-historico.mjs --versoes lista.txt  # contra uma lista (1 versão por linha)
@@ -60,8 +62,19 @@ if (iVersoes > 0) {
     .filter((v) => /^\d{14}$/.test(v));
   console.log(`${registradas.length} versões lidas de ${process.argv[iVersoes + 1]}`);
 } else if (process.env.DATABASE_URL) {
-  const pg = (await import("pg")).default;
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  let pg;
+  try {
+    pg = (await import("pg")).default;
+  } catch {
+    console.error("Pacote `pg` não encontrado. Rode `bun install` (ele está em devDependencies).");
+    process.exit(2);
+  }
+  const url = new URL(process.env.DATABASE_URL);
+  const local = ["localhost", "127.0.0.1", "::1"].includes(url.hostname) || url.searchParams.get("sslmode") === "disable";
+  const client = new pg.Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: local ? false : { rejectUnauthorized: false },
+  });
   await client.connect();
   try {
     await client.query("begin transaction read only");
