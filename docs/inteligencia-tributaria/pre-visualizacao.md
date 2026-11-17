@@ -31,6 +31,7 @@ chegue até a 0240 e a 0241 sem alterar nenhuma migration:
 | --- | --- | --- |
 | `auth.users` `bd3cd68f-…` (`preview-admin@preview.invalid`, sem senha) | `20260817192810_735bbf89…` (papel `platform_admin` + perfil) | usuário real do fluxa-dev |
 | `tenants` `40bb64ba-…`, canal "Canal de teste (pré-visualização)" | `20260817211332_dd9fbc30…` (regra de comissão do canal) | canal "Contábil Alfa" do seed, que no fluxa-dev recebeu esse id aleatório e foi removido depois pela 0215 |
+| `schema_migrations` marca `20260818200000` e `20260820150000` como aplicadas, sem executar | arquivos duplicados (ver seção 2) | espelha o fluxa-dev, onde o mesmo conteúdo está aplicado como `20260818173625` e `20260820123740` |
 
 Correção definitiva possível, ainda **não feita** e fora do escopo deste PR: a migration só
 insere o membership se o usuário existir em `auth.users`. Isso exige alterar uma migration
@@ -49,6 +50,12 @@ Comparação entre os arquivos em `supabase/migrations/` e a tabela
 | Deste PR, não aplicadas | `…_0240_…` e `…_0241_…` | ausentes (correto) |
 
 Todas as 138 versões registradas no fluxa-dev existem no repositório.
+
+**Confirmado na pré-visualização:** o repositório tem as duas versões de
+`split_premissas_antecipacao`. Uma é a exportada do banco (`20260818173625`) e a outra é a
+original comentada (`20260818200000`). Rodando as duas em ordem, a segunda falha com
+`project_cash_sql: nenhuma substituição aplicada`, porque ela só funciona uma vez: a
+primeira já fez as substituições. A sequência travou nesse ponto, em 106 de 143.
 
 **Consequência para o merge:** com a integração ligada, um merge na `main` deve tentar aplicar
 no fluxa-dev **as 5 migrations acima**, e não só as duas deste PR. Isso inclui reexecutar
