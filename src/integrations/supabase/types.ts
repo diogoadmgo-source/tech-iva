@@ -2157,6 +2157,47 @@ export type Database = {
           },
         ]
       }
+      rtc_webhook_recebido: {
+        Row: {
+          aceito: boolean
+          apuracao_id: string | null
+          erro: string | null
+          id: number
+          meta: Json | null
+          payload: Json | null
+          recebido_em: string
+          ref: string | null
+        }
+        Insert: {
+          aceito?: boolean
+          apuracao_id?: string | null
+          erro?: string | null
+          id?: never
+          meta?: Json | null
+          payload?: Json | null
+          recebido_em?: string
+          ref?: string | null
+        }
+        Update: {
+          aceito?: boolean
+          apuracao_id?: string | null
+          erro?: string | null
+          id?: never
+          meta?: Json | null
+          payload?: Json | null
+          recebido_em?: string
+          ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_webhook_recebido_apuracao_id_fkey"
+            columns: ["apuracao_id"]
+            isOneToOne: false
+            referencedRelation: "rtc_apuracao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rule_versions: {
         Row: {
           calc_version: string
@@ -2255,6 +2296,59 @@ export type Database = {
           },
           {
             foreignKeyName: "subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string | null
+          after: Json | null
+          at: string
+          before: Json | null
+          id: number
+          ip: unknown
+          target_id: string | null
+          target_type: string
+          tenant_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role?: string | null
+          after?: Json | null
+          at?: string
+          before?: Json | null
+          id?: number
+          ip?: unknown
+          target_id?: string | null
+          target_type: string
+          tenant_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string | null
+          after?: Json | null
+          at?: string
+          before?: Json | null
+          id?: number
+          ip?: unknown
+          target_id?: string | null
+          target_type?: string
+          tenant_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_audit_logs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -4220,6 +4314,977 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_consultations: {
+        Row: {
+          consulted_at: string
+          dataset_version: string | null
+          error: string | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          http_status: number | null
+          id: string
+          lookup_key: string
+          response_normalized: Json | null
+          response_raw: Json | null
+          response_sha256: string | null
+          source_code: string
+          source_run_id: string | null
+          status: Database["public"]["Enums"]["tax_consultation_status"]
+        }
+        Insert: {
+          consulted_at?: string
+          dataset_version?: string | null
+          error?: string | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          http_status?: number | null
+          id?: string
+          lookup_key: string
+          response_normalized?: Json | null
+          response_raw?: Json | null
+          response_sha256?: string | null
+          source_code: string
+          source_run_id?: string | null
+          status: Database["public"]["Enums"]["tax_consultation_status"]
+        }
+        Update: {
+          consulted_at?: string
+          dataset_version?: string | null
+          error?: string | null
+          granularity?: Database["public"]["Enums"]["tax_granularity"]
+          http_status?: number | null
+          id?: string
+          lookup_key?: string
+          response_normalized?: Json | null
+          response_raw?: Json | null
+          response_sha256?: string | null
+          source_code?: string
+          source_run_id?: string | null
+          status?: Database["public"]["Enums"]["tax_consultation_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_consultations_source_code_fkey"
+            columns: ["source_code"]
+            isOneToOne: false
+            referencedRelation: "tax_sources"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "tax_consultations_source_run_id_fkey"
+            columns: ["source_run_id"]
+            isOneToOne: false
+            referencedRelation: "tax_source_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_entities: {
+        Row: {
+          cnpj: string
+          cnpj_alfanumerico: boolean | null
+          cnpj_dv: string | null
+          cnpj_ordem: string | null
+          cnpj_raiz: string | null
+          created_at: string
+          is_matriz: boolean | null
+          last_consulted_at: string | null
+          municipio: string | null
+          municipio_ibge: string | null
+          nome_fantasia: string | null
+          public_classification: Database["public"]["Enums"]["tax_classification"]
+          public_classification_basis: Json
+          public_classified_at: string | null
+          razao_social: string | null
+          situacao_cadastral: string | null
+          situacao_data: string | null
+          uf: string | null
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          cnpj_alfanumerico?: boolean | null
+          cnpj_dv?: string | null
+          cnpj_ordem?: string | null
+          cnpj_raiz?: string | null
+          created_at?: string
+          is_matriz?: boolean | null
+          last_consulted_at?: string | null
+          municipio?: string | null
+          municipio_ibge?: string | null
+          nome_fantasia?: string | null
+          public_classification?: Database["public"]["Enums"]["tax_classification"]
+          public_classification_basis?: Json
+          public_classified_at?: string | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+          situacao_data?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          cnpj_alfanumerico?: boolean | null
+          cnpj_dv?: string | null
+          cnpj_ordem?: string | null
+          cnpj_raiz?: string | null
+          created_at?: string
+          is_matriz?: boolean | null
+          last_consulted_at?: string | null
+          municipio?: string | null
+          municipio_ibge?: string | null
+          nome_fantasia?: string | null
+          public_classification?: Database["public"]["Enums"]["tax_classification"]
+          public_classification_basis?: Json
+          public_classified_at?: string | null
+          razao_social?: string | null
+          situacao_cadastral?: string | null
+          situacao_data?: string | null
+          uf?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tax_evidences: {
+        Row: {
+          asserted_value: Database["public"]["Enums"]["tax_tri_state"]
+          created_at: string
+          document_date: string
+          fact: Database["public"]["Enums"]["tax_evidence_fact"]
+          file_mime: string | null
+          file_path: string | null
+          file_sha256: string | null
+          file_size_bytes: number | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id: string
+          lookup_key: string
+          origin: Database["public"]["Enums"]["tax_evidence_origin"]
+          origin_description: string
+          responsible_user: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: Database["public"]["Enums"]["tax_evidence_status"]
+          supersedes_id: string | null
+          tenant_id: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          asserted_value: Database["public"]["Enums"]["tax_tri_state"]
+          created_at?: string
+          document_date: string
+          fact: Database["public"]["Enums"]["tax_evidence_fact"]
+          file_mime?: string | null
+          file_path?: string | null
+          file_sha256?: string | null
+          file_size_bytes?: number | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key: string
+          origin: Database["public"]["Enums"]["tax_evidence_origin"]
+          origin_description: string
+          responsible_user: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["tax_evidence_status"]
+          supersedes_id?: string | null
+          tenant_id: string
+          valid_from: string
+          valid_to?: string | null
+        }
+        Update: {
+          asserted_value?: Database["public"]["Enums"]["tax_tri_state"]
+          created_at?: string
+          document_date?: string
+          fact?: Database["public"]["Enums"]["tax_evidence_fact"]
+          file_mime?: string | null
+          file_path?: string | null
+          file_sha256?: string | null
+          file_size_bytes?: number | null
+          granularity?: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key?: string
+          origin?: Database["public"]["Enums"]["tax_evidence_origin"]
+          origin_description?: string
+          responsible_user?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: Database["public"]["Enums"]["tax_evidence_status"]
+          supersedes_id?: string | null
+          tenant_id?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_evidences_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "tax_evidences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_evidences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_import_items: {
+        Row: {
+          cnpj: string | null
+          cnpj_raw: string | null
+          error: string | null
+          import_id: string
+          nome_fantasia: string | null
+          normalization_note: string | null
+          razao_social: string | null
+          relationship_raw: string | null
+          relationships:
+            | Database["public"]["Enums"]["tax_relationship_kind"][]
+            | null
+          row_number: number
+          status: Database["public"]["Enums"]["tax_import_item_status"]
+          tenant_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          cnpj_raw?: string | null
+          error?: string | null
+          import_id: string
+          nome_fantasia?: string | null
+          normalization_note?: string | null
+          razao_social?: string | null
+          relationship_raw?: string | null
+          relationships?:
+            | Database["public"]["Enums"]["tax_relationship_kind"][]
+            | null
+          row_number: number
+          status: Database["public"]["Enums"]["tax_import_item_status"]
+          tenant_id: string
+        }
+        Update: {
+          cnpj?: string | null
+          cnpj_raw?: string | null
+          error?: string | null
+          import_id?: string
+          nome_fantasia?: string | null
+          normalization_note?: string | null
+          razao_social?: string | null
+          relationship_raw?: string | null
+          relationships?:
+            | Database["public"]["Enums"]["tax_relationship_kind"][]
+            | null
+          row_number?: number
+          status?: Database["public"]["Enums"]["tax_import_item_status"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_import_items_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "tax_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_import_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_imports: {
+        Row: {
+          canceled_at: string | null
+          canceled_by: string | null
+          created_at: string
+          created_by: string
+          default_relationship:
+            | Database["public"]["Enums"]["tax_relationship_kind"]
+            | null
+          duplicate_count: number
+          error: string | null
+          existing_count: number
+          expected_rows: number
+          file_kind: string
+          file_name: string
+          file_sha256: string
+          file_size_bytes: number
+          finalized_at: string | null
+          finalized_by: string | null
+          first_data_line: number
+          id: string
+          invalid_cnpj_count: number
+          invalid_relationship_count: number
+          missing_cnpj_count: number
+          new_relationships_count: number
+          padded_count: number
+          received_rows: number
+          sheet_name: string | null
+          status: Database["public"]["Enums"]["tax_import_status"]
+          storage_path: string
+          tenant_id: string
+          unique_cnpjs: number
+          unique_roots: number
+          valid_count: number
+        }
+        Insert: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          created_at?: string
+          created_by: string
+          default_relationship?:
+            | Database["public"]["Enums"]["tax_relationship_kind"]
+            | null
+          duplicate_count?: number
+          error?: string | null
+          existing_count?: number
+          expected_rows: number
+          file_kind: string
+          file_name: string
+          file_sha256: string
+          file_size_bytes: number
+          finalized_at?: string | null
+          finalized_by?: string | null
+          first_data_line?: number
+          id?: string
+          invalid_cnpj_count?: number
+          invalid_relationship_count?: number
+          missing_cnpj_count?: number
+          new_relationships_count?: number
+          padded_count?: number
+          received_rows?: number
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["tax_import_status"]
+          storage_path: string
+          tenant_id: string
+          unique_cnpjs?: number
+          unique_roots?: number
+          valid_count?: number
+        }
+        Update: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          created_at?: string
+          created_by?: string
+          default_relationship?:
+            | Database["public"]["Enums"]["tax_relationship_kind"]
+            | null
+          duplicate_count?: number
+          error?: string | null
+          existing_count?: number
+          expected_rows?: number
+          file_kind?: string
+          file_name?: string
+          file_sha256?: string
+          file_size_bytes?: number
+          finalized_at?: string | null
+          finalized_by?: string | null
+          first_data_line?: number
+          id?: string
+          invalid_cnpj_count?: number
+          invalid_relationship_count?: number
+          missing_cnpj_count?: number
+          new_relationships_count?: number
+          padded_count?: number
+          received_rows?: number
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["tax_import_status"]
+          storage_path?: string
+          tenant_id?: string
+          unique_cnpjs?: number
+          unique_roots?: number
+          valid_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_imports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_job_items: {
+        Row: {
+          attempts: number
+          cnpj: string
+          consultation_id: string | null
+          job_id: string
+          last_error: string | null
+          lease_until: string | null
+          next_attempt_at: string | null
+          status: Database["public"]["Enums"]["tax_job_item_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          cnpj: string
+          consultation_id?: string | null
+          job_id: string
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string | null
+          status?: Database["public"]["Enums"]["tax_job_item_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          cnpj?: string
+          consultation_id?: string | null
+          job_id?: string
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string | null
+          status?: Database["public"]["Enums"]["tax_job_item_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_job_items_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_consultations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_job_items_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "tax_processing_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_job_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_processing_jobs: {
+        Row: {
+          cached: number
+          created_at: string
+          created_by: string
+          error: string | null
+          failed: number
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          import_id: string | null
+          kind: Database["public"]["Enums"]["tax_job_kind"]
+          params: Json
+          processed: number
+          status: Database["public"]["Enums"]["tax_job_status"]
+          succeeded: number
+          tenant_id: string
+          total: number
+        }
+        Insert: {
+          cached?: number
+          created_at?: string
+          created_by: string
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          import_id?: string | null
+          kind: Database["public"]["Enums"]["tax_job_kind"]
+          params?: Json
+          processed?: number
+          status?: Database["public"]["Enums"]["tax_job_status"]
+          succeeded?: number
+          tenant_id: string
+          total?: number
+        }
+        Update: {
+          cached?: number
+          created_at?: string
+          created_by?: string
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          import_id?: string | null
+          kind?: Database["public"]["Enums"]["tax_job_kind"]
+          params?: Json
+          processed?: number
+          status?: Database["public"]["Enums"]["tax_job_status"]
+          succeeded?: number
+          tenant_id?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_processing_jobs_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "tax_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_processing_jobs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_regime_events: {
+        Row: {
+          after: Json | null
+          before: Json | null
+          consultation_id: string
+          detected_at: string
+          effective_date: string | null
+          event_date: string | null
+          event_type: string
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id: string
+          lookup_key: string
+          previous_consultation_id: string | null
+        }
+        Insert: {
+          after?: Json | null
+          before?: Json | null
+          consultation_id: string
+          detected_at?: string
+          effective_date?: string | null
+          event_date?: string | null
+          event_type: string
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key: string
+          previous_consultation_id?: string | null
+        }
+        Update: {
+          after?: Json | null
+          before?: Json | null
+          consultation_id?: string
+          detected_at?: string
+          effective_date?: string | null
+          event_date?: string | null
+          event_type?: string
+          granularity?: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key?: string
+          previous_consultation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_regime_events_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_consultations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_regime_events_previous_consultation_id_fkey"
+            columns: ["previous_consultation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_regime_history: {
+        Row: {
+          ano: number
+          cnpj: string
+          cnpj_da_scp: string | null
+          cnpj_raiz: string | null
+          consultation_id: string
+          dataset_version: string
+          forma_tributacao_original: string
+          id: string
+          quantidade_escrituracoes: number | null
+          recorded_at: string
+          regime_normalizado: Database["public"]["Enums"]["tax_ecf_regime"]
+        }
+        Insert: {
+          ano: number
+          cnpj: string
+          cnpj_da_scp?: string | null
+          cnpj_raiz?: string | null
+          consultation_id: string
+          dataset_version: string
+          forma_tributacao_original: string
+          id?: string
+          quantidade_escrituracoes?: number | null
+          recorded_at?: string
+          regime_normalizado: Database["public"]["Enums"]["tax_ecf_regime"]
+        }
+        Update: {
+          ano?: number
+          cnpj?: string
+          cnpj_da_scp?: string | null
+          cnpj_raiz?: string | null
+          consultation_id?: string
+          dataset_version?: string
+          forma_tributacao_original?: string
+          id?: string
+          quantidade_escrituracoes?: number | null
+          recorded_at?: string
+          regime_normalizado?: Database["public"]["Enums"]["tax_ecf_regime"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_regime_history_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_regimes: {
+        Row: {
+          consultation_id: string
+          end_date: string | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id: string
+          lookup_key: string
+          recorded_at: string
+          regime: Database["public"]["Enums"]["tax_public_regime"]
+          start_date: string
+        }
+        Insert: {
+          consultation_id: string
+          end_date?: string | null
+          granularity: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key: string
+          recorded_at?: string
+          regime: Database["public"]["Enums"]["tax_public_regime"]
+          start_date: string
+        }
+        Update: {
+          consultation_id?: string
+          end_date?: string | null
+          granularity?: Database["public"]["Enums"]["tax_granularity"]
+          id?: string
+          lookup_key?: string
+          recorded_at?: string
+          regime?: Database["public"]["Enums"]["tax_public_regime"]
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_regimes_consultation_id_fkey"
+            columns: ["consultation_id"]
+            isOneToOne: false
+            referencedRelation: "tax_consultations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_relationships: {
+        Row: {
+          cnpj: string
+          cnpj_raiz: string | null
+          created_at: string
+          created_by: string | null
+          declared_nome_fantasia: string | null
+          declared_razao_social: string | null
+          first_import_id: string | null
+          last_import_id: string | null
+          relationship: Database["public"]["Enums"]["tax_relationship_kind"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          cnpj_raiz?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_nome_fantasia?: string | null
+          declared_razao_social?: string | null
+          first_import_id?: string | null
+          last_import_id?: string | null
+          relationship: Database["public"]["Enums"]["tax_relationship_kind"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          cnpj_raiz?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_nome_fantasia?: string | null
+          declared_razao_social?: string | null
+          first_import_id?: string | null
+          last_import_id?: string | null
+          relationship?: Database["public"]["Enums"]["tax_relationship_kind"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_relationships_cnpj_fkey"
+            columns: ["cnpj"]
+            isOneToOne: false
+            referencedRelation: "tax_entities"
+            referencedColumns: ["cnpj"]
+          },
+          {
+            foreignKeyName: "tax_relationships_first_import_id_fkey"
+            columns: ["first_import_id"]
+            isOneToOne: false
+            referencedRelation: "tax_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_relationships_last_import_id_fkey"
+            columns: ["last_import_id"]
+            isOneToOne: false
+            referencedRelation: "tax_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tax_relationships_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_source_run_files: {
+        Row: {
+          file_name: string
+          header: string[] | null
+          last_row_committed: number
+          rows_matched: number
+          rows_scanned: number
+          run_id: string
+          sha256: string | null
+          size_bytes: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          file_name: string
+          header?: string[] | null
+          last_row_committed?: number
+          rows_matched?: number
+          rows_scanned?: number
+          run_id: string
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          file_name?: string
+          header?: string[] | null
+          last_row_committed?: number
+          rows_matched?: number
+          rows_scanned?: number
+          run_id?: string
+          sha256?: string | null
+          size_bytes?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_source_run_files_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "tax_source_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_source_runs: {
+        Row: {
+          bytes_downloaded: number | null
+          competencia: string
+          datasets: string[]
+          dry_run: boolean
+          duration_seconds: number | null
+          error: string | null
+          finished_at: string | null
+          github_run_url: string | null
+          id: string
+          metrics: Json
+          peak_disk_bytes: number | null
+          rows_matched: number | null
+          rows_scanned: number | null
+          runner_minutes: number | null
+          started_at: string
+          status: Database["public"]["Enums"]["tax_source_run_status"]
+          targets_count: number | null
+          triggered_by: string
+        }
+        Insert: {
+          bytes_downloaded?: number | null
+          competencia: string
+          datasets: string[]
+          dry_run?: boolean
+          duration_seconds?: number | null
+          error?: string | null
+          finished_at?: string | null
+          github_run_url?: string | null
+          id?: string
+          metrics?: Json
+          peak_disk_bytes?: number | null
+          rows_matched?: number | null
+          rows_scanned?: number | null
+          runner_minutes?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["tax_source_run_status"]
+          targets_count?: number | null
+          triggered_by: string
+        }
+        Update: {
+          bytes_downloaded?: number | null
+          competencia?: string
+          datasets?: string[]
+          dry_run?: boolean
+          duration_seconds?: number | null
+          error?: string | null
+          finished_at?: string | null
+          github_run_url?: string | null
+          id?: string
+          metrics?: Json
+          peak_disk_bytes?: number | null
+          rows_matched?: number | null
+          rows_scanned?: number | null
+          runner_minutes?: number | null
+          started_at?: string
+          status?: Database["public"]["Enums"]["tax_source_run_status"]
+          targets_count?: number | null
+          triggered_by?: string
+        }
+        Relationships: []
+      }
+      tax_sources: {
+        Row: {
+          code: string
+          coverage: string
+          granularity: Database["public"]["Enums"]["tax_granularity"] | null
+          is_public: boolean
+          kind: string
+          limitations: string
+          name: string
+          status: string
+          updated_at: string
+          url: string | null
+          verified_at: string | null
+          verified_note: string | null
+        }
+        Insert: {
+          code: string
+          coverage: string
+          granularity?: Database["public"]["Enums"]["tax_granularity"] | null
+          is_public?: boolean
+          kind: string
+          limitations: string
+          name: string
+          status: string
+          updated_at?: string
+          url?: string | null
+          verified_at?: string | null
+          verified_note?: string | null
+        }
+        Update: {
+          code?: string
+          coverage?: string
+          granularity?: Database["public"]["Enums"]["tax_granularity"] | null
+          is_public?: boolean
+          kind?: string
+          limitations?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          url?: string | null
+          verified_at?: string | null
+          verified_note?: string | null
+        }
+        Relationships: []
+      }
+      tax_tenant_classifications: {
+        Row: {
+          basis: Json
+          cbs_basis: Json
+          cbs_regular: Database["public"]["Enums"]["tax_tri_state"]
+          cbs_valid_from: string | null
+          cbs_valid_to: string | null
+          classification: Database["public"]["Enums"]["tax_classification"]
+          cnpj: string
+          computed_at: string
+          ibs_basis: Json
+          ibs_regular: Database["public"]["Enums"]["tax_tri_state"]
+          ibs_valid_from: string | null
+          ibs_valid_to: string | null
+          reference_date: string
+          tenant_id: string
+        }
+        Insert: {
+          basis?: Json
+          cbs_basis?: Json
+          cbs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          cbs_valid_from?: string | null
+          cbs_valid_to?: string | null
+          classification: Database["public"]["Enums"]["tax_classification"]
+          cnpj: string
+          computed_at?: string
+          ibs_basis?: Json
+          ibs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          ibs_valid_from?: string | null
+          ibs_valid_to?: string | null
+          reference_date: string
+          tenant_id: string
+        }
+        Update: {
+          basis?: Json
+          cbs_basis?: Json
+          cbs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          cbs_valid_from?: string | null
+          cbs_valid_to?: string | null
+          classification?: Database["public"]["Enums"]["tax_classification"]
+          cnpj?: string
+          computed_at?: string
+          ibs_basis?: Json
+          ibs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          ibs_valid_from?: string | null
+          ibs_valid_to?: string | null
+          reference_date?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_tenant_classifications_cnpj_fkey"
+            columns: ["cnpj"]
+            isOneToOne: false
+            referencedRelation: "tax_entities"
+            referencedColumns: ["cnpj"]
+          },
+          {
+            foreignKeyName: "tax_tenant_classifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_features: {
         Row: {
           enabled: boolean
@@ -5007,7 +6072,7 @@ export type Database = {
         }[]
       }
       rtc_apuracao_receber_tiquete: {
-        Args: { p_payload: Json; p_ref: string }
+        Args: { p_meta?: Json; p_payload: Json; p_ref: string }
         Returns: Json
       }
       rtc_apuracao_registrar_diag: {
@@ -5152,6 +6217,63 @@ export type Database = {
         }
         Returns: number
       }
+      tax_audit: {
+        Args: {
+          p_action: string
+          p_after?: Json
+          p_before?: Json
+          p_target_id: string
+          p_target_type: string
+          p_tenant: string
+        }
+        Returns: undefined
+      }
+      tax_can_read_audit: { Args: { p_tenant: string }; Returns: boolean }
+      tax_can_read_evidence_file: { Args: { p_name: string }; Returns: boolean }
+      tax_can_read_import_file: { Args: { p_name: string }; Returns: boolean }
+      tax_can_upload_evidence: { Args: { p_name: string }; Returns: boolean }
+      tax_can_upload_import: { Args: { p_name: string }; Returns: boolean }
+      tax_can_write: { Args: { p_tenant: string }; Returns: boolean }
+      tax_cnpj_is_valid: { Args: { p: string }; Returns: boolean }
+      tax_cnpj_strip: { Args: { p: string }; Returns: string }
+      tax_import_add_items: {
+        Args: { p_import: string; p_rows: Json }
+        Returns: Json
+      }
+      tax_import_cancel: { Args: { p_import: string }; Returns: Json }
+      tax_import_create: {
+        Args: {
+          p_default_relationship?: Database["public"]["Enums"]["tax_relationship_kind"]
+          p_expected_rows: number
+          p_file_kind: string
+          p_file_name: string
+          p_file_sha256: string
+          p_file_size: number
+          p_first_data_line?: number
+          p_sheet_name: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      tax_import_finalize: { Args: { p_import: string }; Returns: Json }
+      tax_import_summary: {
+        Args: { v: Database["public"]["Tables"]["tax_imports"]["Row"] }
+        Returns: Json
+      }
+      tax_is_platform_manager: { Args: never; Returns: boolean }
+      tax_key_visible: {
+        Args: {
+          p_granularity: Database["public"]["Enums"]["tax_granularity"]
+          p_key: string
+        }
+        Returns: boolean
+      }
+      tax_parse_relationship: {
+        Args: { p: string }
+        Returns: Database["public"]["Enums"]["tax_relationship_kind"][]
+      }
+      tax_scope_tenants: { Args: never; Returns: string[] }
+      tax_storage_tenant: { Args: { p_name: string }; Returns: string }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
       tenant_members: {
         Args: { p_tenant: string }
@@ -5263,6 +6385,74 @@ export type Database = {
         | "pf"
         | "imune"
         | "desconhecido"
+      tax_classification:
+        | "simples_nacional"
+        | "mei_simei"
+        | "simples_com_ibs_cbs_regular"
+        | "lucro_presumido"
+        | "lucro_real"
+        | "excluido_simples"
+        | "nao_identificado"
+        | "consulta_pendente"
+      tax_consultation_status:
+        | "ok"
+        | "nao_encontrado"
+        | "erro"
+        | "fonte_indisponivel"
+      tax_ecf_regime:
+        | "lucro_real"
+        | "lucro_presumido"
+        | "lucro_arbitrado"
+        | "imune"
+        | "isenta"
+        | "combinado"
+        | "nao_mapeado"
+      tax_evidence_fact:
+        | "ibs_regular"
+        | "cbs_regular"
+        | "lucro_real"
+        | "lucro_presumido"
+        | "simples_nacional"
+        | "outro"
+      tax_evidence_origin:
+        | "portal_simples_nacional"
+        | "declaracao_contribuinte"
+        | "documento_contabil"
+        | "contrato"
+        | "outro"
+      tax_evidence_status: "ativa" | "revogada" | "substituida"
+      tax_granularity: "raiz" | "estabelecimento"
+      tax_import_item_status:
+        | "recebido"
+        | "valido"
+        | "duplicado_no_arquivo"
+        | "ja_existente"
+        | "cnpj_invalido"
+        | "cnpj_ausente"
+        | "relacionamento_invalido"
+      tax_import_status:
+        | "recebendo"
+        | "finalizando"
+        | "concluida"
+        | "falhou"
+        | "cancelada"
+      tax_job_item_status:
+        | "pendente"
+        | "reservado"
+        | "concluido"
+        | "via_cache"
+        | "nao_encontrado"
+        | "erro"
+      tax_job_kind: "importacao" | "atualizar_empresas"
+      tax_job_status: "ativo" | "pausado" | "concluido" | "falhou" | "cancelado"
+      tax_public_regime: "simples_nacional" | "simei"
+      tax_relationship_kind: "cliente" | "fornecedor"
+      tax_source_run_status:
+        | "iniciada"
+        | "concluida"
+        | "falhou"
+        | "abortada_layout"
+      tax_tri_state: "sim" | "nao" | "nao_identificado"
       tenant_kind: "platform" | "channel" | "company" | "unit"
       tenant_status: "active" | "suspended" | "archived"
     }
@@ -5460,6 +6650,83 @@ export const Constants = {
         "imune",
         "desconhecido",
       ],
+      tax_classification: [
+        "simples_nacional",
+        "mei_simei",
+        "simples_com_ibs_cbs_regular",
+        "lucro_presumido",
+        "lucro_real",
+        "excluido_simples",
+        "nao_identificado",
+        "consulta_pendente",
+      ],
+      tax_consultation_status: [
+        "ok",
+        "nao_encontrado",
+        "erro",
+        "fonte_indisponivel",
+      ],
+      tax_ecf_regime: [
+        "lucro_real",
+        "lucro_presumido",
+        "lucro_arbitrado",
+        "imune",
+        "isenta",
+        "combinado",
+        "nao_mapeado",
+      ],
+      tax_evidence_fact: [
+        "ibs_regular",
+        "cbs_regular",
+        "lucro_real",
+        "lucro_presumido",
+        "simples_nacional",
+        "outro",
+      ],
+      tax_evidence_origin: [
+        "portal_simples_nacional",
+        "declaracao_contribuinte",
+        "documento_contabil",
+        "contrato",
+        "outro",
+      ],
+      tax_evidence_status: ["ativa", "revogada", "substituida"],
+      tax_granularity: ["raiz", "estabelecimento"],
+      tax_import_item_status: [
+        "recebido",
+        "valido",
+        "duplicado_no_arquivo",
+        "ja_existente",
+        "cnpj_invalido",
+        "cnpj_ausente",
+        "relacionamento_invalido",
+      ],
+      tax_import_status: [
+        "recebendo",
+        "finalizando",
+        "concluida",
+        "falhou",
+        "cancelada",
+      ],
+      tax_job_item_status: [
+        "pendente",
+        "reservado",
+        "concluido",
+        "via_cache",
+        "nao_encontrado",
+        "erro",
+      ],
+      tax_job_kind: ["importacao", "atualizar_empresas"],
+      tax_job_status: ["ativo", "pausado", "concluido", "falhou", "cancelado"],
+      tax_public_regime: ["simples_nacional", "simei"],
+      tax_relationship_kind: ["cliente", "fornecedor"],
+      tax_source_run_status: [
+        "iniciada",
+        "concluida",
+        "falhou",
+        "abortada_layout",
+      ],
+      tax_tri_state: ["sim", "nao", "nao_identificado"],
       tenant_kind: ["platform", "channel", "company", "unit"],
       tenant_status: ["active", "suspended", "archived"],
     },
