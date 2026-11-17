@@ -1,16 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import type { ColumnDef } from "@tanstack/react-table";
-import { FileSpreadsheet, History, Play, Upload, XCircle } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Circle,
+  Download,
+  FileSpreadsheet,
+  History,
+  Loader2,
+  Pause,
+  Play,
+  RefreshCw,
+  Table2,
+  Upload,
+  XCircle,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
-import { DataTable } from "@/components/techiva/data-table";
+import { Dropzone } from "@/components/tax-intel/dropzone";
+import { ModuleTabs } from "@/components/tax-intel/module-tabs";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
-import { Kpi } from "@/components/techiva/kpi";
+import { InfoHint } from "@/components/techiva/info-hint";
 import { Page, PageHeader, Panel, Rise } from "@/components/techiva/page";
+import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
-import { Badge } from "@/components/ui/badge";
+import { Stepper } from "@/components/techiva/stepper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -21,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MemberRole } from "@/lib/auth";
 import { formatCnpj } from "@/lib/tax-intel/cnpj";
 import {
@@ -32,12 +60,22 @@ import {
   type ImportRow,
   type ImportSummary,
 } from "@/lib/tax-intel/import-client";
+import { dateTime, n, pct, since } from "@/lib/tax-intel/labels";
 import { buildPreview, type Preview, type PreviewRow } from "@/lib/tax-intel/preview";
 import { readTabular, sha256Hex, type ReadResult } from "@/lib/tax-intel/read-file";
 import type { RelationshipKind } from "@/lib/tax-intel/relationship";
 import { useShellData } from "@/lib/tenant-shell-data";
+import { cn } from "@/lib/utils";
+
+type Search = { detalhe?: string | undefined };
 
 export const Route = createFileRoute("/_authenticated/t/$tenantId/tributario/importacoes")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    detalhe:
+      typeof s["detalhe"] === "string" && /^[0-9a-f-]{36}$/.test(s["detalhe"])
+        ? s["detalhe"]
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Importações · Inteligência Tributária · TECH-IVA" },
@@ -60,12 +98,15 @@ const WRITERS: MemberRole[] = [
   "finance",
 ];
 
-const STATUS_LABEL: Record<ImportRow["status"], string> = {
-  recebendo: "Recebendo",
-  finalizando: "Finalizando",
-  concluida: "Concluída",
-  falhou: "Falhou",
-  cancelada: "Cancelada",
+const STATUS: Record<ImportRow["status"], { label: string; className: string }> = {
+  recebendo: { label: "Recebendo", className: "border-primary/40 bg-primary/10 text-primary" },
+  finalizando: { label: "Finalizando", className: "border-primary/40 bg-primary/10 text-primary" },
+  concluida: { label: "Concluída", className: "border-flow-in/40 bg-flow-in/10 text-flow-in" },
+  falhou: {
+    label: "Falhou",
+    className: "border-destructive/40 bg-destructive/10 text-destructive",
+  },
+  cancelada: { label: "Cancelada", className: "border-border bg-muted/40 text-muted-foreground" },
 };
 
 type ItemStatus =
@@ -87,9 +128,10 @@ const ITEM_LABEL: Record<ItemStatus, string> = {
   recebido: "Aguardando finalização",
 };
 
-const n = (v: number | null | undefined) => (v ?? 0).toLocaleString("pt-BR");
+const problemsOf = (r: ImportRow) =>
+  r.invalid_cnpj_count + r.missing_cnpj_count + r.invalid_relationship_count;
 
-function useImports(tenantId: string) {
+function useImports(tenantId: string, live: boolean) {
   return useQuery({
     queryKey: ["tax-imports", tenantId],
     queryFn: async (): Promise<ImportRow[]> => {
@@ -101,20 +143,25 @@ function useImports(tenantId: string) {
       if (error) throw error;
       return (data ?? []) as ImportRow[];
     },
+    refetchInterval: live ? 4000 : false,
   });
 }
 
 function ImportacoesPage() {
   const { tenantId } = Route.useParams();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const shell = useShellData(tenantId);
-  const imports = useImports(tenantId);
-  const [newOpen, setNewOpen] = useState(false);
-  const [detail, setDetail] = useState<ImportRow | null>(null);
+  const [busy, setBusy] = useState(false);
+  const imports = useImports(tenantId, busy);
 
   const kind = shell.data?.tenant.kind;
   const role = shell.data?.role ?? null;
   const canWrite = role !== null && WRITERS.includes(role);
   const allowedKind = kind === "company" || kind === "unit";
+  const detail = imports.data?.find((i) => i.id === search.detalhe) ?? null;
+  const openDetail = (id: string | null) =>
+    void navigate({ search: id ? { detalhe: id } : {}, replace: true });
 
   if (shell.data && !allowedKind) {
     return (
@@ -147,53 +194,751 @@ function ImportacoesPage() {
             </p>
           </>
         }
-        actions={
-          canWrite ? (
-            <Button className="cta-lift" onClick={() => setNewOpen(true)}>
-              <Upload className="mr-2 size-4" /> Nova importação
-            </Button>
-          ) : null
-        }
       />
+      <ModuleTabs tenantId={tenantId} />
 
-      <Rise index={1}>
-        <Panel title="Histórico" icon={History}>
+      {canWrite ? (
+        <Rise index={1}>
+          <NewImport tenantId={tenantId} onBusy={setBusy} onOpenDetail={openDetail} />
+        </Rise>
+      ) : shell.data ? (
+        <Rise index={1}>
+          <p className="rounded-lg border border-border/60 bg-surface-1/60 px-4 py-3 text-xs text-muted-foreground">
+            Seu papel permite consultar o histórico, mas não enviar arquivos.
+          </p>
+        </Rise>
+      ) : null}
+
+      <Rise index={2}>
+        <Panel
+          title="Histórico"
+          icon={History}
+          actions={
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label="Atualizar histórico"
+              onClick={() => void imports.refetch()}
+              disabled={imports.isFetching}
+            >
+              <RefreshCw
+                className={cn("size-4", imports.isFetching && "animate-spin")}
+                aria-hidden
+              />
+            </Button>
+          }
+          bodyClassName="p-0"
+          className="overflow-hidden"
+        >
           {imports.error ? (
-            <ErrorState
-              message={(imports.error as Error).message}
-              onRetry={() => void imports.refetch()}
-            />
+            <div className="p-4">
+              <ErrorState
+                message={(imports.error as Error).message}
+                onRetry={() => void imports.refetch()}
+              />
+            </div>
           ) : (
             <ImportsTable
               rows={imports.data ?? []}
               loading={imports.isLoading}
               canWrite={canWrite}
-              onOpen={setDetail}
+              onOpen={(r) => openDetail(r.id)}
               tenantId={tenantId}
             />
           )}
         </Panel>
       </Rise>
 
-      {canWrite ? (
-        <NewImportSheet open={newOpen} onOpenChange={setNewOpen} tenantId={tenantId} />
-      ) : null}
-      <ImportDetailSheet imp={detail} onClose={() => setDetail(null)} />
+      <ImportDetailSheet imp={detail} tenantId={tenantId} onClose={() => openDetail(null)} />
     </Page>
   );
 }
 
-function StatusBadge({ status }: { status: ImportRow["status"] }) {
-  const variant =
-    status === "concluida"
-      ? "secondary"
-      : status === "cancelada" || status === "falhou"
-        ? "destructive"
-        : "outline";
+// ---------------------------------------------------------------------------
+// Nova importação: arquivo → validação → processamento → resultado
+// ---------------------------------------------------------------------------
+type Loaded = { file: File; bytes: Uint8Array; sha256: string; read: ReadResult };
+
+const STEPS = ["Arquivo", "Validação", "Processamento", "Resultado"];
+
+const PHASES: { phase: ImportProgress["phase"]; label: string }[] = [
+  { phase: "criando", label: "Registrar a importação" },
+  { phase: "enviando_arquivo", label: "Guardar o arquivo original" },
+  { phase: "enviando_linhas", label: "Enviar as linhas" },
+  { phase: "finalizando", label: "Validar no banco e gravar a carteira" },
+];
+
+const fmtBytes = (b: number) =>
+  b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} KB` : `${(b / 1024 / 1024).toFixed(1)} MB`;
+
+function downloadTemplate() {
+  // Só o cabeçalho: nenhum dado de exemplo é inventado.
+  const blob = new Blob(["﻿CNPJ;Razão social;Nome fantasia;Tipo\n"], {
+    type: "text/csv;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "modelo-carteira.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function NewImport({
+  tenantId,
+  onBusy,
+  onOpenDetail,
+}: {
+  tenantId: string;
+  onBusy: (v: boolean) => void;
+  onOpenDetail: (id: string) => void;
+}) {
+  const qc = useQueryClient();
+  const abortRef = useRef<AbortController | null>(null);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [reading, setReading] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
+  const [defaultRel, setDefaultRel] = useState<RelationshipKind | "nenhum">("nenhum");
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [rate, setRate] = useState<{ t0: number; s0: number; perSec: number } | null>(null);
+
+  const preview: Preview | null = useMemo(
+    () =>
+      loaded ? buildPreview(loaded.read.rows, defaultRel === "nenhum" ? null : defaultRel) : null,
+    [loaded, defaultRel],
+  );
+
+  const reset = () => {
+    setLoaded(null);
+    setReadError(null);
+    setProgress(null);
+    setSummary(null);
+    setFailure(null);
+    setRate(null);
+  };
+
+  const onFile = async (file: File) => {
+    reset();
+    if (file.size > 30 * 1024 * 1024) {
+      setReadError(`O arquivo tem ${fmtBytes(file.size)}; o limite é 30 MB.`);
+      return;
+    }
+    setReading(true);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const read = await readTabular(file.name, bytes);
+      setLoaded({ file, bytes, sha256: await sha256Hex(bytes), read });
+    } catch (e) {
+      setReadError((e as Error).message);
+    } finally {
+      setReading(false);
+    }
+  };
+
+  const onProgress = (p: ImportProgress) => {
+    setProgress(p);
+    setRate((r) => {
+      const now = performance.now();
+      if (!r || p.phase !== "enviando_linhas")
+        return { t0: now, s0: p.sent, perSec: r?.perSec ?? 0 };
+      const dt = (now - r.t0) / 1000;
+      return dt > 0.5 ? { ...r, perSec: (p.sent - r.s0) / dt } : r;
+    });
+  };
+
+  const send = useMutation({
+    mutationFn: async () => {
+      if (!loaded) throw new Error("Escolha um arquivo.");
+      abortRef.current = new AbortController();
+      setFailure(null);
+      onBusy(true);
+      return runImport({
+        tenantId,
+        file: loaded.file,
+        bytes: loaded.bytes,
+        sha256: loaded.sha256,
+        kind: loaded.read.kind,
+        sheetName: loaded.read.sheetName,
+        headerLine: loaded.read.headerLine,
+        rows: loaded.read.rows,
+        defaultRelationship: defaultRel === "nenhum" ? null : defaultRel,
+        onProgress,
+        signal: abortRef.current.signal,
+      });
+    },
+    onSuccess: (s) => {
+      setSummary(s);
+      toast.success("Importação concluída.");
+    },
+    onError: (e) => {
+      const paused = (e as Error).name === "AbortError";
+      setFailure(
+        paused
+          ? "Envio pausado. A importação ficou no histórico e pode ser retomada de onde parou."
+          : (e as Error).message,
+      );
+      toast.error(paused ? "Envio pausado." : "A importação não terminou.");
+    },
+    onSettled: () => {
+      onBusy(false);
+      void qc.invalidateQueries({ queryKey: ["tax-imports", tenantId] });
+      void qc.invalidateQueries({ queryKey: ["tax-overview", tenantId] });
+      void qc.invalidateQueries({ queryKey: ["tax-portfolio", tenantId] });
+    },
+  });
+
+  // Fechar a aba no meio do envio: o navegador pede confirmação.
+  useEffect(() => {
+    if (!send.isPending) return;
+    const h = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, [send.isPending]);
+
+  const step = summary ? 3 : send.isPending || failure ? 2 : loaded ? 1 : 0;
+
   return (
-    <Badge variant={variant} className="rounded-full px-2 py-0.5 text-[11px] font-medium">
-      {STATUS_LABEL[status]}
-    </Badge>
+    <section className="panel sheen overflow-hidden">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Upload className="size-4 text-primary" aria-hidden />
+          <h2 className="text-sm font-semibold">Nova importação</h2>
+          <InfoHint title="Colunas aceitas">
+            <p>
+              CNPJ (obrigatória), razão social, nome fantasia e tipo (cliente ou fornecedor). Os
+              nomes das colunas são reconhecidos com ou sem acento, em qualquer ordem.
+            </p>
+            <p className="mt-2">
+              CNPJ com ou sem máscara, numérico ou alfanumérico. Zeros à esquerda perdidos pelo
+              Excel são completados e indicados.
+            </p>
+          </InfoHint>
+        </div>
+        <Stepper steps={STEPS} current={step} className="w-full sm:w-auto sm:min-w-[440px]" />
+      </header>
+
+      <div className="p-4 sm:p-5">
+        {step === 0 ? (
+          <div className="space-y-3">
+            <Dropzone onFile={(f) => void onFile(f)} busy={reading} disabled={reading} />
+            {readError ? (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm"
+              >
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+                <div>
+                  <p className="font-medium text-destructive">Não foi possível ler o arquivo</p>
+                  <p className="text-xs text-muted-foreground">{readError}</p>
+                </div>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span>Colunas:</span>
+              {["CNPJ", "Razão social", "Nome fantasia", "Tipo"].map((c, i) => (
+                <span
+                  key={c}
+                  className={cn(
+                    "rounded-md border px-1.5 py-0.5",
+                    i === 0 ? "border-primary/40 text-primary" : "border-border/70",
+                  )}
+                >
+                  {c}
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={downloadTemplate}
+                className="ml-auto inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <Download className="size-3.5" aria-hidden /> Baixar modelo
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {step === 1 && loaded && preview ? (
+          <Validation
+            loaded={loaded}
+            preview={preview}
+            defaultRel={defaultRel}
+            setDefaultRel={setDefaultRel}
+            onReset={reset}
+            onSend={() => send.mutate()}
+          />
+        ) : null}
+
+        {step === 2 && progress ? (
+          <Processing
+            progress={progress}
+            perSec={rate?.perSec ?? 0}
+            pending={send.isPending}
+            failure={failure}
+            onPause={() => abortRef.current?.abort()}
+            onRetry={() => send.mutate()}
+            onReset={reset}
+          />
+        ) : null}
+
+        {step === 3 && summary ? (
+          <Result
+            s={summary}
+            tenantId={tenantId}
+            onDetail={() => onOpenDetail(summary.import_id)}
+            onReset={reset}
+          />
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: string | undefined;
+  hint?: string | undefined;
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-surface-2/30 px-3 py-2.5">
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className={cn("mt-0.5 font-mono tabular text-lg font-semibold", tone)}>{value}</p>
+      {hint ? <p className="truncate text-[11px] text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+function Validation({
+  loaded,
+  preview,
+  defaultRel,
+  setDefaultRel,
+  onReset,
+  onSend,
+}: {
+  loaded: Loaded;
+  preview: Preview;
+  defaultRel: RelationshipKind | "nenhum";
+  setDefaultRel: (v: RelationshipKind | "nenhum") => void;
+  onReset: () => void;
+  onSend: () => void;
+}) {
+  const [verdict, setVerdict] = useState<PreviewRow["verdict"] | "todos">("todos");
+  const bad = preview.invalidCnpj + preview.missingCnpj + preview.invalidRelationship;
+  const problems = preview.rows.filter(
+    (r) => r.verdict !== "valido" && (verdict === "todos" || r.verdict === verdict),
+  );
+  const quality = preview.total ? preview.valid / preview.total : 0;
+  const cols = loaded.read.columns;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-surface-2/30 p-3">
+        <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">
+          <FileSpreadsheet className="size-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{loaded.file.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {loaded.read.kind.toUpperCase()} · {fmtBytes(loaded.file.size)}
+            {loaded.read.sheetName ? ` · aba “${loaded.read.sheetName}”` : ""}
+            {loaded.read.encoding ? ` · ${loaded.read.encoding}` : ""} · cabeçalho na linha{" "}
+            {loaded.read.headerLine}
+          </p>
+        </div>
+        <Button size="sm" variant="ghost" onClick={onReset}>
+          Trocar arquivo
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-xs">
+        {(["cnpj", "razao", "fantasia", "rel"] as const).map((k) => {
+          const label = {
+            cnpj: "CNPJ",
+            razao: "Razão social",
+            fantasia: "Nome fantasia",
+            rel: "Tipo",
+          }[k];
+          const found = cols[k];
+          return (
+            <span
+              key={k}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md border px-2 py-1",
+                found
+                  ? "border-flow-in/40 text-foreground"
+                  : "border-dashed border-border text-muted-foreground",
+              )}
+            >
+              {found ? (
+                <Check className="size-3 text-flow-in" aria-hidden />
+              ) : (
+                <Circle className="size-3" aria-hidden />
+              )}
+              {label}
+              {found ? (
+                <span className="text-muted-foreground">← “{found}”</span>
+              ) : (
+                <span>não encontrada</span>
+              )}
+            </span>
+          );
+        })}
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-baseline justify-between text-xs">
+          <span className="font-medium">Qualidade da base</span>
+          <span className="font-mono tabular text-muted-foreground">
+            {pct(preview.valid, preview.total)} válidas
+          </span>
+        </div>
+        <div className="flex h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden>
+          <span
+            className="bg-flow-in transition-[width] duration-700"
+            style={{ width: `${quality * 100}%` }}
+          />
+          <span
+            className="bg-warn transition-[width] duration-700"
+            style={{ width: `${(preview.duplicateInFile / Math.max(preview.total, 1)) * 100}%` }}
+          />
+          <span
+            className="bg-destructive transition-[width] duration-700"
+            style={{ width: `${(bad / Math.max(preview.total, 1)) * 100}%` }}
+          />
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Stat label="Linhas" value={n(preview.total)} />
+          <Stat
+            label="Válidas"
+            value={n(preview.valid)}
+            tone="text-flow-in"
+            hint={`${n(preview.uniqueCnpjs)} CNPJs · ${n(preview.uniqueRoots)} raízes`}
+          />
+          <Stat
+            label="Repetidas no arquivo"
+            value={n(preview.duplicateInFile)}
+            tone={preview.duplicateInFile ? "text-warn" : undefined}
+          />
+          <Stat
+            label="Com problema"
+            value={n(bad)}
+            tone={bad ? "text-destructive" : undefined}
+            hint={`${n(preview.invalidCnpj)} inválidos · ${n(preview.missingCnpj)} vazios · ${n(preview.invalidRelationship)} sem tipo`}
+          />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {n(preview.matrizes)} matrizes · {n(preview.filiais)} filiais · {n(preview.alfanumericos)}{" "}
+          alfanuméricos
+          {preview.padded > 0 ? ` · ${n(preview.padded)} com zeros completados` : ""}
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,260px)_1fr] sm:items-end">
+        <div className="space-y-1.5">
+          <Label htmlFor="default-rel" className="text-xs">
+            Tipo vazio na planilha
+          </Label>
+          <Select value={defaultRel} onValueChange={(v) => setDefaultRel(v as typeof defaultRel)}>
+            <SelectTrigger id="default-rel" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nenhum">Marcar como problema</SelectItem>
+              <SelectItem value="cliente">Considerar cliente</SelectItem>
+              <SelectItem value="fornecedor">Considerar fornecedor</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" onClick={onReset}>
+            Cancelar
+          </Button>
+          <Button className="cta-lift" disabled={preview.total === 0} onClick={onSend}>
+            <Upload className="mr-2 size-4" aria-hidden /> Importar {n(preview.total)} linhas
+          </Button>
+        </div>
+      </div>
+
+      {preview.total - preview.valid > 0 ? (
+        <div className="rounded-lg border border-border/60">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+            <p className="text-xs font-medium">
+              Inconsistências{" "}
+              <span className="text-muted-foreground">(o banco valida tudo de novo)</span>
+            </p>
+            <Select value={verdict} onValueChange={(v) => setVerdict(v as typeof verdict)}>
+              <SelectTrigger className="h-7 w-[190px] text-xs" aria-label="Filtrar inconsistências">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas</SelectItem>
+                <SelectItem value="cnpj_invalido">CNPJ inválido</SelectItem>
+                <SelectItem value="cnpj_ausente">CNPJ vazio</SelectItem>
+                <SelectItem value="duplicado_no_arquivo">Repetido no arquivo</SelectItem>
+                <SelectItem value="relacionamento_invalido">Tipo não reconhecido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="max-h-64 overflow-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-surface-1">
+                <tr className="border-b border-border">
+                  <th scope="col" className="th-label px-3 py-1.5 text-left">
+                    Linha
+                  </th>
+                  <th scope="col" className="th-label px-3 py-1.5 text-left">
+                    CNPJ lido
+                  </th>
+                  <th scope="col" className="th-label px-3 py-1.5 text-left">
+                    Nome
+                  </th>
+                  <th scope="col" className="th-label px-3 py-1.5 text-left">
+                    Situação
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {problems.slice(0, 200).map((r) => (
+                  <tr key={r.r} className="border-b border-border/50">
+                    <td className="px-3 py-1.5 font-mono tabular">{r.line}</td>
+                    <td className="px-3 py-1.5 font-mono tabular">{r.cnpj ?? "—"}</td>
+                    <td className="max-w-[220px] truncate px-3 py-1.5">{r.razao ?? "—"}</td>
+                    <td className="px-3 py-1.5">
+                      <span
+                        className={
+                          r.verdict === "duplicado_no_arquivo" ? "text-warn" : "text-destructive"
+                        }
+                      >
+                        {ITEM_LABEL[r.verdict]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {problems.length > 200 ? (
+            <p className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+              Mostrando 200 de {n(problems.length)}. A lista completa fica no detalhe da importação.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Processing({
+  progress,
+  perSec,
+  pending,
+  failure,
+  onPause,
+  onRetry,
+  onReset,
+}: {
+  progress: ImportProgress;
+  perSec: number;
+  pending: boolean;
+  failure: string | null;
+  onPause: () => void;
+  onRetry: () => void;
+  onReset: () => void;
+}) {
+  const idx = PHASES.findIndex((p) => p.phase === progress.phase);
+  const current = idx < 0 ? PHASES.length : idx;
+  // Peso de cada fase na barra: o envio e a finalização são quase todo o tempo.
+  const base = [0, 3, 6, 55][Math.min(current, 3)] ?? 100;
+  const span = [3, 3, 49, 45][Math.min(current, 3)] ?? 0;
+  const frac = progress.total > 0 ? progress.sent / progress.total : 0;
+  const pctAll = Math.min(100, Math.round(base + span * frac));
+  const remaining = progress.total - progress.sent;
+  const eta =
+    progress.phase === "enviando_linhas" && perSec > 0 ? Math.ceil(remaining / perSec) : null;
+
+  return (
+    <div className="space-y-5" aria-live="polite">
+      <div>
+        <div className="mb-2 flex items-baseline justify-between">
+          <p className="text-sm font-medium">
+            {failure ? "Envio interrompido" : PHASES[Math.min(current, 3)]?.label}
+          </p>
+          <span className="font-mono tabular text-sm">{pctAll}%</span>
+        </div>
+        <Progress
+          value={pctAll}
+          className={cn(failure && "opacity-60")}
+          aria-label="Progresso da importação"
+        />
+        <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
+          <span className="font-mono tabular">
+            {n(progress.sent)} / {n(progress.total)} linhas
+          </span>
+          {perSec > 0 && pending ? (
+            <span className="font-mono tabular">
+              {n(Math.round(perSec))} linhas/s
+              {eta !== null
+                ? ` · ~${eta < 60 ? `${eta}s` : `${Math.ceil(eta / 60)} min`} restantes`
+                : ""}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <ol className="space-y-2">
+        {PHASES.map((p, i) => {
+          const done = i < current;
+          const active = i === current && !failure;
+          const failed = i === current && failure;
+          return (
+            <li
+              key={p.phase}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition-colors duration-300",
+                active ? "border-primary/40 bg-primary/5" : "border-border/60",
+                failed && "border-destructive/40 bg-destructive/5",
+              )}
+            >
+              <span className="grid size-6 place-items-center">
+                {done ? (
+                  <CheckCircle2 className="size-5 text-flow-in" aria-hidden />
+                ) : active ? (
+                  <Loader2 className="size-5 animate-spin text-primary" aria-hidden />
+                ) : failed ? (
+                  <XCircle className="size-5 text-destructive" aria-hidden />
+                ) : (
+                  <Circle className="size-4 text-muted-foreground/50" aria-hidden />
+                )}
+              </span>
+              <span className={cn(!done && !active && !failed && "text-muted-foreground")}>
+                {p.label}
+              </span>
+              {active && (p.phase === "enviando_linhas" || p.phase === "finalizando") ? (
+                <span className="ml-auto font-mono tabular text-xs text-muted-foreground">
+                  {pct(progress.sent, progress.total)}
+                </span>
+              ) : done ? (
+                <span className="ml-auto text-xs text-flow-in">feito</span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ol>
+
+      {failure ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-warn/40 bg-warn/10 px-3 py-2.5"
+        >
+          <AlertTriangle className="size-4 shrink-0 text-warn" aria-hidden />
+          <p className="min-w-0 flex-1 text-xs">{failure}</p>
+          <Button size="sm" variant="outline" onClick={onReset}>
+            Fechar
+          </Button>
+          <Button size="sm" onClick={onRetry}>
+            <RefreshCw className="mr-1.5 size-3.5" aria-hidden /> Tentar de novo
+          </Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted-foreground">
+            Se a conexão cair, retome pelo histórico de onde parou.
+          </p>
+          <Button variant="outline" size="sm" onClick={onPause} disabled={!pending}>
+            <Pause className="mr-1.5 size-3.5" aria-hidden /> Pausar envio
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Result({
+  s,
+  tenantId,
+  onDetail,
+  onReset,
+}: {
+  s: ImportSummary;
+  tenantId: string;
+  onDetail: () => void;
+  onReset: () => void;
+}) {
+  const bad = s.invalid_cnpj + s.missing_cnpj + s.invalid_relationship;
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <span className="grid size-11 animate-in zoom-in-50 place-items-center rounded-full bg-flow-in/15 text-flow-in duration-500">
+          <CheckCircle2 className="size-6" aria-hidden />
+        </span>
+        <div>
+          <p className="text-base font-semibold">Importação concluída</p>
+          <p className="text-xs text-muted-foreground">
+            {n(s.unique_cnpjs)} CNPJs em {n(s.unique_roots)} raízes · {n(s.new_relationships)}{" "}
+            relacionamentos novos
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Stat label="Novos na carteira" value={n(s.valid)} tone="text-flow-in" />
+        <Stat label="Já existiam" value={n(s.already_existing)} />
+        <Stat
+          label="Repetidos no arquivo"
+          value={n(s.duplicate_in_file)}
+          tone={s.duplicate_in_file ? "text-warn" : undefined}
+        />
+        <Stat label="Com problema" value={n(bad)} tone={bad ? "text-destructive" : undefined} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        O regime tributário ainda não foi consultado: os CNPJs entram como “Consulta pendente”.
+      </p>
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={onReset}>
+          Nova importação
+        </Button>
+        <Button variant="outline" onClick={onDetail}>
+          Ver linhas
+        </Button>
+        <Button asChild className="cta-lift">
+          <Link
+            to="/t/$tenantId/tributario/carteira"
+            params={{ tenantId }}
+            search={{ importacao: s.import_id }}
+          >
+            <Table2 className="mr-2 size-4" aria-hidden /> Ver na carteira
+            <ArrowRight className="ml-1 size-4" aria-hidden />
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Histórico
+// ---------------------------------------------------------------------------
+function StatusBadge({ status }: { status: ImportRow["status"] }) {
+  const s = STATUS[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium",
+        s.className,
+      )}
+    >
+      {status === "recebendo" || status === "finalizando" ? (
+        <span className="size-1.5 animate-pulse rounded-full bg-current" aria-hidden />
+      ) : null}
+      {s.label}
+    </span>
   );
 }
 
@@ -212,402 +957,203 @@ function ImportsTable({
 }) {
   const qc = useQueryClient();
   const [progress, setProgress] = useState<Record<string, ImportProgress>>({});
+  const [confirmCancel, setConfirmCancel] = useState<ImportRow | null>(null);
 
+  const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ["tax-imports", tenantId] });
+    void qc.invalidateQueries({ queryKey: ["tax-overview", tenantId] });
+  };
   const resume = useMutation({
     mutationFn: (row: ImportRow) =>
       resumeImport(row, (p) => setProgress((s) => ({ ...s, [row.id]: p }))),
     onSuccess: () => toast.success("Importação concluída."),
     onError: (e) => toast.error((e as Error).message),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ["tax-imports", tenantId] }),
+    onSettled: invalidate,
   });
   const cancel = useMutation({
     mutationFn: (id: string) => cancelImport(id),
     onSuccess: () => toast.success("Importação cancelada. As linhas recebidas ficam registradas."),
     onError: (e) => toast.error((e as Error).message),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ["tax-imports", tenantId] }),
+    onSettled: invalidate,
   });
 
-  const columns = useMemo<ColumnDef<ImportRow, unknown>[]>(
-    () => [
-      {
-        accessorKey: "file_name",
-        header: "Arquivo",
-        cell: ({ row }) => (
-          <button
-            type="button"
-            className="text-left font-medium hover:underline"
-            onClick={() => onOpen(row.original)}
-          >
-            {row.original.file_name}
-          </button>
-        ),
-      },
-      {
-        accessorKey: "created_at",
-        header: "Enviado em",
-        cell: ({ row }) => (
-          <span className="font-mono tabular text-xs">
-            {new Date(row.original.created_at).toLocaleString("pt-BR")}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "status",
-        header: "Situação",
-        cell: ({ row }) => <StatusBadge status={row.original.status} />,
-      },
-      {
-        accessorKey: "expected_rows",
-        header: "Linhas",
-        cell: ({ row }) => {
-          const p = progress[row.original.id];
-          if (p && p.phase !== "concluida") {
-            return (
-              <span className="font-mono tabular text-xs">
-                {n(p.sent)} / {n(p.total)}
-              </span>
-            );
-          }
-          return <span className="font-mono tabular text-xs">{n(row.original.expected_rows)}</span>;
-        },
-      },
-      {
-        accessorKey: "valid_count",
-        header: "Novos",
-        cell: ({ row }) => <span className="font-mono tabular">{n(row.original.valid_count)}</span>,
-      },
-      {
-        accessorKey: "existing_count",
-        header: "Já existiam",
-        cell: ({ row }) => (
-          <span className="font-mono tabular">{n(row.original.existing_count)}</span>
-        ),
-      },
-      {
-        accessorKey: "invalid_cnpj_count",
-        header: "Com problema",
-        cell: ({ row }) => {
-          const r = row.original;
-          return (
-            <span className="font-mono tabular">
-              {n(
-                r.invalid_cnpj_count +
-                  r.missing_cnpj_count +
-                  r.invalid_relationship_count +
-                  r.duplicate_count,
-              )}
-            </span>
-          );
-        },
-      },
-      {
-        id: "acoes",
-        header: "",
-        cell: ({ row }) => {
-          const r = row.original;
-          const open = r.status === "recebendo" || r.status === "finalizando";
-          if (!canWrite || !open) return null;
-          return (
-            <div className="flex justify-end gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={resume.isPending}
-                onClick={() => resume.mutate(r)}
-              >
-                <Play className="mr-1 size-3.5" /> Retomar
-              </Button>
-              {r.status === "recebendo" ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={cancel.isPending}
-                  onClick={() => cancel.mutate(r.id)}
+  if (loading) {
+    return (
+      <div className="space-y-2 p-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-10" />
+        ))}
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="p-4">
+        <EmptyState
+          icon={History}
+          title="Nenhuma importação ainda"
+          hint={canWrite ? "Arraste a planilha na área acima para começar." : undefined}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
+          <thead>
+            <tr className="border-b border-border">
+              <th scope="col" className="th-label px-4 py-2 text-left">
+                Arquivo
+              </th>
+              <th scope="col" className="th-label px-3 py-2 text-left">
+                Situação
+              </th>
+              <th scope="col" className="th-label px-3 py-2 text-right">
+                Linhas
+              </th>
+              <th scope="col" className="th-label px-3 py-2 text-right">
+                Novos
+              </th>
+              <th scope="col" className="th-label px-3 py-2 text-right">
+                Já existiam
+              </th>
+              <th scope="col" className="th-label px-3 py-2 text-right">
+                Recusadas
+              </th>
+              <th scope="col" className="th-label px-4 py-2 text-right">
+                <span className="sr-only">Ações</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const p = progress[r.id];
+              const open = r.status === "recebendo" || r.status === "finalizando";
+              const refused = problemsOf(r) + r.duplicate_count;
+              return (
+                <tr
+                  key={r.id}
+                  className="row-hover cursor-pointer border-b border-border/50"
+                  onClick={() => onOpen(r)}
                 >
-                  <XCircle className="mr-1 size-3.5" /> Cancelar
-                </Button>
-              ) : null}
-            </div>
-          );
-        },
-      },
-    ],
-    [canWrite, cancel, onOpen, progress, resume],
-  );
-
-  return (
-    <DataTable
-      columns={columns}
-      data={rows}
-      loading={loading}
-      emptyTitle="Nenhuma importação ainda"
-      emptyHint={
-        canWrite
-          ? "Use “Nova importação” para enviar a base de clientes e fornecedores."
-          : undefined
-      }
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Nova importação: arquivo → prévia → envio
-// ---------------------------------------------------------------------------
-type Loaded = { file: File; bytes: Uint8Array; sha256: string; read: ReadResult };
-
-function NewImportSheet({
-  open,
-  onOpenChange,
-  tenantId,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  tenantId: string;
-}) {
-  const qc = useQueryClient();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [reading, setReading] = useState(false);
-  const [readError, setReadError] = useState<string | null>(null);
-  const [defaultRel, setDefaultRel] = useState<RelationshipKind | "nenhum">("nenhum");
-  const [progress, setProgress] = useState<ImportProgress | null>(null);
-  const [summary, setSummary] = useState<ImportSummary | null>(null);
-
-  const preview: Preview | null = useMemo(
-    () =>
-      loaded ? buildPreview(loaded.read.rows, defaultRel === "nenhum" ? null : defaultRel) : null,
-    [loaded, defaultRel],
-  );
-
-  const reset = () => {
-    setLoaded(null);
-    setReadError(null);
-    setProgress(null);
-    setSummary(null);
-    if (inputRef.current) inputRef.current.value = "";
-  };
-
-  const onFile = async (file: File | undefined) => {
-    if (!file) return;
-    reset();
-    setReading(true);
-    try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      const read = await readTabular(file.name, bytes);
-      setLoaded({ file, bytes, sha256: await sha256Hex(bytes), read });
-    } catch (e) {
-      setReadError((e as Error).message);
-    } finally {
-      setReading(false);
-    }
-  };
-
-  const send = useMutation({
-    mutationFn: async () => {
-      if (!loaded) throw new Error("Escolha um arquivo.");
-      abortRef.current = new AbortController();
-      return runImport({
-        tenantId,
-        file: loaded.file,
-        bytes: loaded.bytes,
-        sha256: loaded.sha256,
-        kind: loaded.read.kind,
-        sheetName: loaded.read.sheetName,
-        headerLine: loaded.read.headerLine,
-        rows: loaded.read.rows,
-        defaultRelationship: defaultRel === "nenhum" ? null : defaultRel,
-        onProgress: setProgress,
-        signal: abortRef.current.signal,
-      });
-    },
-    onSuccess: (s) => {
-      setSummary(s);
-      toast.success("Importação concluída.");
-    },
-    onError: (e) =>
-      toast.error(
-        (e as Error).name === "AbortError"
-          ? "Envio pausado. Retome pelo histórico quando quiser."
-          : (e as Error).message,
-      ),
-    onSettled: () => void qc.invalidateQueries({ queryKey: ["tax-imports", tenantId] }),
-  });
-
-  const pct =
-    progress && progress.total > 0 ? Math.round((progress.sent / progress.total) * 100) : 0;
-  const problems = (preview?.rows ?? []).filter((r) => r.verdict !== "valido").slice(0, 50);
-
-  return (
-    <SideSheet
-      open={open}
-      onOpenChange={(v) => {
-        if (!v && send.isPending) return; // não fecha no meio do envio
-        if (!v) reset();
-        onOpenChange(v);
-      }}
-      title="Nova importação"
-      description="XLSX ou CSV, até 100 mil linhas e 30 MB. Colunas: CNPJ (obrigatória), razão social, nome fantasia, tipo."
-      footer={
-        summary ? (
-          <Button className="w-full" onClick={() => onOpenChange(false)}>
-            Fechar
-          </Button>
-        ) : send.isPending ? (
-          <Button variant="outline" className="w-full" onClick={() => abortRef.current?.abort()}>
-            Pausar envio
-          </Button>
-        ) : (
-          <Button
-            className="w-full cta-lift"
-            disabled={!preview || preview.total === 0}
-            onClick={() => send.mutate()}
-          >
-            <Upload className="mr-2 size-4" /> Importar {preview ? n(preview.total) : ""} linhas
-          </Button>
-        )
-      }
-    >
-      <div className="space-y-5">
-        <div className="space-y-2">
-          <Label htmlFor="tax-file">Arquivo</Label>
-          <input
-            id="tax-file"
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.csv,.txt"
-            disabled={send.isPending}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-surface-2 file:px-3 file:py-1.5"
-            onChange={(e) => void onFile(e.target.files?.[0])}
-          />
-          {reading ? <p className="text-xs text-muted-foreground">Lendo o arquivo…</p> : null}
-          {readError ? <p className="text-xs text-destructive">{readError}</p> : null}
-          {loaded ? (
-            <p className="text-xs text-muted-foreground">
-              {loaded.read.kind.toUpperCase()}
-              {loaded.read.sheetName ? ` · aba “${loaded.read.sheetName}”` : ""}
-              {loaded.read.encoding ? ` · ${loaded.read.encoding}` : ""} · cabeçalho na linha{" "}
-              {loaded.read.headerLine} · colunas: {Object.values(loaded.read.columns).join(", ")}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Quando o tipo estiver vazio, considerar</Label>
-          <Select
-            value={defaultRel}
-            onValueChange={(v) => setDefaultRel(v as typeof defaultRel)}
-            disabled={send.isPending}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="nenhum">Não considerar (linha fica com problema)</SelectItem>
-              <SelectItem value="cliente">Cliente</SelectItem>
-              <SelectItem value="fornecedor">Fornecedor</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {preview && !summary ? <PreviewBlock preview={preview} problems={problems} /> : null}
-
-        {progress && !summary ? (
-          <div className="space-y-2">
-            <p className="text-sm">
-              {progress.phase === "enviando_linhas"
-                ? `Enviando linhas: ${n(progress.sent)} de ${n(progress.total)}`
-                : progress.phase === "finalizando"
-                  ? `Finalizando: ${n(progress.sent)} de ${n(progress.total)}`
-                  : progress.phase === "enviando_arquivo"
-                    ? "Guardando o arquivo original…"
-                    : "Registrando a importação…"}
-            </p>
-            <Progress value={pct} />
-            <p className="text-xs text-muted-foreground">
-              Se a conexão cair, a importação fica no histórico e pode ser retomada de onde parou.
-            </p>
-          </div>
-        ) : null}
-
-        {summary ? <SummaryBlock s={summary} /> : null}
-      </div>
-    </SideSheet>
-  );
-}
-
-function PreviewBlock({ preview, problems }: { preview: Preview; problems: PreviewRow[] }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-semibold">Prévia (o banco valida tudo de novo)</p>
-      <div className="grid grid-cols-2 gap-2">
-        <Kpi label="Linhas" value={n(preview.total)} interactive={false} />
-        <Kpi label="Válidas" value={n(preview.valid)} interactive={false} />
-        <Kpi label="Repetidas no arquivo" value={n(preview.duplicateInFile)} interactive={false} />
-        <Kpi
-          label="Com problema"
-          value={n(preview.invalidCnpj + preview.missingCnpj + preview.invalidRelationship)}
-          hint={`${n(preview.invalidCnpj)} inválidos · ${n(preview.missingCnpj)} vazios · ${n(preview.invalidRelationship)} sem tipo`}
-          interactive={false}
-        />
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {n(preview.uniqueCnpjs)} CNPJs únicos em {n(preview.uniqueRoots)} raízes ·{" "}
-        {n(preview.matrizes)} matrizes · {n(preview.filiais)} filiais · {n(preview.alfanumericos)}{" "}
-        alfanuméricos
-        {preview.padded > 0 ? ` · ${n(preview.padded)} com zeros à esquerda completados` : ""}
-      </p>
-      {problems.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-border">
-                <th scope="col" className="th-label">
-                  Linha
-                </th>
-                <th scope="col" className="th-label">
-                  CNPJ
-                </th>
-                <th scope="col" className="th-label">
-                  Situação
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {problems.map((r) => (
-                <tr key={r.r} className="border-b border-border/60">
-                  <td className="px-3 py-1.5 font-mono tabular">{r.line}</td>
-                  <td className="px-3 py-1.5 font-mono tabular">{r.cnpj ?? "—"}</td>
-                  <td className="px-3 py-1.5">{ITEM_LABEL[r.verdict]}</td>
+                  <td className="px-4 py-2.5">
+                    <button
+                      type="button"
+                      className="focus-glow block max-w-[280px] truncate rounded text-left font-medium hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpen(r);
+                      }}
+                    >
+                      {r.file_name}
+                    </button>
+                    <span
+                      className="font-mono tabular text-[11px] text-muted-foreground"
+                      title={dateTime(r.created_at)}
+                    >
+                      {r.file_kind.toUpperCase()} · {since(r.created_at)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <StatusBadge status={r.status} />
+                    {p && p.phase !== "concluida" ? (
+                      <Progress
+                        value={p.total ? (p.sent / p.total) * 100 : 0}
+                        className="mt-1.5 h-1 w-24"
+                      />
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular text-xs">
+                    {open ? `${n(r.received_rows)} / ${n(r.expected_rows)}` : n(r.expected_rows)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular text-flow-in">
+                    {n(r.valid_count)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono tabular">
+                    {n(r.existing_count)}
+                  </td>
+                  <td
+                    className={cn(
+                      "px-3 py-2.5 text-right font-mono tabular",
+                      refused > 0 && "text-warn",
+                    )}
+                  >
+                    {n(refused)}
+                  </td>
+                  <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    {canWrite && open ? (
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={resume.isPending}
+                          onClick={() => resume.mutate(r)}
+                        >
+                          {resume.isPending && resume.variables?.id === r.id ? (
+                            <Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />
+                          ) : (
+                            <Play className="mr-1 size-3.5" aria-hidden />
+                          )}
+                          Retomar
+                        </Button>
+                        {r.status === "recebendo" ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={cancel.isPending}
+                            onClick={() => setConfirmCancel(r)}
+                          >
+                            <XCircle className="mr-1 size-3.5" aria-hidden /> Cancelar
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : r.status === "concluida" ? (
+                      <div className="flex justify-end">
+                        <Button asChild size="sm" variant="ghost">
+                          <Link
+                            to="/t/$tenantId/tributario/carteira"
+                            params={{ tenantId }}
+                            search={{ importacao: r.id }}
+                          >
+                            Carteira <ArrowRight className="ml-1 size-3.5" aria-hidden />
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : null}
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SummaryBlock({ s }: { s: ImportSummary }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-semibold">Resultado gravado</p>
-      <div className="grid grid-cols-2 gap-2">
-        <Kpi label="Novos na carteira" value={n(s.valid)} interactive={false} />
-        <Kpi label="Já existiam" value={n(s.already_existing)} interactive={false} />
-        <Kpi label="Repetidos no arquivo" value={n(s.duplicate_in_file)} interactive={false} />
-        <Kpi
-          label="Com problema"
-          value={n(s.invalid_cnpj + s.missing_cnpj + s.invalid_relationship)}
-          interactive={false}
-        />
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-      <p className="text-xs text-muted-foreground">
-        {n(s.unique_cnpjs)} CNPJs únicos em {n(s.unique_roots)} raízes · {n(s.new_relationships)}{" "}
-        relacionamentos novos. O regime tributário ainda não foi consultado.
-      </p>
-    </div>
+
+      <AlertDialog open={Boolean(confirmCancel)} onOpenChange={(v) => !v && setConfirmCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar esta importação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmCancel?.file_name}: as linhas já recebidas ficam registradas, mas nada entra
+              na carteira. Para importar de novo, envie o arquivo outra vez.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (confirmCancel) cancel.mutate(confirmCancel.id);
+                setConfirmCancel(null);
+              }}
+            >
+              Cancelar importação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -626,9 +1172,22 @@ type ItemRow = {
 
 const PAGE = 50;
 
-function ImportDetailSheet({ imp, onClose }: { imp: ImportRow | null; onClose: () => void }) {
+function ImportDetailSheet({
+  imp,
+  tenantId,
+  onClose,
+}: {
+  imp: ImportRow | null;
+  tenantId: string;
+  onClose: () => void;
+}) {
   const [status, setStatus] = useState<ItemStatus | "todos">("todos");
   const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    setStatus("todos");
+    setPage(0);
+  }, [imp?.id]);
 
   const items = useQuery({
     enabled: Boolean(imp),
@@ -648,75 +1207,63 @@ function ImportDetailSheet({ imp, onClose }: { imp: ImportRow | null; onClose: (
     },
   });
 
-  const columns = useMemo<ColumnDef<ItemRow, unknown>[]>(
-    () => [
-      {
-        accessorKey: "row_number",
-        header: "Linha",
-        cell: ({ row }) => (
-          <span className="font-mono tabular text-xs">
-            {imp ? imp.first_data_line + row.original.row_number - 1 : row.original.row_number}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "cnpj",
-        header: "CNPJ",
-        cell: ({ row }) => (
-          <span className="font-mono tabular text-xs">
-            {row.original.cnpj ? formatCnpj(row.original.cnpj) : (row.original.cnpj_raw ?? "—")}
-          </span>
-        ),
-      },
-      { accessorKey: "razao_social", header: "Razão social" },
-      {
-        accessorKey: "status",
-        header: "Situação",
-        cell: ({ row }) => (
-          <span className="text-xs">
-            {ITEM_LABEL[row.original.status]}
-            {row.original.error ? ` · ${row.original.error}` : ""}
-            {row.original.normalization_note ? ` · ${row.original.normalization_note}` : ""}
-          </span>
-        ),
-      },
-    ],
-    [imp],
-  );
-
   return (
     <SideSheet
       open={Boolean(imp)}
-      onOpenChange={(v) => {
-        if (!v) {
-          setStatus("todos");
-          setPage(0);
-          onClose();
-        }
-      }}
+      onOpenChange={(v) => !v && onClose()}
       title={imp?.file_name ?? ""}
       description={
         imp
-          ? `${STATUS_LABEL[imp.status]} · ${n(imp.received_rows)} de ${n(imp.expected_rows)} linhas recebidas`
+          ? `${STATUS[imp.status].label} · ${n(imp.received_rows)} de ${n(imp.expected_rows)} linhas recebidas · ${dateTime(imp.created_at)}`
           : undefined
+      }
+      footer={
+        imp?.status === "concluida" ? (
+          <Button asChild className="w-full">
+            <Link
+              to="/t/$tenantId/tributario/carteira"
+              params={{ tenantId }}
+              search={{ importacao: imp.id }}
+            >
+              <Table2 className="mr-2 size-4" aria-hidden /> Ver estes CNPJs na carteira
+            </Link>
+          </Button>
+        ) : undefined
       }
     >
       {imp ? (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
-            <Kpi label="Novos" value={n(imp.valid_count)} interactive={false} />
-            <Kpi label="Já existiam" value={n(imp.existing_count)} interactive={false} />
-            <Kpi label="Repetidos" value={n(imp.duplicate_count)} interactive={false} />
-            <Kpi
+            <Stat label="Novos" value={n(imp.valid_count)} tone="text-flow-in" />
+            <Stat label="Já existiam" value={n(imp.existing_count)} />
+            <Stat
+              label="Repetidos"
+              value={n(imp.duplicate_count)}
+              tone={imp.duplicate_count ? "text-warn" : undefined}
+            />
+            <Stat
               label="Com problema"
-              value={n(
-                imp.invalid_cnpj_count + imp.missing_cnpj_count + imp.invalid_relationship_count,
-              )}
-              interactive={false}
+              value={n(problemsOf(imp))}
+              tone={problemsOf(imp) ? "text-destructive" : undefined}
+              hint={`${n(imp.invalid_cnpj_count)} inválidos · ${n(imp.missing_cnpj_count)} vazios · ${n(imp.invalid_relationship_count)} sem tipo`}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Situação da linha</Label>
+          <dl className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg border border-border/60 px-3 py-2">
+              <dt className="text-muted-foreground">CNPJs únicos</dt>
+              <dd className="font-mono tabular">
+                {n(imp.unique_cnpjs)} em {n(imp.unique_roots)} raízes
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border/60 px-3 py-2">
+              <dt className="text-muted-foreground">SHA-256 do original</dt>
+              <dd className="truncate font-mono" title={imp.file_sha256}>
+                {imp.file_sha256.slice(0, 16)}…
+              </dd>
+            </div>
+          </dl>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Situação da linha</Label>
             <Select
               value={status}
               onValueChange={(v) => {
@@ -724,7 +1271,7 @@ function ImportDetailSheet({ imp, onClose }: { imp: ImportRow | null; onClose: (
                 setPage(0);
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -743,21 +1290,86 @@ function ImportDetailSheet({ imp, onClose }: { imp: ImportRow | null; onClose: (
               onRetry={() => void items.refetch()}
             />
           ) : (
-            <DataTable
-              columns={columns}
-              data={items.data?.rows ?? []}
-              loading={items.isLoading}
-              density="compact"
-              exportName={`importacao-${imp.id.slice(0, 8)}`}
-              emptyTitle="Nenhuma linha nesta situação"
-              serverPagination={{
-                page,
-                pageSize: PAGE,
-                total: items.data?.total ?? 0,
-                unit: "linha(s)",
-                onPageChange: setPage,
-              }}
-            />
+            <div className="rounded-lg border border-border/60">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th scope="col" className="th-label px-3 py-1.5 text-left">
+                      Linha
+                    </th>
+                    <th scope="col" className="th-label px-3 py-1.5 text-left">
+                      CNPJ
+                    </th>
+                    <th scope="col" className="th-label px-3 py-1.5 text-left">
+                      Situação
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.isLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                        <tr key={i}>
+                          <td colSpan={3} className="px-3 py-1.5">
+                            <Skeleton className="h-4" />
+                          </td>
+                        </tr>
+                      ))
+                    : (items.data?.rows ?? []).map((r) => (
+                        <tr key={r.row_number} className="border-b border-border/50 align-top">
+                          <td className="px-3 py-1.5 font-mono tabular">
+                            {imp.first_data_line + r.row_number - 1}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            <span className="font-mono tabular">
+                              {r.cnpj ? formatCnpj(r.cnpj) : (r.cnpj_raw ?? "—")}
+                            </span>
+                            {r.razao_social ? (
+                              <span className="block max-w-[180px] truncate text-muted-foreground">
+                                {r.razao_social}
+                              </span>
+                            ) : null}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            <span
+                              className={cn(
+                                r.status === "valido" && "text-flow-in",
+                                r.status === "duplicado_no_arquivo" && "text-warn",
+                                [
+                                  "cnpj_invalido",
+                                  "cnpj_ausente",
+                                  "relacionamento_invalido",
+                                ].includes(r.status) && "text-destructive",
+                              )}
+                            >
+                              {ITEM_LABEL[r.status]}
+                            </span>
+                            {r.error ? (
+                              <span className="block text-muted-foreground">{r.error}</span>
+                            ) : null}
+                            {r.normalization_note ? (
+                              <span className="block text-muted-foreground">
+                                {r.normalization_note}
+                              </span>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+              {!items.isLoading && (items.data?.rows.length ?? 0) === 0 ? (
+                <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+                  Nenhuma linha nesta situação.
+                </p>
+              ) : null}
+              <Pager
+                page={page}
+                pageSize={PAGE}
+                total={items.data?.total ?? 0}
+                onPageChange={setPage}
+                unit="linha(s)"
+                loading={items.isFetching}
+              />
+            </div>
           )}
         </div>
       ) : null}

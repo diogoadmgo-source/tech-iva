@@ -1,0 +1,4 @@
+20:48:02 leitura e validação no navegador (70.055 linhas) 1.85 s
+20:48:24 importação 70k concluída em 21.9 s (desde o clique)
+(medições de busca/filtro desta execução descartadas: o script lia a contagem antes da resposta; ver escala-api.txt e conferencia-sql.txt)
+20:49:12 exportar Excel da carteira inteira 37.86 s

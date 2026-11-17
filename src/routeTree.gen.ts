@@ -54,6 +54,8 @@ import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/publi
 import { Route as AuthenticatedTTenantIdSettingsIndexRouteImport } from './routes/_authenticated/t.$tenantId.settings.index'
 import { Route as AuthenticatedTTenantIdSettingsIntegrationsRouteImport } from './routes/_authenticated/t.$tenantId.settings.integrations'
 import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './routes/_authenticated/t.$tenantId.settings.users'
+import { Route as AuthenticatedTTenantIdTributarioIndexRouteImport } from './routes/_authenticated/t.$tenantId.tributario.index'
+import { Route as AuthenticatedTTenantIdTributarioCarteiraRouteImport } from './routes/_authenticated/t.$tenantId.tributario.carteira'
 import { Route as AuthenticatedTTenantIdTributarioImportacoesRouteImport } from './routes/_authenticated/t.$tenantId.tributario.importacoes'
 import { Route as ApiPublicRtcApuracaoRefRouteImport } from './routes/api/public/rtc.apuracao.$ref'
 
@@ -310,6 +312,18 @@ const AuthenticatedTTenantIdSettingsUsersRoute =
     path: '/settings/users',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdTributarioIndexRoute =
+  AuthenticatedTTenantIdTributarioIndexRouteImport.update({
+    id: '/tributario/',
+    path: '/tributario/',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
+const AuthenticatedTTenantIdTributarioCarteiraRoute =
+  AuthenticatedTTenantIdTributarioCarteiraRouteImport.update({
+    id: '/tributario/carteira',
+    path: '/tributario/carteira',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const AuthenticatedTTenantIdTributarioImportacoesRoute =
   AuthenticatedTTenantIdTributarioImportacoesRouteImport.update({
     id: '/tributario/importacoes',
@@ -366,9 +380,11 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
+  '/t/$tenantId/tributario/': typeof AuthenticatedTTenantIdTributarioIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -413,9 +429,11 @@ export interface FileRoutesByTo {
   '/t/$tenantId': typeof AuthenticatedTTenantIdIndexRoute
   '/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings': typeof AuthenticatedTTenantIdSettingsIndexRoute
+  '/t/$tenantId/tributario': typeof AuthenticatedTTenantIdTributarioIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -463,9 +481,11 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/': typeof AuthenticatedTTenantIdIndexRoute
   '/_authenticated/t/$tenantId/settings/integrations': typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
+  '/_authenticated/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/_authenticated/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/_authenticated/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
+  '/_authenticated/t/$tenantId/tributario/': typeof AuthenticatedTTenantIdTributarioIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -513,9 +533,11 @@ export interface FileRouteTypes {
     | '/t/$tenantId/'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/t/$tenantId/tributario/carteira'
     | '/t/$tenantId/tributario/importacoes'
     | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings/'
+    | '/t/$tenantId/tributario/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -560,9 +582,11 @@ export interface FileRouteTypes {
     | '/t/$tenantId'
     | '/t/$tenantId/settings/integrations'
     | '/t/$tenantId/settings/users'
+    | '/t/$tenantId/tributario/carteira'
     | '/t/$tenantId/tributario/importacoes'
     | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings'
+    | '/t/$tenantId/tributario'
   id:
     | '__root__'
     | '/'
@@ -609,9 +633,11 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/'
     | '/_authenticated/t/$tenantId/settings/integrations'
     | '/_authenticated/t/$tenantId/settings/users'
+    | '/_authenticated/t/$tenantId/tributario/carteira'
     | '/_authenticated/t/$tenantId/tributario/importacoes'
     | '/api/public/rtc/apuracao/$ref'
     | '/_authenticated/t/$tenantId/settings/'
+    | '/_authenticated/t/$tenantId/tributario/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -951,6 +977,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/tributario/': {
+      id: '/_authenticated/t/$tenantId/tributario/'
+      path: '/tributario'
+      fullPath: '/t/$tenantId/tributario/'
+      preLoaderRoute: typeof AuthenticatedTTenantIdTributarioIndexRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
+    '/_authenticated/t/$tenantId/tributario/carteira': {
+      id: '/_authenticated/t/$tenantId/tributario/carteira'
+      path: '/tributario/carteira'
+      fullPath: '/t/$tenantId/tributario/carteira'
+      preLoaderRoute: typeof AuthenticatedTTenantIdTributarioCarteiraRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/_authenticated/t/$tenantId/tributario/importacoes': {
       id: '/_authenticated/t/$tenantId/tributario/importacoes'
       path: '/tributario/importacoes'
@@ -994,8 +1034,10 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdIndexRoute: typeof AuthenticatedTTenantIdIndexRoute
   AuthenticatedTTenantIdSettingsIntegrationsRoute: typeof AuthenticatedTTenantIdSettingsIntegrationsRoute
   AuthenticatedTTenantIdSettingsUsersRoute: typeof AuthenticatedTTenantIdSettingsUsersRoute
+  AuthenticatedTTenantIdTributarioCarteiraRoute: typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   AuthenticatedTTenantIdTributarioImportacoesRoute: typeof AuthenticatedTTenantIdTributarioImportacoesRoute
   AuthenticatedTTenantIdSettingsIndexRoute: typeof AuthenticatedTTenantIdSettingsIndexRoute
+  AuthenticatedTTenantIdTributarioIndexRoute: typeof AuthenticatedTTenantIdTributarioIndexRoute
 }
 
 const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
@@ -1029,10 +1071,14 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
       AuthenticatedTTenantIdSettingsIntegrationsRoute,
     AuthenticatedTTenantIdSettingsUsersRoute:
       AuthenticatedTTenantIdSettingsUsersRoute,
+    AuthenticatedTTenantIdTributarioCarteiraRoute:
+      AuthenticatedTTenantIdTributarioCarteiraRoute,
     AuthenticatedTTenantIdTributarioImportacoesRoute:
       AuthenticatedTTenantIdTributarioImportacoesRoute,
     AuthenticatedTTenantIdSettingsIndexRoute:
       AuthenticatedTTenantIdSettingsIndexRoute,
+    AuthenticatedTTenantIdTributarioIndexRoute:
+      AuthenticatedTTenantIdTributarioIndexRoute,
   }
 
 const AuthenticatedTTenantIdRouteWithChildren =

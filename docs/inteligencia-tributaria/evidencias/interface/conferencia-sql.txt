@@ -1,0 +1,10 @@
+ cnpjs | clientes | fornecedores | matrizes | alfa | forn_alfa | busca_cnpj | busca_nome 
+-------+----------+--------------+----------+------+-----------+------------+------------
+  4357 |     3391 |          974 |     1442 |    6 |         6 |         30 |          8
+(1 row)
+
+relacionamentos|60656
+cnpjs|60648
+cnpj 90012*|2596
+fornecedores|13352
+nome Teste 06999|1

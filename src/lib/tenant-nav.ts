@@ -20,6 +20,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  Table2,
   Tag,
   ToggleLeft,
   Users,
@@ -54,6 +55,8 @@ export type NavRoute =
   | "/t/$tenantId/features"
   | "/t/$tenantId/notices"
   | "/t/$tenantId/settings"
+  | "/t/$tenantId/tributario"
+  | "/t/$tenantId/tributario/carteira"
   | "/t/$tenantId/tributario/importacoes";
 
 export type NavBadge = "alerts" | "jobs";
@@ -100,7 +103,13 @@ const OVERVIEW: NavItem = { label: "Visão geral", block: "1.7.2", icon: Gauge, 
 function companyGroups(isCompany: boolean): NavGroup[] {
   const admin: NavItem[] = isCompany
     ? [
-        { label: "Onboarding", block: "3.2", icon: Rocket, to: "/t/$tenantId/onboarding", roles: MANAGERS },
+        {
+          label: "Onboarding",
+          block: "3.2",
+          icon: Rocket,
+          to: "/t/$tenantId/onboarding",
+          roles: MANAGERS,
+        },
         {
           label: "Integrações",
           block: "1.7.3",
@@ -108,7 +117,13 @@ function companyGroups(isCompany: boolean): NavGroup[] {
           to: "/t/$tenantId/settings/integrations",
           roles: MANAGERS,
         },
-        { label: "Assinatura", block: "1.7.5", icon: Layers, to: "/t/$tenantId/plans", roles: BILLING },
+        {
+          label: "Assinatura",
+          block: "1.7.5",
+          icon: Layers,
+          to: "/t/$tenantId/plans",
+          roles: BILLING,
+        },
       ]
     : [];
   return [
@@ -133,7 +148,12 @@ function companyGroups(isCompany: boolean): NavGroup[] {
       label: "Ferramentas",
       items: [
         { label: "Simulador", block: "3.13", icon: Calculator, to: "/t/$tenantId/simulador" },
-        { label: "Validador de XML", block: "3.13", icon: ShieldCheck, to: "/t/$tenantId/validador" },
+        {
+          label: "Validador de XML",
+          block: "3.13",
+          icon: ShieldCheck,
+          to: "/t/$tenantId/validador",
+        },
         { label: "Carteira de parceiros", block: "3.3", icon: Network, to: "/t/$tenantId/chain" },
         { label: "Regime tributário", block: "3.5", icon: Scale, to: "/t/$tenantId/regime" },
       ],
@@ -141,6 +161,8 @@ function companyGroups(isCompany: boolean): NavGroup[] {
     {
       label: "Inteligência Tributária",
       items: [
+        { label: "Painel", block: "IT.3", icon: Gauge, to: "/t/$tenantId/tributario" },
+        { label: "Carteira", block: "IT.3", icon: Table2, to: "/t/$tenantId/tributario/carteira" },
         {
           label: "Importações",
           block: "IT.1",
@@ -244,7 +266,13 @@ export const NAV_GROUPS_BY_KIND: Record<TenantKind, NavGroup[]> = {
     {
       label: "Governança",
       items: [
-        { label: "Auditoria", block: "1.7.6", icon: ScrollText, to: "/t/$tenantId/audit", roles: AUDITORS },
+        {
+          label: "Auditoria",
+          block: "1.7.6",
+          icon: ScrollText,
+          to: "/t/$tenantId/audit",
+          roles: AUDITORS,
+        },
         {
           label: "Usuários",
           block: "1.7.3",
