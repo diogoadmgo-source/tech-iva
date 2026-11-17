@@ -1,0 +1,28 @@
+== Distribuição das classes (dados SINTÉTICOS, banco local)
+ public_classification | count 
+-----------------------+-------
+ simples_nacional      | 20421
+ excluido_simples      | 10400
+ nao_identificado      |  9562
+ lucro_presumido       |  7135
+ lucro_real            |  7102
+ mei_simei             |  6028
+(6 rows)
+
+== Invariantes (todas devem ser 0)
+                regra                 | count 
+--------------------------------------+-------
+ nao_identificado sem o aviso         |     0
+ lucro_* sem ano-calendário na base   |     0
+ classe sem fonte/competência na base |     0
+ lucro_real/presumido sem ECF         |     0
+(4 rows)
+
+== Execuções
+ competencia |  status   | started_at | finished_at 
+-------------+-----------+------------+-------------
+ 2026-10     | concluida | 22:00:41   | 22:01:47
+ 2026-10     | concluida | 22:02:24   | 22:02:40
+ 2026-11     | concluida | 22:03:08   | 22:03:39
+(3 rows)
+

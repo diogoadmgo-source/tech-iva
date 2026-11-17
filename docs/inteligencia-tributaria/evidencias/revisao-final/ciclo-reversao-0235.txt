@@ -1,0 +1,14 @@
+# Ciclo de reversão 0235 no Supabase local (17/11/2026, dentro de uma transação desfeita no final)
+ANTES
+rtc_apuracao_expirar_pendentes() acl=postgres=X/postgres,service_role=X/postgres | rtc_apuracao_receber_tiquete(text,jsonb,jsonb) acl=postgres=X/postgres,service_role=X/postgres
+janela_24h=true tabela_log=true hist0235=true
+DEPOIS_DA_REVERSAO
+rtc_apuracao_receber_tiquete(text,jsonb) acl=postgres=X/postgres,service_role=X/postgres | rtc_apuracao_expirar_pendentes() acl=postgres=X/postgres,service_role=X/postgres
+janela_24h=false tabela_log=true hist0235=false
+psql:ciclo-reversao-0235.sql:137: NOTICE:  relation "rtc_webhook_recebido" already exists, skipping
+psql:ciclo-reversao-0235.sql:143: NOTICE:  column "meta" of relation "rtc_webhook_recebido" already exists, skipping
+psql:ciclo-reversao-0235.sql:143: NOTICE:  column "erro" of relation "rtc_webhook_recebido" already exists, skipping
+psql:ciclo-reversao-0235.sql:146: NOTICE:  relation "rtc_webhook_recebido_recebido_em_idx" already exists, skipping
+DEPOIS_DE_REAPLICAR
+rtc_apuracao_receber_tiquete(text,jsonb,jsonb) acl=postgres=X/postgres,service_role=X/postgres | rtc_apuracao_expirar_pendentes() acl=postgres=X/postgres,service_role=X/postgres
+janela_24h=true tabela_log=true hist0235=true

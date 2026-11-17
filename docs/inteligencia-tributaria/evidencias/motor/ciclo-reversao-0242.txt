@@ -1,0 +1,38 @@
+== antes
+ funcoes_public | papel | historico | consultas | entidades 
+----------------+-------+-----------+-----------+-----------
+            191 |     1 |         1 |    336008 |     60648
+(1 row)
+
+BEGIN
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DO
+DELETE 1
+== depois da reversão (dentro da transação)
+ funcoes_public | papel | historico | consultas | entidades 
+----------------+-------+-----------+-----------+-----------
+            180 |     0 |         0 |    336008 |     60648
+(1 row)
+
+ funcoes_tax_ingest_restantes 
+------------------------------
+                            0
+(1 row)
+
+ROLLBACK
+== após ROLLBACK do teste (estado local intacto)
+ funcoes_public | papel | historico | consultas | entidades 
+----------------+-------+-----------+-----------+-----------
+            191 |     1 |         1 |    336008 |     60648
+(1 row)
+

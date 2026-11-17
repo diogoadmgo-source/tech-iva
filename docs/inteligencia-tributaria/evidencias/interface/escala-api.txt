@@ -1,0 +1,7 @@
+206 0.458417s  pagina padrao
+206 0.045709s  busca cnpj
+200 0.144741s  busca nome
+206 0.179410s  fornecedor+classe
+206 0.434869s  ordem por classe
+206 0.051754s  count entidades
+206 0.072395s  count entidades classe

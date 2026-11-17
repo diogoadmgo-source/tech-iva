@@ -1,0 +1,51 @@
+# Saída real de: npx vitest run src/lib/tax-intel --reporter=verbose (17/11/2026)
+
+ RUN  v4.1.11 /home/user/tech-iva
+
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > valida o exemplo oficial da Receita (12.ABC.345/01DE-35) 2ms
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > valida CNPJ numérico e recusa DV errado 1ms
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > recusa sequência repetida e DV com letra 0ms
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > completa zeros à esquerda só para 12 ou 13 dígitos numéricos 1ms
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > vazio é ausente, não inválido 0ms
+ ✓ src/lib/tax-intel/cnpj.test.ts > CNPJ numérico e alfanumérico > separa raiz, ordem, DV, matriz e filial 0ms
+ ✓ src/lib/tax-intel/preview.test.ts > prévia da importação (mesmas regras do banco) > reproduz a base de 12 linhas da suíte SQL 8ms
+ ✓ src/lib/tax-intel/preview.test.ts > prévia da importação (mesmas regras do banco) > sem padrão definido, relacionamento vazio é inválido 0ms
+ ✓ src/lib/tax-intel/separation.test.ts > separação da regra de regime existente > o código do módulo não importa o cadastro de CNPJ antigo nem a dica de regime 3ms
+ ✓ src/lib/tax-intel/separation.test.ts > separação da regra de regime existente > as migrations do módulo não chamam regime_from_registry nem leem counterparties 1ms
+ ✓ src/lib/tax-intel/separation.test.ts > separação da regra de regime existente > a regra existente segue no lugar (não foi alterada por este módulo) 0ms
+ ✓ src/lib/tax-intel/zip-guard.test.ts > proteção contra zip-bomb > aceita uma planilha comum 2ms
+ ✓ src/lib/tax-intel/zip-guard.test.ts > proteção contra zip-bomb > recusa taxa de compressão absurda numa entrada grande 1ms
+ ✓ src/lib/tax-intel/zip-guard.test.ts > proteção contra zip-bomb > recusa conteúdo descompactado acima de 300 MB 0ms
+ ✓ src/lib/tax-intel/zip-guard.test.ts > proteção contra zip-bomb > recusa ZIP64 e arquivo que não é ZIP 0ms
+ ✓ src/lib/tax-intel/relationship.test.ts > tipo de relacionamento > vazio devolve null (vale o padrão da importação) 2ms
+ ✓ src/lib/tax-intel/relationship.test.ts > tipo de relacionamento > reconhece variações com caixa, acento e espaços 1ms
+ ✓ src/lib/tax-intel/relationship.test.ts > tipo de relacionamento > texto desconhecido devolve lista vazia (relacionamento inválido) 0ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de XLSX (exceljs) > lê CNPJ numérico sem notação científica, rich text e fórmula como texto 73ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de XLSX (exceljs) > recusa planilha sem coluna de CNPJ 17ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de XLSX (exceljs) > cellText não perde dígitos de inteiro grande 0ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de CSV (papaparse) > detecta ponto e vírgula e UTF-8 com BOM 10ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de CSV (papaparse) > detecta vírgula com campo entre aspas 1ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de CSV (papaparse) > cai para Windows-1252 quando o arquivo não é UTF-8 0ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de CSV (papaparse) > mapeia cabeçalhos comuns 0ms
+ ✓ src/lib/tax-intel/read-file.test.ts > leitura de CSV (papaparse) > recusa mais de 100 mil linhas 105ms
+stdout | src/lib/tax-intel/read-file.test.ts > volume: 70 mil linhas > CSV: lê e monta a prévia
+[tax-intel] CSV 70k: leitura + prévia em 340 ms
+
+ ✓ src/lib/tax-intel/read-file.test.ts > volume: 70 mil linhas > CSV: lê e monta a prévia 342ms
+stdout | src/lib/tax-intel/read-file.test.ts > volume: 70 mil linhas > XLSX: lê e monta a prévia
+[tax-intel] XLSX 70k (1.5 MB): leitura + prévia em 1782 ms
+
+ ✓ src/lib/tax-intel/read-file.test.ts > volume: 70 mil linhas > XLSX: lê e monta a prévia 3854ms
+
+ Test Files  6 passed (6)
+      Tests  28 passed (28)
+   Start at  19:26:41
+   Duration  4.94s (transform 420ms, setup 0ms, import 737ms, tests 4.44s, environment 1ms)
+
+
+# Suíte completa do projeto: npx vitest run
+ Test Files  25 passed (25)
+      Tests  157 passed (157)
+   Start at  19:26:47
+   Duration  5.02s (transform 1.06s, setup 0ms, import 2.17s, tests 5.47s, environment 3ms)
+

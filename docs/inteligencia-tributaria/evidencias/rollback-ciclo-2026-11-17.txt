@@ -1,0 +1,155 @@
+# Ciclo instalar → reverter → instalar (Postgres 16 descartável, privilégios padrão do fluxa-dev), 17/11/2026
+antes=202 instalado=352 revertido=202
+diff antes × revertido: nenhuma diferença
+
+## Objetos criados pela 0240 e 0241 (instalado − antes)
+> bucket tax-evidences
+> bucket tax-imports
+> fn tax_audit(uuid,text,text,text,jsonb,jsonb) {postgres=X/postgres,service_role=X/postgres}
+> fn tax_block_mutation() {postgres=X/postgres,service_role=X/postgres}
+> fn tax_can_read_audit(uuid) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_can_read_evidence_file(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_can_read_import_file(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_can_upload_evidence(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_can_upload_import(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_can_write(uuid) {postgres=X/postgres,service_role=X/postgres}
+> fn tax_cnpj_is_valid(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_cnpj_strip(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_evidences_guard() {postgres=X/postgres,service_role=X/postgres}
+> fn tax_import_add_items(uuid,jsonb) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_import_cancel(uuid) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_import_create(uuid,text,bigint,text,text,text,integer,tax_relationship_kind,integer) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_import_finalize(uuid) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_import_summary(tax_imports) {postgres=X/postgres,service_role=X/postgres}
+> fn tax_is_platform_manager() {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_key_visible(text,tax_granularity) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_parse_relationship(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_regimes_guard() {postgres=X/postgres,service_role=X/postgres}
+> fn tax_scope_tenants() {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> fn tax_storage_tenant(text) {postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+> mig 20261117200000
+> mig 20261117200100
+> pol public.tax_audit_logs.tax_audit_logs_read
+> pol public.tax_consultations.tax_consultations_read
+> pol public.tax_entities.tax_entities_read
+> pol public.tax_evidences.tax_evidences_read
+> pol public.tax_import_items.tax_import_items_read
+> pol public.tax_imports.tax_imports_read
+> pol public.tax_job_items.tax_job_items_read
+> pol public.tax_processing_jobs.tax_processing_jobs_read
+> pol public.tax_regime_events.tax_regime_events_read
+> pol public.tax_regime_history.tax_regime_history_read
+> pol public.tax_regimes.tax_regimes_read
+> pol public.tax_relationships.tax_relationships_read
+> pol public.tax_source_run_files.tax_source_run_files_read
+> pol public.tax_source_runs.tax_source_runs_read
+> pol public.tax_sources.tax_sources_read
+> pol public.tax_tenant_classifications.tax_tenant_classifications_read
+> pol storage.objects.tax_evidences_download
+> pol storage.objects.tax_evidences_upload
+> pol storage.objects.tax_imports_download
+> pol storage.objects.tax_imports_upload
+> rel public.tax_audit_logs r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_audit_logs_id_seq S {postgres=rwU/postgres,service_role=rwU/postgres}
+> rel public.tax_audit_logs_pkey i 
+> rel public.tax_audit_logs_tenant i 
+> rel public.tax_consultations r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_consultations_key i 
+> rel public.tax_consultations_open_data_once i 
+> rel public.tax_consultations_pkey i 
+> rel public.tax_entities r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_entities_pkey i 
+> rel public.tax_entities_public_class i 
+> rel public.tax_entities_raiz i 
+> rel public.tax_entities_uf_municipio i 
+> rel public.tax_evidences r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_evidences_lookup i 
+> rel public.tax_evidences_pkey i 
+> rel public.tax_import_items r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_import_items_cnpj i 
+> rel public.tax_import_items_pkey i 
+> rel public.tax_import_items_status i 
+> rel public.tax_import_items_tenant i 
+> rel public.tax_imports r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_imports_pkey i 
+> rel public.tax_imports_sha i 
+> rel public.tax_imports_storage_path_key i 
+> rel public.tax_imports_tenant i 
+> rel public.tax_job_items r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_job_items_claim i 
+> rel public.tax_job_items_pkey i 
+> rel public.tax_processing_jobs r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_processing_jobs_one_refresh i 
+> rel public.tax_processing_jobs_pkey i 
+> rel public.tax_processing_jobs_tenant i 
+> rel public.tax_regime_events r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_regime_events_key i 
+> rel public.tax_regime_events_once i 
+> rel public.tax_regime_events_pkey i 
+> rel public.tax_regime_history r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_regime_history_once i 
+> rel public.tax_regime_history_pkey i 
+> rel public.tax_regime_history_raiz i 
+> rel public.tax_regimes r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_regimes_key i 
+> rel public.tax_regimes_pkey i 
+> rel public.tax_regimes_regime_lookup_key_start_date_key i 
+> rel public.tax_relationships r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_relationships_cnpj i 
+> rel public.tax_relationships_pkey i 
+> rel public.tax_relationships_raiz i 
+> rel public.tax_source_run_files r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_source_run_files_pkey i 
+> rel public.tax_source_runs r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_source_runs_pkey i 
+> rel public.tax_source_runs_started i 
+> rel public.tax_sources r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_sources_pkey i 
+> rel public.tax_tenant_classifications r {postgres=arwdDxt/postgres,service_role=arwdDxt/postgres,authenticated=r/postgres}
+> rel public.tax_tenant_classifications_class i 
+> rel public.tax_tenant_classifications_pkey i 
+> trg tax_audit_logs.tax_audit_logs_immutable
+> trg tax_audit_logs.tax_audit_logs_no_truncate
+> trg tax_consultations.tax_consultations_immutable
+> trg tax_consultations.tax_consultations_no_truncate
+> trg tax_evidences.tax_evidences_guard
+> trg tax_evidences.tax_evidences_no_truncate
+> trg tax_regime_events.tax_regime_events_immutable
+> trg tax_regime_events.tax_regime_events_no_truncate
+> trg tax_regime_history.tax_regime_history_immutable
+> trg tax_regime_history.tax_regime_history_no_truncate
+> trg tax_regimes.tax_regimes_guard
+> type public.tax_audit_logs
+> type public.tax_classification
+> type public.tax_cnpj
+> type public.tax_cnpj_raiz
+> type public.tax_consultation_status
+> type public.tax_consultations
+> type public.tax_ecf_regime
+> type public.tax_entities
+> type public.tax_evidence_fact
+> type public.tax_evidence_origin
+> type public.tax_evidence_status
+> type public.tax_evidences
+> type public.tax_granularity
+> type public.tax_import_item_status
+> type public.tax_import_items
+> type public.tax_import_status
+> type public.tax_imports
+> type public.tax_job_item_status
+> type public.tax_job_items
+> type public.tax_job_kind
+> type public.tax_job_status
+> type public.tax_processing_jobs
+> type public.tax_public_regime
+> type public.tax_regime_events
+> type public.tax_regime_history
+> type public.tax_regimes
+> type public.tax_relationship_kind
+> type public.tax_relationships
+> type public.tax_source_run_files
+> type public.tax_source_run_status
+> type public.tax_source_runs
+> type public.tax_sources
+> type public.tax_tenant_classifications
+> type public.tax_tri_state

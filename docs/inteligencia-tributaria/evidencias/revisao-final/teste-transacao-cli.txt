@@ -1,0 +1,13 @@
+# Como o Supabase CLI 2.122.1 aplica os arquivos (banco descartável "txprobe" no Postgres local)
+# Arquivo 20980101000000_ok.sql: create table tx_probe_ok
+# Arquivo 20990101000000_probe.sql: create table tx_probe_a; create function tx_probe_f; select 1/0; create table tx_probe_b
+
+Applying migration 20980101000000_ok.sql...
+Applying migration 20990101000000_probe.sql...
+{"_tag":"Error","error":{"code":"DbPushApplyError","message":"ERROR: division by zero (SQLSTATE 22012)\nAt statement: 2\nselect 1/0"}}
+
+Tabelas que ficaram:   tx_probe_ok              (tx_probe_a NÃO ficou, tx_probe_f NÃO ficou)
+Histórico gravado:     20980101000000           (a versão que falhou NÃO foi registrada)
+
+Conclusão: cada arquivo é atômico (tudo ou nada, incluindo o registro no histórico);
+arquivos anteriores que deram certo continuam aplicados.

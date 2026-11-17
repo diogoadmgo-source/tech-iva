@@ -113,7 +113,6 @@ export function TenantSidebar({
           )}
         </div>
 
-
         {/* Cabeçalho de contexto: responde "onde estou" */}
         <div className="px-2">
           <button
@@ -216,7 +215,7 @@ export function TenantSidebar({
                         {fullName ?? email ?? "Conta"}
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
-                        {context.papel ?? role
+                        {(context.papel ?? role)
                           ? ROLE_LABELS[(context.papel ?? role) as MemberRole]
                           : "Acesso por hierarquia"}
                       </span>
@@ -292,7 +291,7 @@ function SidebarItem({
       onFocus={warm}
       onTouchStart={warm}
       onClick={onNavigate}
-      activeOptions={{ exact: item.to === "/t/$tenantId" }}
+      activeOptions={{ exact: item.to === "/t/$tenantId" || item.to === "/t/$tenantId/tributario" }}
       activeProps={{
         className:
           "bg-surface-2 text-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r before:bg-primary [&_svg]:text-primary",

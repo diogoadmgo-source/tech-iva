@@ -1,0 +1,16 @@
+# Impressão digital do TechIVA-Prod (lfufwoirpwlsdmststbr), lida em 17/11/2026 ~21h50 UTC, somente leitura.
+# Contagem exata de linhas por tabela (count(*)). Base de comparação para o backup lógico e para a verificação pós-migration.
+# Tabelas voláteis (mudam com login): auth.sessions, auth.refresh_tokens, auth.mfa_*; public.audit_log e credential_usage crescem com uso.
+historico supabase_migrations.schema_migrations=138 (ultima 20260923200000)
+tamanho do banco=95 MB
+auth: identities=1 mfa_amr_claims=46 mfa_challenges=3 mfa_factors=1 refresh_tokens=101 sessions=23 users=1 (demais 0)
+credit: policies=3 (contracts, ledger, offers, repayments, risk_scores = 0)
+public: alerts=20 audit_log=274 calc_rule_cache=12 calc_simulations=1 cnpj_registry=2 credential_usage=42 dfe_events=36
+        dfe_sync_state=1 integration_credentials=5 invitations=4 jobs=27 memberships=1 plans=4 platform_notices=17
+        price_scenarios=1 profiles=1 rtc_api_quota=7 rtc_apuracao=23 (erro=19, solicitada=4) rtc_class_trib=2
+        rule_versions=2 tax_cash_events=23 tenant_features=1 tenants=2
+        (zero: api_keys audit_findings bank_accounts bank_transactions billing_webhook_events calc_classtrib_aplicavel
+         calc_classtrib_matriz commission_rules counterparties dfe_pending_manifest integrations invoice_items invoices
+         price_lines products prontidao_item receivables regime_simulations rtc_apuracao_conta rtc_debito subscriptions xml_validations)
+storage: buckets=3 (avatars, dfe-raw, dfe-secrets) objects=26 migrations=81
+funcoes alteradas pela 0235, estado atual: rtc_apuracao_receber_tiquete(text,jsonb) e rtc_apuracao_expirar_pendentes(), ACL postgres+service_role, janela 2h

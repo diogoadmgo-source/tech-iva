@@ -1,0 +1,9 @@
+141 arquivos em supabase/migrations/
+138 versões lidas de ../versoes-fluxa-dev-2026-11-17-2058.txt
+última versão registrada: 20260923200000
+seriam aplicadas (3):
+  20260926030000_0235_retorno_da_receita_registrado_e_24h.sql
+  20261117200000_0240_inteligencia_tributaria_fundacao.sql
+  20261117200100_0241_inteligencia_tributaria_importacao.sql
+
+OK: nenhum problema encontrado.
