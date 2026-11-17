@@ -26,30 +26,40 @@ fontes corrigiram o mesmo defeito no mesmo arquivo, de jeitos diferentes.
 
 - Migração nova: `supabase/migrations/AAAAMMDDHHMMSS_NNNN_descricao.sql`.
 - `db/migrations/` **não** é a fonte da verdade (ver o LEIA-ME de lá).
-- A migração só existe em produção depois de rodada no SQL Editor do Supabase.
-  Gravar o arquivo no projeto não aplica nada.
-- Arquivos prontos para colar no SQL Editor ficam em `docs/colar-no-supabase/`
-  (fora do controle de versão; a migração em si é que fica versionada em
-  `supabase/migrations/`).
+- A migração só existe em produção depois de aplicada com o Supabase CLI
+  (`supabase db push --dry-run`, conferir a lista, depois `supabase db push`).
+  Gravar o arquivo no projeto não aplica nada. O passo a passo e as regras estão
+  em `supabase/migrations/README.md`. Desde 17/11/2026, não se cola mais migração
+  no SQL Editor nem se aplica pelo MCP: os dois deixam o histórico diferente do
+  repositório.
 
-## Ordem: publicar o código antes de colar mudanças do banco
+## Ordem: publicar o código antes de aplicar mudanças do banco
 
-Regra: **sempre publique o código mais recente ANTES de colar uma migração**
-no SQL Editor. Migração nova costuma mudar o que o banco devolve (por exemplo,
+Regra: **sempre publique o código mais recente ANTES de aplicar uma migração**,
+a menos que o cabeçalho da migração diga o contrário (a 0235, por exemplo, exige
+o banco antes do código). Migração nova costuma mudar o que o banco devolve (por exemplo,
 passar a devolver "sem valor" onde antes devolvia zero), e só o código novo
 sabe mostrar isso direito.
 
-A ordem desta rodada (Fase 0), passo a passo:
+### Histórico: rodada da Fase 0 (já concluída, não repetir)
 
-1. Publicar a versão com a Tarefa 6 (commit `ae1b6eb` ou posterior), depois de
+Registro do que foi feito antes de 17/11/2026, mantido só como histórico. **Não é
+instrução vigente.** As migrações 0231 a 0234 já estão aplicadas no fluxa-dev:
+foram coladas no SQL Editor naquela época e depois registradas no histórico com
+`supabase migration repair`. Hoje, qualquer migração nova segue apenas o
+procedimento com o Supabase CLI descrito em `supabase/migrations/README.md`.
+
+O que foi feito, na ordem:
+
+1. Publicada a versão com a Tarefa 6 (commit `ae1b6eb` ou posterior), depois de
    `bash scripts/pronto-para-publicar.sh` dizer **PRONTO PARA PUBLICAR**.
-2. Colar no SQL Editor as migrações 0231, 0232, 0233 e 0234 (arquivos em
-   `docs/colar-no-supabase/`). Entre si, a ordem não importa.
-3. Só então fazer a consulta do experimento (plano da Fase 0, Tarefa 4, Passo 9).
+2. Aplicadas as migrações 0231, 0232, 0233 e 0234 pelo SQL Editor (os arquivos
+   estão em `supabase/migrations/`).
+3. Feita a consulta do experimento (plano da Fase 0, Tarefa 4, Passo 9).
 
-Por quê: a versão publicada antes da Tarefa 6 mostraria "Seu cálculo bate com
-a apuração da Receita" sem ter comparado nada, assim que a primeira apuração
-chegasse.
+O motivo da ordem: a versão publicada antes da Tarefa 6 mostraria "Seu cálculo
+bate com a apuração da Receita" sem ter comparado nada, assim que a primeira
+apuração chegasse.
 
 ## Verificação automática
 
