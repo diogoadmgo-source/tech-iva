@@ -21,3 +21,22 @@ esperam encontrar:
 
 Ao contrário da pré-visualização do PR #1, **não foi preciso marcar nenhuma migration como
 aplicada sem executar**: as duplicadas saíram da pasta.
+
+## 2ª execução, com os dados de apoio
+
+Migrations ✅, sem aviso de "fora de ordem" (o PR #1 tinha esse aviso por causa das
+duplicadas). Conferido na pré-visualização:
+
+| Verificação | Resultado |
+| --- | --- |
+| Migrations registradas | **139**, igual ao número de arquivos em `supabase/migrations/` |
+| Última versão | `20260926030000` (0235) |
+| Versões duplicadas registradas | 0 |
+| Objeto da 0235 (`rtc_webhook_recebido`) | criado |
+
+## Reprodução local com o Supabase completo
+
+O mesmo histórico também rodou do zero num Supabase local (CLI 2.122.1, Postgres 17.11,
+com Auth, REST e Storage), com os mesmos dois dados de apoio. Eles ficaram como arquivos
+**só locais**, fora do repositório. Foram 141 migrations aplicadas (139 do repositório + 2
+de apoio), sem erro.
