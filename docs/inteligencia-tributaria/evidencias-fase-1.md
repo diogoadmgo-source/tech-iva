@@ -99,5 +99,11 @@ bunx tsc --noEmit
 bunx vitest run
 ```
 
-No GitHub, o workflow `Inteligência Tributária · SQL` roda a mesma suíte em todo PR que
-toque nas migrations 024x, nos testes ou no script.
+O workflow `Inteligência Tributária · SQL` foi feito para rodar a mesma suíte no GitHub em
+todo PR que toque nas migrations 024x, nos testes ou no script. **Até 17/11/2026 ele não
+rodou no PR #1**: o GitHub não registrou nenhuma execução de Actions nesta branch. A
+evidência acima é de execução local.
+
+Desde 17/11/2026 a suíte aplica, antes das migrations, os mesmos privilégios padrão do
+fluxa-dev (tabelas, sequências e funções novas nascem com acesso para `authenticated`).
+Dependências, reinstalação e reversão estão em `diagnostico-migrations.md`.

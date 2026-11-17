@@ -1,0 +1,12 @@
+Counter({'IGUAL': 133, 'AUSENTE': 5, 'SEM_CONTEUDO_REG': 5})
+20260818200000 split_premissas_antecipacao AUSENTE
+20260820150000 dfe_distribuicao_estado_e_cofre AUSENTE
+20260916173820 0230_diagnostico_acumula SEM_CONTEUDO_REG
+20260917120000 0231_fila_nao_repete_tiquete_gasto SEM_CONTEUDO_REG
+20260923180000 0232_conciliacao_ausente_nao_e_zero SEM_CONTEUDO_REG
+20260923190000 0233_apuracao_divergencia_ausente_nao_e_zero SEM_CONTEUDO_REG
+20260923200000 0234_ingestao_nao_entendeu_e_erro SEM_CONTEUDO_REG
+20260926030000 0235_retorno_da_receita_registrado_e_24h AUSENTE
+20261117200000 0240_inteligencia_tributaria_fundacao AUSENTE
+20261117200100 0241_inteligencia_tributaria_importacao AUSENTE
+prod sem arquivo: []

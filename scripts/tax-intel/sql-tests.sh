@@ -20,6 +20,12 @@ createdb "$DB"
 psql -X -q -d "$DB" -c "alter database \"$DB\" set search_path = \"\$user\", public, extensions"
 
 "${PSQL[@]}" -f db/tests/tax_intel/00_supabase_stubs.sql
+# Privilégios padrão como no fluxa-dev (pg_default_acl do papel postgres no schema public,
+# lido em 17/11/2026): tabelas, sequências e funções novas já nascem com acesso para
+# authenticated. As migrations do módulo precisam revogar isso explicitamente.
+"${PSQL[@]}" -c "alter default privileges for role postgres in schema public grant all on tables to authenticated, service_role;
+  alter default privileges for role postgres in schema public grant all on sequences to authenticated, service_role;
+  alter default privileges for role postgres in schema public grant execute on functions to authenticated, service_role;"
 for m in supabase/migrations/*_024[0-9]_inteligencia_tributaria_*.sql; do
   echo "== migration $(basename "$m")"
   "${PSQL[@]}" -f "$m"

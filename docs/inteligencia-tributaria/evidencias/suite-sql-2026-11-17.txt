@@ -265,17 +265,17 @@ PASS  carga: válidas = recebidas − inválidas − repetidas
 PASS  carga: toda linha tem um status final
 PASS  carga: válidas + duplicadas + inválidas = recebidas
 PASS  carga: relacionamentos novos gravados
-TEMPO  create                        7.7 ms  (0 linhas)
-TEMPO  add_items (todos os lotes)    9949.4 ms  (70000 linhas)
-TEMPO  add_items (pior lote)         229.2 ms  (1000 linhas)
-TEMPO  reenvio de lote               142.6 ms  (1000 linhas)
-TEMPO  finalize (7 chamadas)         6755.5 ms  (70000 linhas)
-TEMPO  finalize (pior chamada)       1036.5 ms  (10000 linhas)
-TEMPO  total                         17486.3 ms  (70000 linhas)
-TEMPO  RLS: contar relacionamentos   8.4 ms  (69809 linhas)
-TEMPO  RLS: contar entidades (públi  487.7 ms  (69807 linhas)
-TEMPO  RLS: página de 50 linhas [ow  38.2 ms  (50 linhas)
-TEMPO  RLS: contar relacionamentos   8.9 ms  (69811 linhas)
-TEMPO  RLS: contar entidades (públi  91.2 ms  (2 linhas)
+TEMPO  create                        4.8 ms  (0 linhas)
+TEMPO  add_items (todos os lotes)    9864.8 ms  (70000 linhas)
+TEMPO  add_items (pior lote)         207.3 ms  (1000 linhas)
+TEMPO  reenvio de lote               128.4 ms  (1000 linhas)
+TEMPO  finalize (7 chamadas)         6985.1 ms  (70000 linhas)
+TEMPO  finalize (pior chamada)       1181.8 ms  (10000 linhas)
+TEMPO  total                         17610.8 ms  (70000 linhas)
+TEMPO  RLS: contar relacionamentos   11.1 ms  (69809 linhas)
+TEMPO  RLS: contar entidades (públi  184.6 ms  (69807 linhas)
+TEMPO  RLS: página de 50 linhas [ow  17.8 ms  (50 linhas)
+TEMPO  RLS: contar relacionamentos   11.3 ms  (69811 linhas)
+TEMPO  RLS: contar entidades (públi  93.8 ms  (2 linhas)
 
 253 testes · 253 PASS · 0 FAIL

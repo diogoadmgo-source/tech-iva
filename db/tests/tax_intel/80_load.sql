@@ -74,7 +74,7 @@ begin
     v_res := public.tax_import_finalize(v_imp);
     v_ms := extract(epoch from clock_timestamp() - t0) * 1000;
     v_sum := v_sum + v_ms; v_max := greatest(v_max, v_ms); b := b + 1;
-    if b = 1 then
+    if b = 1 and n > 10000 then  -- com até 10 mil linhas a 1ª chamada já conclui
       perform t.eq('primeira chamada deixa a importação "finalizando"', v_res->>'status', 'finalizando');
       begin
         perform public.tax_import_cancel(v_imp);
