@@ -21,6 +21,17 @@ estado `MIGRATIONS_FAILED` da branch `main` no painel do Supabase desde 17/08.
 (e-mail fictício `preview-admin@preview.invalid`, sem senha) foi inserido em
 `auth.users`. A migration antiga não foi alterada, nem no repositório nem no fluxa-dev.
 
+### Dados de apoio criados só na pré-visualização
+
+Algumas migrations antigas usam ids que só existem no fluxa-dev. Os registros abaixo foram
+criados **apenas** na pré-visualização, para que a sequência de migrations do repositório
+chegue até a 0240 e a 0241 sem alterar nenhuma migration:
+
+| Registro | Para qual migration | Origem do id |
+| --- | --- | --- |
+| `auth.users` `bd3cd68f-…` (`preview-admin@preview.invalid`, sem senha) | `20260817192810_735bbf89…` (papel `platform_admin` + perfil) | usuário real do fluxa-dev |
+| `tenants` `40bb64ba-…`, canal "Canal de teste (pré-visualização)" | `20260817211332_dd9fbc30…` (regra de comissão do canal) | canal "Contábil Alfa" do seed, que no fluxa-dev recebeu esse id aleatório e foi removido depois pela 0215 |
+
 Correção definitiva possível, ainda **não feita** e fora do escopo deste PR: a migration só
 insere o membership se o usuário existir em `auth.users`. Isso exige alterar uma migration
 antiga, o que depende de autorização.
