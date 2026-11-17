@@ -3,7 +3,7 @@
 -- alcançável pelo front. register_credential não recebia finalidades nem autoria,
 -- e credentials_status não devolvia finalidades, falhas_consecutivas nem quem
 -- subiu — ou seja, as colunas existiriam sempre com o default e a tela não teria
--- o que mostrar. APLICAR NO techiva-prod junto das 0150/0151.
+-- o que mostrar. (Nota antiga pedia aplicar no techiva-prod; esse projeto foi excluído em 17/11/2026.)
 
 -- ─────────────────── finalidades: lista fechada, validada ─────────────────
 -- Trigger em vez de CHECK para poder evoluir a lista sem recriar a constraint.
