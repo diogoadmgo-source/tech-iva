@@ -1,0 +1,26 @@
+$ node scripts/migrations/verificar-historico.mjs --versoes docs/historico-migrations/evidencias/versoes-fluxa-dev-2026-11-17.txt
+# ANTES (main, e6d3c16)
+141 arquivos em supabase/migrations/
+138 versões lidas de docs/historico-migrations/evidencias/versoes-fluxa-dev-2026-11-17.txt
+última versão registrada: 20260923200000
+seriam aplicadas (3):
+  20260818200000_split_premissas_antecipacao.sql   <- FORA DE ORDEM
+  20260820150000_dfe_distribuicao_estado_e_cofre.sql   <- FORA DE ORDEM
+  20260926030000_0235_retorno_da_receita_registrado_e_24h.sql
+
+PROBLEMAS (4):
+  - descrição "split_premissas_antecipacao" repetida com versões diferentes: 20260818173625_split_premissas_antecipacao.sql, 20260818200000_split_premissas_antecipacao.sql
+  - descrição "dfe_distribuicao_estado_e_cofre" repetida com versões diferentes: 20260820123740_dfe_distribuicao_estado_e_cofre.sql, 20260820150000_dfe_distribuicao_estado_e_cofre.sql
+  - fora de ordem (anterior à última registrada): 20260818200000_split_premissas_antecipacao.sql
+  - fora de ordem (anterior à última registrada): 20260820150000_dfe_distribuicao_estado_e_cofre.sql
+exit=1
+
+# DEPOIS (esta branch)
+139 arquivos em supabase/migrations/
+138 versões lidas de docs/historico-migrations/evidencias/versoes-fluxa-dev-2026-11-17.txt
+última versão registrada: 20260923200000
+seriam aplicadas (1):
+  20260926030000_0235_retorno_da_receita_registrado_e_24h.sql
+
+OK: nenhum problema encontrado.
+exit=0
