@@ -26,16 +26,18 @@ fontes corrigiram o mesmo defeito no mesmo arquivo, de jeitos diferentes.
 
 - Migração nova: `supabase/migrations/AAAAMMDDHHMMSS_NNNN_descricao.sql`.
 - `db/migrations/` **não** é a fonte da verdade (ver o LEIA-ME de lá).
-- A migração só existe em produção depois de rodada no SQL Editor do Supabase.
-  Gravar o arquivo no projeto não aplica nada.
-- Arquivos prontos para colar no SQL Editor ficam em `docs/colar-no-supabase/`
-  (fora do controle de versão; a migração em si é que fica versionada em
-  `supabase/migrations/`).
+- A migração só existe em produção depois de aplicada com o Supabase CLI
+  (`supabase db push --dry-run`, conferir a lista, depois `supabase db push`).
+  Gravar o arquivo no projeto não aplica nada. O passo a passo e as regras estão
+  em `supabase/migrations/README.md`. Desde 17/11/2026, não se cola mais migração
+  no SQL Editor nem se aplica pelo MCP: os dois deixam o histórico diferente do
+  repositório.
 
 ## Ordem: publicar o código antes de colar mudanças do banco
 
-Regra: **sempre publique o código mais recente ANTES de colar uma migração**
-no SQL Editor. Migração nova costuma mudar o que o banco devolve (por exemplo,
+Regra: **sempre publique o código mais recente ANTES de aplicar uma migração**,
+a menos que o cabeçalho da migração diga o contrário (a 0235, por exemplo, exige
+o banco antes do código). Migração nova costuma mudar o que o banco devolve (por exemplo,
 passar a devolver "sem valor" onde antes devolvia zero), e só o código novo
 sabe mostrar isso direito.
 
