@@ -1,16 +1,19 @@
 import { cn } from "@/lib/utils";
 import {
-  CLASSIFICATION_LABEL,
   CLASSIFICATION_TONE,
+  classificationText,
   type TaxClassification,
 } from "@/lib/tax-intel/labels";
 
 /** Selo da classificação gravada no banco. Não deduz nada. */
 export function ClassificationBadge({
   value,
+  basis,
   className,
 }: {
   value: TaxClassification;
+  /** Base gravada no banco: dá o ano da ECF a Real/Presumido. */
+  basis?: Record<string, unknown> | null | undefined;
   className?: string | undefined;
 }) {
   return (
@@ -24,7 +27,7 @@ export function ClassificationBadge({
       {value === "consulta_pendente" ? (
         <span className="size-1.5 animate-pulse rounded-full bg-muted-foreground/60" aria-hidden />
       ) : null}
-      {CLASSIFICATION_LABEL[value]}
+      {classificationText(value, basis)}
     </span>
   );
 }

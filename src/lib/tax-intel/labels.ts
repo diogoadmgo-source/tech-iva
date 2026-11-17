@@ -101,3 +101,59 @@ export function since(iso: string, now = Date.now()): string {
 
 export const dateTime = (iso: string) =>
   new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+/** Nome curto das fontes (códigos de tax_sources). */
+export const SOURCE_NAME: Record<string, string> = {
+  receita_simples: "Receita · Simples e SIMEI",
+  receita_estabelecimentos: "Receita · Estabelecimentos",
+  receita_empresas: "Receita · Empresas",
+  receita_regime_tributario: "Receita · Regime na ECF",
+  brasilapi_cnpj: "BrasilAPI",
+  ibs_cbs_regular: "IBS/CBS regular",
+};
+export const sourceName = (code: string) => SOURCE_NAME[code] ?? code;
+
+type Basis = Record<string, unknown>;
+const str = (v: unknown) => (v === null || v === undefined || v === "" ? null : String(v));
+const isoDate = (v: unknown) => {
+  const s = str(v);
+  return s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s.split("-").reverse().join("/") : s;
+};
+
+/**
+ * Rótulo com o período de referência: Real e Presumido só existem com o
+ * ano-calendário da ECF ao lado (histórico, não regime vigente).
+ */
+export function classificationText(c: TaxClassification, basis: Basis | null | undefined): string {
+  const ano = str(basis?.["ano_calendario"]);
+  if ((c === "lucro_real" || c === "lucro_presumido") && ano)
+    return `${CLASSIFICATION_LABEL[c]} (ECF ${ano})`;
+  return CLASSIFICATION_LABEL[c];
+}
+
+/** Linhas legíveis da base da classificação, na ordem em que importam. */
+export function basisLines(basis: Basis | null | undefined): { label: string; value: string }[] {
+  if (!basis) return [];
+  const out: { label: string; value: string }[] = [];
+  const push = (label: string, v: string | null) => {
+    if (v) out.push({ label, value: v });
+  };
+  const fonte = str(basis["fonte"]);
+  push("Fonte", fonte ? sourceName(fonte) : null);
+  push("Competência dos dados", str(basis["competencia"]));
+  push("Ano-calendário da ECF", str(basis["ano_calendario"]));
+  const formas = basis["forma_original"];
+  push("Forma declarada", Array.isArray(formas) ? formas.join(", ") : str(formas));
+  push("Opção pelo Simples", isoDate(basis["data_opcao_simples"]));
+  push("Opção pelo SIMEI", isoDate(basis["data_opcao_mei"]));
+  push("Exclusão do Simples", isoDate(basis["data_exclusao"]));
+  push("Motivo", str(basis["motivo"]));
+  push("Aviso", str(basis["aviso"]));
+  return out;
+}
+
+/** Texto único para planilha (uma célula). */
+export const basisText = (basis: Basis | null | undefined) =>
+  basisLines(basis)
+    .map((l) => `${l.label}: ${l.value}`)
+    .join(" · ");

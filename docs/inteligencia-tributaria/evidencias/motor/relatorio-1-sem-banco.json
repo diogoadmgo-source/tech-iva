@@ -1,0 +1,113 @@
+{
+  "competencia": "2026-10",
+  "modo": "sem-banco",
+  "datasets": {
+    "receita_simples": {
+      "files": [
+        {
+          "name": "Simples.zip",
+          "size": 1987870,
+          "sha256": "9657f14f128d2985238f967facc7c4db5ff43eb598cbdb83bb1050d1995b1e80",
+          "rows": 767535,
+          "matched": 23340,
+          "layout_checked": 2000,
+          "layout_bad": 0,
+          "seconds": 0
+        }
+      ],
+      "matched": 23340,
+      "not_found": 14,
+      "inserted": 23354,
+      "cached": 0
+    },
+    "receita_empresas": {
+      "files": [
+        {
+          "name": "Empresas0.zip",
+          "size": 7803653,
+          "sha256": "03361064d1a67d9f12d1ba3f76f970e97bab8dfbdb38447364e3db66d4cbf654",
+          "rows": 1523354,
+          "matched": 23354,
+          "layout_checked": 2000,
+          "layout_bad": 0,
+          "seconds": 0
+        }
+      ],
+      "matched": 23354,
+      "not_found": 0,
+      "inserted": 23354,
+      "cached": 0
+    },
+    "receita_estabelecimentos": {
+      "files": [
+        {
+          "name": "Estabelecimentos0.zip",
+          "size": 17537076,
+          "sha256": "c266799b118f0a56a97f8669a1590ec0ed4df18b89df01ce8b28c6c7d2e243fa",
+          "rows": 3060648,
+          "matched": 60648,
+          "layout_checked": 2000,
+          "layout_bad": 0,
+          "seconds": 1
+        }
+      ],
+      "matched": 60648,
+      "not_found": 0,
+      "inserted": 60648,
+      "cached": 0
+    },
+    "receita_regime_tributario": {
+      "files": [
+        {
+          "name": "Lucro Presumido.zip",
+          "size": 1331137,
+          "sha256": "3ada43fa32e96ff254a70a00d44be8c7fb0ed49cd64b675e251179ea29d7df28",
+          "rows": 306244,
+          "matched": 12982,
+          "header": [
+            "ano",
+            "cnpj",
+            "cnpj_da_scp",
+            "forma_de_tributacao",
+            "quantidade_de_escrituracoes"
+          ],
+          "seconds": 0
+        },
+        {
+          "name": "Lucro Real.zip",
+          "size": 1409219,
+          "sha256": "40885c04c32a2000f8a7f0ee888f50be10ed7ba135a04067936937c7453c7c0a",
+          "rows": 302618,
+          "matched": 9356,
+          "header": [
+            "ano",
+            "cnpj",
+            "cnpj_da_scp",
+            "forma_de_tributacao",
+            "quantidade_de_escrituracoes"
+          ],
+          "seconds": 0
+        }
+      ],
+      "matched": 12330,
+      "not_found": 48318,
+      "inserted": 60648,
+      "cached": 0
+    }
+  },
+  "sample": {},
+  "stats": {
+    "bytes_downloaded": 0,
+    "peak_disk_bytes": 0,
+    "rows_scanned": 5960399,
+    "rows_matched": 129680,
+    "rejected": 0,
+    "duration_seconds": 2,
+    "runner_minutes": 0.03
+  },
+  "competencias_publicadas": [
+    "2026-10"
+  ],
+  "status": "concluida",
+  "error": null
+}

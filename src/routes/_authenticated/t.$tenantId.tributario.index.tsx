@@ -519,7 +519,7 @@ function Consultations({ d, loading }: { d: Overview | undefined; loading: boole
         <EmptyState
           icon={Search}
           title="Nenhuma consulta realizada ainda"
-          hint="As consultas às fontes públicas entram na próxima fase. Até lá, todo CNPJ fica como “Consulta pendente”."
+          hint="A carteira é cruzada em lote com os arquivos públicos da Receita. Até o primeiro cruzamento, todo CNPJ fica como “Consulta pendente”."
           className="py-8"
         />
       ) : (
@@ -537,6 +537,7 @@ function Consultations({ d, loading }: { d: Overview | undefined; loading: boole
           {d.lastConsultedAt ? (
             <p className="mt-3 text-xs text-muted-foreground">
               Última consulta {since(d.lastConsultedAt)}
+              {d.competencia ? ` · dados da Receita da competência ${d.competencia}` : ""}
             </p>
           ) : null}
         </>

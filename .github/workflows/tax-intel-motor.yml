@@ -1,0 +1,78 @@
+name: Inteligência Tributária · Motor em massa
+
+# Execução MANUAL do motor (scripts/tax-intel/executor/run.mjs).
+#   sonda: sem banco e sem segredo. Baixa os arquivos públicos da Receita,
+#          confere o layout e mede volume e tempo. Só cruza a amostra pública.
+#   carga: grava no Supabase com o papel tax_ingestor (nunca service_role).
+#          Exige o ambiente "tax-intel-producao", com aprovação manual, e o
+#          segredo TAX_INGESTOR_DATABASE_URL nesse ambiente.
+# Nada roda sozinho: não há gatilho de push nem de agenda.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "sonda (sem banco) ou carga (grava no Supabase)"
+        type: choice
+        options: [sonda, carga]
+        default: sonda
+      competencia:
+        description: "AAAA-MM (vazio = a mais recente publicada)"
+        type: string
+        required: false
+      datasets:
+        description: "Fontes, separadas por vírgula"
+        type: string
+        default: "receita_simples,receita_empresas,receita_estabelecimentos,receita_regime_tributario"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tax-intel-motor
+  cancel-in-progress: false
+
+jobs:
+  sonda:
+    if: inputs.modo == 'sonda'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Sonda dos arquivos públicos
+        run: >
+          node scripts/tax-intel/executor/run.mjs --sonda
+          --datasets "${{ inputs.datasets }}"
+          ${{ inputs.competencia && format('--competencia {0}', inputs.competencia) || '' }}
+          --tmp "$RUNNER_TEMP/receita" --relatorio relatorio-sonda.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relatorio-sonda
+          path: relatorio-sonda.json
+
+  carga:
+    if: inputs.modo == 'carga'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment: tax-intel-producao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Dependências
+        run: npm install --no-save --no-package-lock pg@8.16.3
+      - name: Carga das carteiras
+        env:
+          TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}
+        run: >
+          node scripts/tax-intel/executor/run.mjs
+          --datasets "${{ inputs.datasets }}"
+          ${{ inputs.competencia && format('--competencia {0}', inputs.competencia) || '' }}
+          --tmp "$RUNNER_TEMP/receita"
+      # Sem artefato na carga: o repositório é público. O log só tem contagens e
+      # nomes de arquivo (nenhum CNPJ da carteira); o resumo completo fica no banco
+      # (tax_ingest_runs e tax_ingest_summary).

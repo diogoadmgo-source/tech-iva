@@ -64,6 +64,8 @@ export type Overview = {
   byClass: Record<TaxClassification, number>;
   consultations: Record<ConsultationStatus, number>;
   lastConsultedAt: string | null;
+  /** Competência mais recente dos arquivos da Receita já cruzados (AAAA-MM). */
+  competencia: string | null;
   imports: ImportRow[];
   sources: SourceRow[];
   audit: AuditRow[] | null;
@@ -82,35 +84,52 @@ export async function loadOverview(tenantId: string): Promise<Overview> {
     ),
   );
 
-  const [cnpjs, matrizes, alfanumericos, clientes, fornecedores, cls, cons, last, imp, src, aud] =
-    await Promise.all([
-      count(entities(tenantId)),
-      count(entities(tenantId).eq("is_matriz", true)),
-      count(entities(tenantId).eq("cnpj_alfanumerico", true)),
-      count(relationships(tenantId).eq("relationship", "cliente")),
-      count(relationships(tenantId).eq("relationship", "fornecedor")),
-      classCounts,
-      consultCounts,
-      taxFrom("tax_entities")
-        .select("last_consulted_at, tax_relationships!inner(tenant_id)")
-        .eq("tax_relationships.tenant_id", tenantId)
-        .not("last_consulted_at", "is", null)
-        .order("last_consulted_at", { ascending: false })
-        .limit(1),
-      taxFrom("tax_imports")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false })
-        .limit(8),
-      taxFrom("tax_sources")
-        .select("code, name, kind, status, coverage, limitations, verified_at")
-        .order("code"),
-      taxFrom("tax_audit_logs")
-        .select("id, action, target_type, target_id, actor_role, after, at")
-        .eq("tenant_id", tenantId)
-        .order("at", { ascending: false })
-        .limit(12),
-    ]);
+  const [
+    cnpjs,
+    matrizes,
+    alfanumericos,
+    clientes,
+    fornecedores,
+    cls,
+    cons,
+    last,
+    imp,
+    src,
+    aud,
+    comp,
+  ] = await Promise.all([
+    count(entities(tenantId)),
+    count(entities(tenantId).eq("is_matriz", true)),
+    count(entities(tenantId).eq("cnpj_alfanumerico", true)),
+    count(relationships(tenantId).eq("relationship", "cliente")),
+    count(relationships(tenantId).eq("relationship", "fornecedor")),
+    classCounts,
+    consultCounts,
+    taxFrom("tax_entities")
+      .select("last_consulted_at, tax_relationships!inner(tenant_id)")
+      .eq("tax_relationships.tenant_id", tenantId)
+      .not("last_consulted_at", "is", null)
+      .order("last_consulted_at", { ascending: false })
+      .limit(1),
+    taxFrom("tax_imports")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    taxFrom("tax_sources")
+      .select("code, name, kind, status, coverage, limitations, verified_at")
+      .order("code"),
+    taxFrom("tax_audit_logs")
+      .select("id, action, target_type, target_id, actor_role, after, at")
+      .eq("tenant_id", tenantId)
+      .order("at", { ascending: false })
+      .limit(12),
+    taxFrom("tax_consultations")
+      .select("dataset_version")
+      .not("dataset_version", "is", null)
+      .order("dataset_version", { ascending: false })
+      .limit(1),
+  ]);
 
   for (const r of [last, imp, src]) if (r.error) throw new Error(r.error.message);
 
@@ -136,6 +155,8 @@ export async function loadOverview(tenantId: string): Promise<Overview> {
     lastConsultedAt:
       ((last.data ?? [])[0] as { last_consulted_at: string } | undefined)?.last_consulted_at ??
       null,
+    competencia:
+      ((comp.data ?? [])[0] as { dataset_version: string } | undefined)?.dataset_version ?? null,
     imports,
     sources: (src.data ?? []) as SourceRow[],
     // Auditoria: só papéis com leitura de auditoria veem (tax_can_read_audit).
@@ -185,13 +206,14 @@ export type PortfolioRow = {
     uf: string | null;
     municipio: string | null;
     public_classification: TaxClassification;
+    public_classification_basis: Record<string, unknown> | null;
     last_consulted_at: string | null;
   };
 };
 
 const SELECT =
   "tenant_id, cnpj, relationship, declared_razao_social, declared_nome_fantasia, first_import_id, last_import_id, created_at, " +
-  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, uf, municipio, public_classification, last_consulted_at)";
+  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, uf, municipio, public_classification, public_classification_basis, last_consulted_at)";
 
 const ORDER: Record<SortKey, string> = {
   cnpj: "cnpj",

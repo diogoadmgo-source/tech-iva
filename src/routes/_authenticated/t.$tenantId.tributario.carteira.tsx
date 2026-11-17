@@ -40,12 +40,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cnpjParts, formatCnpj } from "@/lib/tax-intel/cnpj";
 import { buildWorkbook, downloadBlob } from "@/lib/tax-intel/excel";
 import {
+  basisLines,
   CLASSIFICATION_LABEL,
   CLASSIFICATIONS,
   CONSULTATION_LABEL,
   dateTime,
   n,
   RELATIONSHIP_LABEL,
+  sourceName,
   type TaxClassification,
 } from "@/lib/tax-intel/labels";
 import {
@@ -541,7 +543,10 @@ function CarteiraPage() {
                             </span>
                           </td>
                           <td className="px-3 py-2.5">
-                            <ClassificationBadge value={e.public_classification} />
+                            <ClassificationBadge
+                              value={e.public_classification}
+                              basis={e.public_classification_basis}
+                            />
                           </td>
                           <td className="px-3 py-2.5 text-xs text-muted-foreground">
                             {e.uf ? `${e.uf}${e.municipio ? ` · ${e.municipio}` : ""}` : "—"}
@@ -753,7 +758,11 @@ function DetailSheet({
             <section className="panel-hero p-4">
               <p className="text-xs text-muted-foreground">Classificação pública</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <ClassificationBadge value={e.public_classification} className="text-xs" />
+                <ClassificationBadge
+                  value={e.public_classification}
+                  basis={e.public_classification_basis}
+                  className="text-xs"
+                />
                 {e.last_consulted_at ? (
                   <span className="text-xs text-muted-foreground">
                     consultado em {dateTime(e.last_consulted_at)}
@@ -764,10 +773,15 @@ function DetailSheet({
                   </span>
                 )}
               </div>
-              {d.data && Object.keys(d.data.basis).length > 0 ? (
-                <pre className="mt-3 max-h-40 overflow-auto rounded-md bg-surface-2/60 p-2 text-[11px]">
-                  {JSON.stringify(d.data.basis, null, 2)}
-                </pre>
+              {d.data && basisLines(d.data.basis).length > 0 ? (
+                <dl className="mt-3 space-y-1.5 text-xs">
+                  {basisLines(d.data.basis).map((l) => (
+                    <div key={l.label} className="grid grid-cols-[9.5rem_1fr] gap-2">
+                      <dt className="text-muted-foreground">{l.label}</dt>
+                      <dd className={l.label === "Aviso" ? "text-warn" : undefined}>{l.value}</dd>
+                    </div>
+                  ))}
+                </dl>
               ) : null}
             </section>
 
@@ -860,7 +874,7 @@ function DetailSheet({
                 {d.data!.consultations.map((c) => (
                   <li key={c.id} className="rounded-lg border border-border/60 px-3 py-2 text-sm">
                     <div className="flex justify-between gap-2">
-                      <span className="font-medium">{c.source_code}</span>
+                      <span className="font-medium">{sourceName(c.source_code)}</span>
                       <span className="text-xs">{CONSULTATION_LABEL[c.status]}</span>
                     </div>
                     <p className="font-mono tabular text-[11px] text-muted-foreground">
