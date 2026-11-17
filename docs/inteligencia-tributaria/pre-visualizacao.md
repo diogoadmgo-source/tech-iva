@@ -65,4 +65,65 @@ commit. Isso precisa ser decidido antes de qualquer merge.
 
 ## 3. Validação das migrations 0240 e 0241 na pré-visualização
 
-Ver a seção atualizada abaixo, preenchida com o resultado real da execução.
+Com os dados de apoio da seção 1, a pré-visualização registrou as **143 migrations** do
+repositório, incluindo a 0235, a 0240 e a 0241. Tudo abaixo foi executado em
+`mcijfmuuamhyrtxalatp` em 17/11/2026. Nada foi executado no fluxa-dev.
+
+### 3.1 Catálogo (consultas de leitura)
+
+| Verificação | Resultado |
+| --- | --- |
+| Tabelas do módulo com RLS ligado (lista explícita de 16) | 16 de 16 |
+| Privilégios INSERT/UPDATE/DELETE/TRUNCATE de `authenticated` nas 16 tabelas | 0 |
+| Privilégios de `anon` nas 16 tabelas | 0 |
+| Funções `tax_*` executáveis por `anon` | 0 de 22 |
+| Funções SECURITY DEFINER sem `pg_temp` no `search_path` | 0 |
+| `tax_audit` executável por `authenticated` | não |
+| Bucket `tax-imports` | privado, limite 31.457.280 bytes |
+| Bucket `tax-evidences` | privado, limite 20.971.520 bytes |
+| Políticas de Storage do módulo | 4 |
+| Fontes cadastradas em `tax_sources` | 6, com os status esperados |
+
+### 3.2 Teste de fumaça (transação desfeita no final)
+
+Um bloco `DO` simulou usuários com `set local role authenticated` e `request.jwt.claims`,
+usando os tenants que existem na pré-visualização. O bloco termina com `raise exception`,
+então **nada ficou gravado**.
+
+| Passo | Resultado |
+| --- | --- |
+| Upload no caminho gerado pela importação | aceito |
+| Upload em outro caminho | recusado pela RLS |
+| `tax_import_add_items` com 5 linhas | 5 inseridas |
+| `tax_import_finalize` | 2 válidos, 1 repetido, 1 inválido, 1 já existente, 3 relacionamentos novos, 13 ms |
+| INSERT/UPDATE/DELETE direto nas tabelas | negado |
+| Owner de outra empresa (Gama) | vê 0 importações, 0 entidades e 0 arquivos |
+| `tax_import_add_items` na importação de outra empresa | `forbidden` |
+| `anon` | `permission denied` |
+| UPDATE em `tax_audit_logs` | `registro imutável: UPDATE em tax_audit_logs` |
+| Registros de auditoria | 2 em `tax_audit_logs` e 2 em `audit_log` |
+
+## 4. Incompatibilidades entre a pré-visualização e o fluxa-dev
+
+1. **Usuário e canal fixos em migrations antigas** (seção 1). A pré-visualização só avança
+   com os dados de apoio. O fluxa-dev não é afetado, porque lá esses registros existem ou
+   já existiram.
+2. **Migrations duplicadas e a 0235 pendente** (seção 2). O repositório e o fluxa-dev não
+   estão alinhados. Isso vem de antes deste módulo e afeta qualquer merge na `main`.
+3. **Migrations fora de ordem.** O Supabase avisou que a pré-visualização recebeu
+   migrations com versão anterior à última aplicada. É consequência das marcações manuais da
+   seção 1. No fluxa-dev, as versões 0240 e 0241 (`20261117…`) são posteriores à última
+   registrada (`20260923200000`), então este aviso não se aplica a elas.
+4. **Tenants do seed.** A 0006 cria os tenants de exemplo com ids aleatórios, e a 0215 os
+   remove por id fixo. Num banco novo a remoção não os encontra. A pré-visualização mantém
+   Alfa, Beta, Gama e Filial, e o fluxa-dev mantém só TECH-IVA e GDB. Os testes de fumaça
+   usaram esses tenants de exemplo, que não existem no fluxa-dev.
+5. **Prefixo `tax_` já usado.** O banco tem 49 tabelas `tax_cash_events_*` (partições de
+   outro módulo), num total de 65 tabelas com esse prefixo. As verificações de catálogo da
+   suíte (`db/tests/tax_intel/70_separation.sql`) contavam tabelas pelo prefixo e dariam
+   número errado num banco real. Foram trocadas por uma lista explícita das 16 tabelas do
+   módulo, e a suíte passou de novo (253 de 253). Nenhuma função antiga usa o prefixo
+   `tax_`, então as verificações de funções continuam por prefixo.
+6. **Pré-visualização sem dados reais.** Ela não tem os dados do fluxa-dev. Desempenho com
+   o volume real e o comportamento com os usuários reais só podem ser medidos depois de uma
+   aplicação autorizada.

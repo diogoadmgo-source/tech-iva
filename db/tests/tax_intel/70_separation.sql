@@ -5,8 +5,12 @@ create temp table pub(t text);
 insert into pub values ('tax_sources'), ('tax_entities'), ('tax_consultations'), ('tax_regimes'),
   ('tax_regime_history'), ('tax_regime_events'), ('tax_source_runs'), ('tax_source_run_files');
 create temp table priv(t text);
+-- Lista explícita: no banco principal já existem tabelas tax_cash_events_* de outro módulo,
+-- então o prefixo 'tax_' não identifica só as tabelas deste módulo.
 insert into priv values ('tax_imports'), ('tax_import_items'), ('tax_relationships'), ('tax_evidences'),
   ('tax_tenant_classifications'), ('tax_processing_jobs'), ('tax_job_items'), ('tax_audit_logs');
+create temp view modulo as select t from pub union all select t from priv;
+select t.eq('lista do módulo tem 16 tabelas', (select count(*) from modulo), 16::bigint);
 
 select t.eq('nenhuma tabela pública tem coluna de tenant',
   (select count(*) from information_schema.columns c join pub on pub.t = c.table_name
@@ -22,14 +26,17 @@ select t.eq('nenhuma FK sai do plano público para o privado',
     where k.contype = 'f'), 0::bigint);
 select t.eq('RLS ligado nas 16 tabelas do módulo',
   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relname like 'tax\_%' and c.relkind = 'r' and c.relrowsecurity), 16::bigint);
+    join modulo m on m.t = c.relname
+    where n.nspname = 'public' and c.relkind = 'r' and c.relrowsecurity), 16::bigint);
 select t.eq('authenticated não tem INSERT/UPDATE/DELETE em nenhuma tabela do módulo',
   (select count(*) from information_schema.role_table_grants
-    where grantee = 'authenticated' and table_schema = 'public' and table_name like 'tax\_%'
+    join modulo m on m.t = table_name
+    where grantee = 'authenticated' and table_schema = 'public'
       and privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')), 0::bigint);
 select t.eq('anon não tem privilégio em nenhuma tabela do módulo',
   (select count(*) from information_schema.role_table_grants
-    where grantee = 'anon' and table_schema = 'public' and table_name like 'tax\_%'), 0::bigint);
+    join modulo m on m.t = table_name
+    where grantee = 'anon' and table_schema = 'public'), 0::bigint);
 select t.eq('anon não executa nenhuma função do módulo',
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname like 'tax\_%' and has_function_privilege('anon', p.oid, 'execute')), 0::bigint);

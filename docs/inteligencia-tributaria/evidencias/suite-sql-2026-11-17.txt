@@ -1,6 +1,3 @@
-# Saída real de: PGHOST=localhost PGUSER=postgres ./scripts/tax-intel/sql-tests.sh
-# Postgres 16.15 local, 4 vCPU, 17/11/2026. TAX_LOAD_ROWS=70000.
-
 == migration 20261117200000_0240_inteligencia_tributaria_fundacao.sql
 == migration 20261117200100_0241_inteligencia_tributaria_importacao.sql
 == 10_cnpj.sql
@@ -236,6 +233,7 @@ PASS  ações principais também no audit_log existente (tela Auditoria)
 PASS  toda importação tem registro de criação
 PASS  nenhum log sem autor
 == 70_separation.sql
+PASS  lista do módulo tem 16 tabelas
 PASS  nenhuma tabela pública tem coluna de tenant
 PASS  toda tabela privada tem tenant_id NOT NULL
 PASS  nenhuma FK sai do plano público para o privado
@@ -267,17 +265,17 @@ PASS  carga: válidas = recebidas − inválidas − repetidas
 PASS  carga: toda linha tem um status final
 PASS  carga: válidas + duplicadas + inválidas = recebidas
 PASS  carga: relacionamentos novos gravados
-TEMPO  create                        9.3 ms  (0 linhas)
-TEMPO  add_items (todos os lotes)    11334.1 ms  (70000 linhas)
-TEMPO  add_items (pior lote)         246.1 ms  (1000 linhas)
-TEMPO  reenvio de lote               158.1 ms  (1000 linhas)
-TEMPO  finalize (7 chamadas)         7320.1 ms  (70000 linhas)
-TEMPO  finalize (pior chamada)       1165.4 ms  (10000 linhas)
-TEMPO  total                         19525.3 ms  (70000 linhas)
-TEMPO  RLS: contar relacionamentos   18.6 ms  (69809 linhas)
-TEMPO  RLS: contar entidades (públi  237.3 ms  (69807 linhas)
-TEMPO  RLS: página de 50 linhas [ow  20.7 ms  (50 linhas)
-TEMPO  RLS: contar relacionamentos   14.5 ms  (69811 linhas)
-TEMPO  RLS: contar entidades (públi  112.2 ms  (2 linhas)
+TEMPO  create                        7.7 ms  (0 linhas)
+TEMPO  add_items (todos os lotes)    9949.4 ms  (70000 linhas)
+TEMPO  add_items (pior lote)         229.2 ms  (1000 linhas)
+TEMPO  reenvio de lote               142.6 ms  (1000 linhas)
+TEMPO  finalize (7 chamadas)         6755.5 ms  (70000 linhas)
+TEMPO  finalize (pior chamada)       1036.5 ms  (10000 linhas)
+TEMPO  total                         17486.3 ms  (70000 linhas)
+TEMPO  RLS: contar relacionamentos   8.4 ms  (69809 linhas)
+TEMPO  RLS: contar entidades (públi  487.7 ms  (69807 linhas)
+TEMPO  RLS: página de 50 linhas [ow  38.2 ms  (50 linhas)
+TEMPO  RLS: contar relacionamentos   8.9 ms  (69811 linhas)
+TEMPO  RLS: contar entidades (públi  91.2 ms  (2 linhas)
 
-252 testes · 252 PASS · 0 FAIL
+253 testes · 253 PASS · 0 FAIL
