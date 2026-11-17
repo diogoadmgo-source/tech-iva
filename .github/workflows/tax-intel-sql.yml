@@ -1,0 +1,55 @@
+name: Inteligência Tributária · SQL
+
+# Suíte SQL do módulo (isolamento, papéis, documentos, imutabilidade, carga de
+# 70 mil linhas) num Postgres 16 DESCARTÁVEL criado pelo próprio job. Não tem
+# segredo nem acesso ao Supabase: as migrations 0240+ são aplicadas só aqui.
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*_024?_inteligencia_tributaria_*.sql"
+      - "db/tests/tax_intel/**"
+      - "scripts/tax-intel/**"
+      - "src/lib/tax-intel/cnpj.ts"
+      - ".github/workflows/tax-intel-sql.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/*_024?_inteligencia_tributaria_*.sql"
+      - "db/tests/tax_intel/**"
+      - "scripts/tax-intel/**"
+      - "src/lib/tax-intel/cnpj.ts"
+
+permissions:
+  contents: read
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      TAX_LOAD_ROWS: "70000"
+    steps:
+      - uses: actions/checkout@v4
+
+      # gen-cnpj-cases.ts roda com --experimental-strip-types (Node 22.6+).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cliente do Postgres
+        run: sudo apt-get update -q && sudo apt-get install -yq postgresql-client
+
+      - name: Suíte SQL
+        run: ./scripts/tax-intel/sql-tests.sh

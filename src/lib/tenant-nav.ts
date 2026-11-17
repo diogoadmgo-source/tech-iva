@@ -7,6 +7,7 @@ import {
   BookOpen,
   Building2,
   Calculator,
+  FileSpreadsheet,
   FileText,
   Gauge,
   Layers,
@@ -52,7 +53,8 @@ export type NavRoute =
   | "/t/$tenantId/alerts"
   | "/t/$tenantId/features"
   | "/t/$tenantId/notices"
-  | "/t/$tenantId/settings";
+  | "/t/$tenantId/settings"
+  | "/t/$tenantId/tributario/importacoes";
 
 export type NavBadge = "alerts" | "jobs";
 
@@ -134,6 +136,17 @@ function companyGroups(isCompany: boolean): NavGroup[] {
         { label: "Validador de XML", block: "3.13", icon: ShieldCheck, to: "/t/$tenantId/validador" },
         { label: "Carteira de parceiros", block: "3.3", icon: Network, to: "/t/$tenantId/chain" },
         { label: "Regime tributário", block: "3.5", icon: Scale, to: "/t/$tenantId/regime" },
+      ],
+    },
+    {
+      label: "Inteligência Tributária",
+      items: [
+        {
+          label: "Importações",
+          block: "IT.1",
+          icon: FileSpreadsheet,
+          to: "/t/$tenantId/tributario/importacoes",
+        },
       ],
     },
     {

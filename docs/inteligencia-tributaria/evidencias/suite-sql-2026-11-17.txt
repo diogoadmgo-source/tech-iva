@@ -1,0 +1,283 @@
+# Saída real de: PGHOST=localhost PGUSER=postgres ./scripts/tax-intel/sql-tests.sh
+# Postgres 16.15 local, 4 vCPU, 17/11/2026. TAX_LOAD_ROWS=70000.
+
+== migration 20261117200000_0240_inteligencia_tributaria_fundacao.sql
+== migration 20261117200100_0241_inteligencia_tributaria_importacao.sql
+== 10_cnpj.sql
+PASS  exemplo oficial da Receita 12ABC34501DE35 é válido
+PASS  exemplo oficial com DV trocado é inválido
+PASS  CNPJ numérico conhecido 00000000000191 é válido
+PASS  CNPJ numérico 11222333000181 é válido
+PASS  DV errado é inválido
+PASS  letra no DV é inválido
+PASS  minúscula não passa sem normalizar
+PASS  normalização converte para maiúscula
+PASS  14 caracteres iguais é inválido
+PASS  13 posições é inválido
+PASS  caractere especial é inválido
+PASS  nulo é inválido
+PASS  gerador de teste concorda com o exemplo oficial
+PASS  domínio tax_cnpj recusa DV errado
+PASS  raiz do alfanumérico
+PASS  ordem do alfanumérico
+PASS  dv do alfanumérico
+PASS  alfanumérico marcado
+PASS  alfanumérico com ordem 01DE não é matriz
+PASS  ordem 0001 é matriz
+PASS  ordem 0002 é filial
+PASS  numérico não marcado como alfanumérico
+PASS  matriz e filial compartilham a raiz
+PASS  coluna derivada não aceita escrita
+PASS  SQL e TypeScript concordam em todos os casos gerados
+PASS  casos gerados incluem válidos e inválidos, numéricos e alfanuméricos
+== 20_import.sql
+PASS  caminho do arquivo é gerado pelo banco na pasta do tenant
+PASS  job de importação criado
+PASS  lote 1: 6 linhas recebidas
+PASS  reenvio do lote 1 não grava nada novo
+PASS  reenvio não sobrescreve a linha original
+PASS  finalizar incompleto é recusado
+PASS  válidos
+PASS  duplicados no arquivo
+PASS  CNPJ inválido
+PASS  CNPJ ausente
+PASS  relacionamento inválido
+PASS  já existentes (primeira importação)
+PASS  zeros completados
+PASS  CNPJs únicos (estabelecimentos)
+PASS  raízes únicas (matriz e filial contam uma)
+PASS  relacionamentos novos
+PASS  linha 10: mesmo par da linha 3 → duplicado
+PASS  linha 8: mesmo CNPJ com outro relacionamento → válido
+PASS  linha 9: 13 dígitos ganham o zero à esquerda
+PASS  linha 9: normalização registrada
+PASS  linha 11: alfanumérico com 13 posições não é completado
+PASS  linha 4: motivo do DV
+PASS  linha 12: "FORNECEDOR" reconhecido
+PASS  linha 3: "Ambos" vira dois relacionamentos
+PASS  nome informado no arquivo fica no relacionamento (privado)
+PASS  entidade pública NÃO recebe o nome informado pelo tenant
+PASS  entidade nasce como consulta pendente
+PASS  finalização repetida é idempotente
+PASS  relacionamentos não duplicam
+PASS  importação concluída não recebe linhas
+PASS  job concluído
+PASS  2ª importação: já existente
+PASS  2ª importação: válido novo
+PASS  2ª importação: vazio sem padrão → relacionamento inválido
+PASS  nome declarado atualizado pela importação mais recente
+PASS  first_import_id preservado; last_import_id atualizado
+PASS  reimportar o mesmo arquivo é sinalizado
+PASS  lote com 1.001 linhas é recusado
+PASS  lote vazio é recusado
+PASS  lote que não é lista é recusado
+PASS  linha sem número é recusada
+PASS  número de linha acima do esperado é recusado
+PASS  CNPJ como número (não texto) é recusado
+PASS  texto acima do limite é recusado
+PASS  número de linha repetido no lote é recusado
+PASS  lote recusado não grava nada
+PASS  retomada: banco informa 1.000 recebidas
+PASS  retomada: 1.200 recebidas sem duplicar
+PASS  retomada: finaliza com 1.200 válidos
+PASS  valor numérico curto (191) não é completado
+PASS  chave desconhecida no lote é recusada
+PASS  cancelar em andamento
+PASS  cancelada não finaliza
+PASS  cancelada não cancela de novo
+PASS  linhas da cancelada ficam para auditoria
+PASS  arquivo acima de 30 MB
+PASS  mais de 100 mil linhas
+PASS  tipo de arquivo inválido
+PASS  hash inválido
+PASS  nome com ../ é saneado no caminho
+== 30_isolation.sql
+PASS  B vê só as próprias importações
+PASS  B não vê linhas importadas por A
+PASS  B não vê relacionamentos de A
+PASS  B não vê jobs de A
+PASS  B não vê o log de A
+PASS  B enxerga no plano público só os CNPJs da própria carteira
+PASS  B não descobre pelo cache um CNPJ que só A importou
+PASS  CNPJ compartilhado aparece para B
+PASS  nome declarado por A não aparece para B
+PASS  B não importa no tenant de A
+PASS  B não envia linhas para importação em andamento de A
+PASS  B não finaliza importação de A
+PASS  B não cancela importação de A
+PASS  A não vê importações de B
+PASS  A não descobre o CNPJ exclusivo de B
+PASS  canal C vê importações de A
+PASS  canal C não vê importações de B
+PASS  canal C não vê CNPJ exclusivo de B
+PASS  canal D não vê importações de A
+PASS  canal D vê o CNPJ exclusivo de B
+PASS  unidade não vê importações da empresa-mãe
+PASS  plataforma vê A e B
+PASS  anon não lê tax_imports
+PASS  anon não lê tax_entities
+PASS  anon não lê tax_sources
+PASS  anon não lê tax_evidences
+PASS  anon não executa tax_import_create
+PASS  sem vínculo: nenhuma importação
+PASS  sem vínculo: nenhuma entidade
+PASS  sem vínculo: lê o catálogo de fontes
+PASS  escopo das políticas = in_scope() para platform_admin@plat
+PASS  escopo das políticas = in_scope() para platform_ops@plat
+PASS  escopo das políticas = in_scope() para platform_risk@plat
+PASS  escopo das políticas = in_scope() para channel_admin@ch_c
+PASS  escopo das políticas = in_scope() para channel_analyst@ch_c
+PASS  escopo das políticas = in_scope() para channel_admin@ch_d
+PASS  escopo das políticas = in_scope() para owner@co_a
+PASS  escopo das políticas = in_scope() para finance@co_a
+PASS  escopo das políticas = in_scope() para commercial@co_a
+PASS  escopo das políticas = in_scope() para viewer@co_a
+PASS  escopo das políticas = in_scope() para owner@un_a
+PASS  escopo das políticas = in_scope() para owner@co_b
+PASS  escopo das políticas = in_scope() para viewer@co_b
+== 40_roles.sql
+PASS  platform_admin@plat pode importar na Empresa A
+PASS  platform_admin@plat pode ler o log da Empresa A
+PASS  platform_ops@plat pode importar na Empresa A
+PASS  platform_ops@plat pode ler o log da Empresa A
+PASS  platform_risk@plat não pode importar na Empresa A
+PASS  platform_risk@plat pode ler o log da Empresa A
+PASS  channel_admin@ch_c pode importar na Empresa A
+PASS  channel_admin@ch_c pode ler o log da Empresa A
+PASS  channel_analyst@ch_c não pode importar na Empresa A
+PASS  channel_analyst@ch_c não pode ler o log da Empresa A
+PASS  owner@co_a pode importar na Empresa A
+PASS  owner@co_a pode ler o log da Empresa A
+PASS  finance@co_a pode importar na Empresa A
+PASS  finance@co_a pode ler o log da Empresa A
+PASS  commercial@co_a não pode importar na Empresa A
+PASS  commercial@co_a não pode ler o log da Empresa A
+PASS  viewer@co_a não pode importar na Empresa A
+PASS  viewer@co_a não pode ler o log da Empresa A
+PASS  channel_admin@ch_d não pode importar na Empresa A
+PASS  channel_admin@ch_d não pode ler o log da Empresa A
+PASS  owner@co_b não pode importar na Empresa A
+PASS  owner@co_b não pode ler o log da Empresa A
+PASS  viewer@co_a lê as importações de A (só leitura)
+PASS  commercial@co_a lê as importações de A (só leitura)
+PASS  channel_analyst@ch_c lê as importações de A (só leitura)
+PASS  platform_risk@plat lê as importações de A (só leitura)
+PASS  não importa no tenant da plataforma
+PASS  não importa no tenant de canal
+PASS  importa na unidade
+PASS  owner não insere direto em tax_relationships
+PASS  owner não atualiza tax_imports direto
+PASS  owner não apaga tax_import_items
+PASS  owner não insere em tax_entities
+PASS  owner não insere em tax_evidences
+PASS  owner não chama a auditoria interna (não forja log)
+PASS  owner não chama tax_can_write (interna)
+== 50_storage.sql
+PASS  bucket tax-imports é privado
+PASS  bucket tax-evidences é privado
+PASS  limite do bucket de importação (30 MB)
+PASS  owner sobe o arquivo no caminho gerado
+PASS  owner não sobe em outro caminho da própria pasta
+PASS  owner não sobe na pasta de B
+PASS  caminho com ../ é recusado
+PASS  owner baixa o arquivo da própria importação
+PASS  arquivo enviado não é trocado (UPDATE afeta 0 linhas)
+PASS  arquivo enviado não é apagado (DELETE afeta 0 linhas)
+PASS  finance não sobe arquivo na importação criada pelo owner
+PASS  finance (escrita) baixa o arquivo importado
+PASS  viewer de A NÃO baixa o arquivo importado
+PASS  owner de B NÃO baixa o arquivo de A
+PASS  importação concluída não aceita novo upload
+PASS  finance sobe evidência na pasta de A
+PASS  finance não sobe evidência na pasta de B
+PASS  caminho sem UUID de tenant é recusado
+PASS  finance baixa evidência registrada de A
+PASS  viewer não sobe evidência
+PASS  viewer não baixa o arquivo da evidência
+PASS  viewer vê os metadados da evidência do próprio tenant
+PASS  platform_risk (auditoria) baixa a evidência
+PASS  platform_risk não sobe evidência
+PASS  B não baixa a evidência de A
+PASS  B não vê os metadados da evidência de A
+PASS  owner sobe arquivo ainda sem evidência registrada
+PASS  arquivo sem evidência registrada não é baixável
+== 60_immutability_audit.sql
+PASS  consulta não é alterada
+PASS  consulta não é apagada
+truncate cascades to table "tax_regimes"
+truncate cascades to table "tax_regime_history"
+truncate cascades to table "tax_regime_events"
+truncate cascades to table "tax_job_items"
+PASS  consulta não é truncada
+PASS  histórico ECF não é alterado
+PASS  histórico ECF não é apagado
+PASS  evento não é alterado
+PASS  evento não é apagado
+PASS  log não é alterado
+PASS  log não é apagado
+PASS  log não é truncado
+PASS  período de regime aberto pode ganhar data de fim
+PASS  período fechado não muda de novo
+PASS  período de regime não é apagado
+PASS  conteúdo da evidência não muda
+PASS  evidência não é apagada
+PASS  evidência ativa pode ser revogada (com motivo)
+PASS  evidência revogada não volta a ativa
+PASS  evidência só de CBS (sem IBS) é aceita
+PASS  evidência não aceita valor "não identificado"
+PASS  arquivo de evidência fora da pasta do tenant é recusado
+PASS  chave de evidência estabelecimento exige CNPJ válido
+PASS  classificação do tenant com CBS sim e IBS não identificado
+PASS  IBS segue não identificado quando só há evidência de CBS
+PASS  criação auditada com autor e papel
+PASS  finalização auditada com o resumo
+PASS  cancelamento auditado
+PASS  ações principais também no audit_log existente (tela Auditoria)
+PASS  toda importação tem registro de criação
+PASS  nenhum log sem autor
+== 70_separation.sql
+PASS  nenhuma tabela pública tem coluna de tenant
+PASS  toda tabela privada tem tenant_id NOT NULL
+PASS  nenhuma FK sai do plano público para o privado
+PASS  RLS ligado nas 16 tabelas do módulo
+PASS  authenticated não tem INSERT/UPDATE/DELETE em nenhuma tabela do módulo
+PASS  anon não tem privilégio em nenhuma tabela do módulo
+PASS  anon não executa nenhuma função do módulo
+PASS  toda função security definer do módulo tem search_path fixo
+PASS  search_path das funções security definer termina em pg_temp
+PASS  funções internas não executáveis por authenticated
+PASS  fonte não pública é recusada
+PASS  fonte com nome de evidência é recusada
+PASS  IBS/CBS regular catalogado como indisponível
+PASS  nenhuma fonte marcada como verificada antes de chamada real
+PASS  consulta com fonte fora do catálogo é recusada
+PASS  consulta por estabelecimento exige CNPJ válido
+PASS  mesma competência não grava a mesma chave duas vezes
+== 80_load.sql
+PASS  reenvio do mesmo lote não insere nada
+PASS  recebidas = esperadas
+PASS  primeira chamada deixa a importação "finalizando"
+PASS  importação em finalização não pode ser cancelada
+PASS  finalização terminou em até 10 chamadas
+PASS  nenhuma chamada passou de 4 s (timeout do Supabase: 8 s)
+PASS  carga: importação concluída
+PASS  carga: CNPJs inválidos contados
+PASS  carga: repetições no arquivo contadas
+PASS  carga: válidas = recebidas − inválidas − repetidas
+PASS  carga: toda linha tem um status final
+PASS  carga: válidas + duplicadas + inválidas = recebidas
+PASS  carga: relacionamentos novos gravados
+TEMPO  create                        9.3 ms  (0 linhas)
+TEMPO  add_items (todos os lotes)    11334.1 ms  (70000 linhas)
+TEMPO  add_items (pior lote)         246.1 ms  (1000 linhas)
+TEMPO  reenvio de lote               158.1 ms  (1000 linhas)
+TEMPO  finalize (7 chamadas)         7320.1 ms  (70000 linhas)
+TEMPO  finalize (pior chamada)       1165.4 ms  (10000 linhas)
+TEMPO  total                         19525.3 ms  (70000 linhas)
+TEMPO  RLS: contar relacionamentos   18.6 ms  (69809 linhas)
+TEMPO  RLS: contar entidades (públi  237.3 ms  (69807 linhas)
+TEMPO  RLS: página de 50 linhas [ow  20.7 ms  (50 linhas)
+TEMPO  RLS: contar relacionamentos   14.5 ms  (69811 linhas)
+TEMPO  RLS: contar entidades (públi  112.2 ms  (2 linhas)
+
+252 testes · 252 PASS · 0 FAIL
