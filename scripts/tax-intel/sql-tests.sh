@@ -26,7 +26,7 @@ psql -X -q -d "$DB" -c "alter database \"$DB\" set search_path = \"\$user\", pub
 "${PSQL[@]}" -c "alter default privileges for role postgres in schema public grant all on tables to authenticated, service_role;
   alter default privileges for role postgres in schema public grant all on sequences to authenticated, service_role;
   alter default privileges for role postgres in schema public grant execute on functions to authenticated, service_role;"
-for m in supabase/migrations/*_024[0-9]_inteligencia_tributaria_*.sql; do
+for m in supabase/migrations/*_02[45][0-9]_inteligencia_tributaria_*.sql; do
   echo "== migration $(basename "$m")"
   "${PSQL[@]}" -f "$m"
 done

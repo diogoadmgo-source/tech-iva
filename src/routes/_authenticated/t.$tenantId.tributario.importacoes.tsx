@@ -16,6 +16,7 @@ import {
   Table2,
   Upload,
   XCircle,
+  Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -120,7 +121,7 @@ type ItemStatus =
 
 const ITEM_LABEL: Record<ItemStatus, string> = {
   valido: "Válido (novo)",
-  ja_existente: "Já existia na carteira",
+  ja_existente: "Já existia na base",
   duplicado_no_arquivo: "Repetido no arquivo",
   cnpj_invalido: "CNPJ inválido",
   cnpj_ausente: "CNPJ vazio",
@@ -170,7 +171,7 @@ function ImportacoesPage() {
         <EmptyState
           icon={FileSpreadsheet}
           title="Importação só em empresa ou unidade"
-          hint="A carteira de clientes e fornecedores pertence a uma empresa. Abra a empresa para importar."
+          hint="A base de CNPJs de clientes e fornecedores pertence a uma empresa. Abra a empresa para importar."
         />
       </Page>
     );
@@ -189,8 +190,8 @@ function ImportacoesPage() {
               CNPJ é lido como texto, numérico ou alfanumérico, e validado de novo no banco.
             </p>
             <p className="mt-2">
-              Nesta fase só a carteira é importada. Nenhuma consulta de regime é feita e nenhum
-              regime é presumido.
+              Nesta etapa só a base é importada. Nenhuma consulta de regime é feita e nenhum regime
+              é presumido.
             </p>
           </>
         }
@@ -265,7 +266,7 @@ const PHASES: { phase: ImportProgress["phase"]; label: string }[] = [
   { phase: "criando", label: "Registrar a importação" },
   { phase: "enviando_arquivo", label: "Guardar o arquivo original" },
   { phase: "enviando_linhas", label: "Enviar as linhas" },
-  { phase: "finalizando", label: "Validar no banco e gravar a carteira" },
+  { phase: "finalizando", label: "Validar no banco e gravar a base" },
 ];
 
 const fmtBytes = (b: number) =>
@@ -279,7 +280,7 @@ function downloadTemplate() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "modelo-carteira.csv";
+  a.download = "modelo-base-de-cnpjs.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -888,7 +889,7 @@ function Result({
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Novos na carteira" value={n(s.valid)} tone="text-flow-in" />
+        <Stat label="Novos na base" value={n(s.valid)} tone="text-flow-in" />
         <Stat label="Já existiam" value={n(s.already_existing)} />
         <Stat
           label="Repetidos no arquivo"
@@ -898,7 +899,7 @@ function Result({
         <Stat label="Com problema" value={n(bad)} tone={bad ? "text-destructive" : undefined} />
       </div>
       <p className="text-xs text-muted-foreground">
-        O regime tributário ainda não foi consultado: os CNPJs entram como “Consulta pendente”.
+        Próximo passo: processar para cruzar com a Receita.
       </p>
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={onReset}>
@@ -907,13 +908,18 @@ function Result({
         <Button variant="outline" onClick={onDetail}>
           Ver linhas
         </Button>
-        <Button asChild className="cta-lift">
+        <Button asChild variant="outline">
           <Link
             to="/t/$tenantId/tributario/carteira"
             params={{ tenantId }}
             search={{ importacao: s.import_id }}
           >
-            <Table2 className="mr-2 size-4" aria-hidden /> Ver na carteira
+            <Table2 className="mr-2 size-4" aria-hidden /> Ver na Base de CNPJs
+          </Link>
+        </Button>
+        <Button asChild className="cta-lift">
+          <Link to="/t/$tenantId/tributario" params={{ tenantId }}>
+            <Zap className="mr-2 size-4" aria-hidden /> Ir para processar
             <ArrowRight className="ml-1 size-4" aria-hidden />
           </Link>
         </Button>
@@ -1117,7 +1123,7 @@ function ImportsTable({
                             params={{ tenantId }}
                             search={{ importacao: r.id }}
                           >
-                            Carteira <ArrowRight className="ml-1 size-3.5" aria-hidden />
+                            Base de CNPJs <ArrowRight className="ml-1 size-3.5" aria-hidden />
                           </Link>
                         </Button>
                       </div>
@@ -1136,7 +1142,7 @@ function ImportsTable({
             <AlertDialogTitle>Cancelar esta importação?</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmCancel?.file_name}: as linhas já recebidas ficam registradas, mas nada entra
-              na carteira. Para importar de novo, envie o arquivo outra vez.
+              na base. Para importar de novo, envie o arquivo outra vez.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1225,7 +1231,7 @@ function ImportDetailSheet({
               params={{ tenantId }}
               search={{ importacao: imp.id }}
             >
-              <Table2 className="mr-2 size-4" aria-hidden /> Ver estes CNPJs na carteira
+              <Table2 className="mr-2 size-4" aria-hidden /> Ver estes CNPJs na base
             </Link>
           </Button>
         ) : undefined

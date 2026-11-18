@@ -17,6 +17,7 @@ import {
 import type { ReactNode } from "react";
 
 import { CountUp } from "@/components/tax-intel/count-up";
+import { Journey } from "@/components/tax-intel/journey";
 import { ModuleTabs } from "@/components/tax-intel/module-tabs";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
 import { InfoHint } from "@/components/techiva/info-hint";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/tributario/")(
       { title: "Visão geral · Inteligência Tributária · TECH-IVA" },
       {
         name: "description",
-        content: "Painel da carteira de clientes e fornecedores da Inteligência Tributária.",
+        content: "Painel da base de CNPJs de clientes e fornecedores da Inteligência Tributária.",
       },
     ],
   }),
@@ -83,7 +84,7 @@ function OverviewPage() {
         <EmptyState
           icon={Layers}
           title="Disponível em empresa ou unidade"
-          hint="A carteira de clientes e fornecedores pertence a uma empresa. Abra a empresa."
+          hint="A base de CNPJs de clientes e fornecedores pertence a uma empresa. Abra a empresa."
         />
       </Page>
     );
@@ -101,7 +102,7 @@ function OverviewPage() {
         help={
           <>
             <p>
-              Números contados no banco, só da carteira desta empresa. A classificação vem das
+              Números contados no banco, só da base de CNPJs desta empresa. A classificação vem das
               fontes públicas consultadas; enquanto não houver consulta, o CNPJ fica como “Consulta
               pendente”.
             </p>
@@ -129,7 +130,7 @@ function OverviewPage() {
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link to="/t/$tenantId/tributario/carteira" params={{ tenantId }}>
-                <Table2 className="mr-2 size-4" aria-hidden /> Carteira
+                <Table2 className="mr-2 size-4" aria-hidden /> Base de CNPJs
               </Link>
             </Button>
             <Button asChild size="sm" className="cta-lift">
@@ -148,17 +149,31 @@ function OverviewPage() {
         <FirstRun tenantId={tenantId} />
       ) : (
         <>
-          <Rise index={1} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
+          <Rise index={1}>
+            {d ? (
+              <Journey
+                tenantId={tenantId}
+                cnpjs={d.cnpjs}
+                pendentes={d.byClass.consulta_pendente}
+                classificados={d.cnpjs - d.byClass.consulta_pendente}
+                lastImportAt={d.imports.find((i) => i.status === "concluida")?.created_at ?? null}
+              />
+            ) : (
+              <Skeleton className="h-36 rounded-2xl" />
+            )}
+          </Rise>
+
+          <Rise index={2} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
             <PortfolioHero d={d} loading={q.isLoading} />
             <Pending d={d} loading={q.isLoading} tenantId={tenantId} />
           </Rise>
 
-          <Rise index={2} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
+          <Rise index={3} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
             <Distribution d={d} loading={q.isLoading} tenantId={tenantId} />
             <Consultations d={d} loading={q.isLoading} />
           </Rise>
 
-          <Rise index={3} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
+          <Rise index={4} className="grid gap-4 lg:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
             <Timeline d={d} loading={q.isLoading} tenantId={tenantId} />
             <Sources rows={d?.sources} loading={q.isLoading} />
           </Rise>
@@ -172,8 +187,8 @@ function OverviewPage() {
 function FirstRun({ tenantId }: { tenantId: string }) {
   const steps = [
     { icon: Upload, title: "Importe a base", text: "XLSX ou CSV com os CNPJs" },
-    { icon: CheckCircle2, title: "Revise a validação", text: "Inválidos e repetidos à parte" },
-    { icon: Search, title: "Acompanhe a carteira", text: "Filtros, detalhe e Excel" },
+    { icon: Search, title: "Processe", text: "Um clique cruza tudo com a Receita" },
+    { icon: CheckCircle2, title: "Baixe o resultado", text: "Excel com regime e evidência" },
   ];
   return (
     <Rise index={1}>
@@ -183,7 +198,7 @@ function FirstRun({ tenantId }: { tenantId: string }) {
             primeiros passos
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-            Sua carteira ainda está vazia
+            Sua base de CNPJs ainda está vazia
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Comece importando clientes e fornecedores.
@@ -259,8 +274,8 @@ function PortfolioHero({ d, loading }: { d: Overview | undefined; loading: boole
   return (
     <section className="panel-hero p-6 sm:p-7">
       <div className="flex items-center gap-2">
-        <p className="text-sm font-medium text-muted-foreground">CNPJs na carteira</p>
-        <InfoHint title="CNPJs na carteira">
+        <p className="text-sm font-medium text-muted-foreground">CNPJs na base</p>
+        <InfoHint title="CNPJs na base">
           CNPJs distintos (estabelecimentos). Um CNPJ que é cliente e fornecedor conta uma vez aqui
           e uma vez em cada relacionamento.
         </InfoHint>
@@ -432,7 +447,7 @@ function Distribution({
     <Panel
       title="Distribuição por regime"
       icon={Layers}
-      help="Classificação pública de cada CNPJ, gravada a partir das fontes consultadas. A barra soma 100% da carteira."
+      help="Classificação pública de cada CNPJ, gravada a partir das fontes consultadas. A barra soma 100% da base."
     >
       {loading || !d ? (
         <div className="space-y-3">
@@ -507,7 +522,7 @@ function Consultations({ d, loading }: { d: Overview | undefined; loading: boole
     <Panel
       title="Status das consultas"
       icon={Search}
-      help="Cada consulta a uma fonte pública fica gravada, com a resposta original. Aqui está o resultado de todas as consultas da carteira."
+      help="Cada consulta a uma fonte pública fica gravada, com a resposta original. Aqui está o resultado de todas as consultas da base."
     >
       {loading || !d ? (
         <div className="grid grid-cols-2 gap-3">
@@ -519,7 +534,7 @@ function Consultations({ d, loading }: { d: Overview | undefined; loading: boole
         <EmptyState
           icon={Search}
           title="Nenhuma consulta realizada ainda"
-          hint="A carteira é cruzada em lote com os arquivos públicos da Receita. Até o primeiro cruzamento, todo CNPJ fica como “Consulta pendente”."
+          hint="A base é cruzada em lote com os arquivos públicos da Receita. Até o primeiro cruzamento, todo CNPJ fica como “Consulta pendente”."
           className="py-8"
         />
       ) : (

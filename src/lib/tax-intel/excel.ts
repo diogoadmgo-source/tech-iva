@@ -23,7 +23,7 @@ export const EXPORT_COLUMNS = [
   "Referência (competência ou ano da ECF)",
   "Base da classificação",
   "Última consulta",
-  "Na carteira desde",
+  "Na base desde",
 ] as const;
 
 export function toExportRow(r: PortfolioRow): (string | Date | null)[] {
@@ -59,7 +59,7 @@ export async function buildWorkbook(rows: PortfolioRow[], meta: { filtro: string
   const wb = new ExcelJS.Workbook();
   wb.creator = "TECH-IVA";
   wb.created = new Date();
-  const ws = wb.addWorksheet("Carteira", { views: [{ state: "frozen", ySplit: 1 }] });
+  const ws = wb.addWorksheet("Base de CNPJs", { views: [{ state: "frozen", ySplit: 1 }] });
   ws.addRow([...EXPORT_COLUMNS]);
   ws.getRow(1).font = { bold: true };
   for (const r of rows) ws.addRow(toExportRow(r));

@@ -552,6 +552,14 @@ export async function main(argv = process.argv.slice(2)) {
   let status = "concluida", error = null;
   try {
     if (a.datasets.includes("receita_estabelecimentos")) ctx.municipios = await loadMunicipios(ctx);
+    // Registra de antemão todos os arquivos da execução ("pendente"), para o
+    // app mostrar o andamento real (arquivos lidos / total) desde o início.
+    for (const ds of a.datasets) {
+      const plan = ds === "receita_regime_tributario"
+        ? await origin.files("regime", competencia)
+        : (await origin.files("cnpj", competencia)).filter((f) => DATASETS[ds].files.test(f.name));
+      for (const f of plan) await db.file(f.name, null, null, null, 0, 0, 0, "pendente");
+    }
     for (const ds of a.datasets) {
       if (ds === "receita_regime_tributario") await scanRegime(ctx);
       else await scanDataset(ds, ctx);
