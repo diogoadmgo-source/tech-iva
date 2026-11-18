@@ -206,7 +206,8 @@ export async function buildWorkbook(
   const acao = count((x) => x.d.precisaAcao);
   const cpf = count((x) => x.d.status === "provavel_cpf");
   const inexistente = count((x) => x.d.status === "cnpj_nao_encontrado");
-  const ressalva = count((x) => x.d.status === "ressalva");
+  const ressalva = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification === "excluido_simples");
+  const ecfAntiga = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification !== "excluido_simples");
   const semFonte = count((x) => x.d.status === "sem_fonte_publica");
   const inativos = count(
     (x) => !!x.r.tax_entities.situacao_cadastral && x.r.tax_entities.situacao_cadastral !== "ATIVA",
@@ -250,6 +251,9 @@ export async function buildWorkbook(
     `${pf(identificados, total)} da base tem regime identificado em fonte oficial da Receita: Simples e MEI pela opção vigente; Lucro Real e Presumido pela última ECF publicada${regimeAno.length ? ` (ano-calendário ${regimeAno.join(", ")})` : ""}.`,
     ressalva
       ? `${nf(ressalva)} empresas saíram do Simples e ainda não têm ECF posterior à saída: o regime atual precisa ser confirmado com o parceiro.`
+      : null,
+    ecfAntiga
+      ? `${nf(ecfAntiga)} empresas têm só ECF antiga (sem as declarações dos anos mais recentes já publicados): confirmar o regime atual.`
       : null,
     semFonte
       ? `${nf(semFonte)} empresas não têm fonte pública que indique o regime (sem Simples e sem ECF publicada): solicitar ao parceiro.`

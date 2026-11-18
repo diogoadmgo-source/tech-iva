@@ -76,6 +76,15 @@ describe("diagnóstico por linha", () => {
     expect(d.alertas[0]).toContain("Baixada desde 02/05/2023");
   });
 
+  it("Real/Presumido com ECF antiga vira ressalva, com o ano na causa", () => {
+    const now = new Date("2026-11-18T12:00:00Z");
+    const velha = diagnose(row("12345678000195", "lucro_presumido", { ano_calendario: 2019 }), now);
+    expect(velha.status).toBe("ressalva");
+    expect(velha.causa).toContain("2019");
+    expect(velha.causa).toContain("2020 a 2024");
+    expect(diagnose(row("12345678000195", "lucro_real", { ano_calendario: 2024 }), now).status).toBe("identificado");
+  });
+
   it("razão social: ignora sufixo e acento, acusa empresa diferente", () => {
     expect(razaoDivergente("Padaria São João Ltda - ME", "PADARIA SAO JOAO LTDA")).toBe(false);
     expect(razaoDivergente("Transportes Alfa", "BETA COMERCIO DE ALIMENTOS LTDA")).toBe(true);
