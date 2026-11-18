@@ -57,16 +57,12 @@ jobs:
               -w '\nHTTP %{http_code}\n' "https://arquivos.receitafederal.gov.br/public.php/webdav$1" \
               | tee resp.xml | grep -oE '<d:href>[^<]+</d:href>|<d:getcontentlength>[0-9]+|<d:getlastmodified>[^<]+|^HTTP [0-9]+' | sed 's/<[^>]*>//g' | head -80
           }
-          listar /
-          head -c 600 resp.xml; echo
-          echo "=== PROPFIND dav/files (Nextcloud 29+)"
-          curl -sS -X PROPFIND -H 'Depth: 1' --max-time 60 -w '\nHTTP %{http_code}\n' \
-            "https://arquivos.receitafederal.gov.br/public.php/dav/files/$token/" \
-            | grep -oE '<d:href>[^<]+</d:href>|^HTTP [0-9]+' | sed 's/<[^>]*>//g' | head -40
-          for d in $(grep -oE '<d:href>[^<]+/</d:href>' resp.xml | sed 's/<[^>]*>//g;s#.*/public.php/webdav##' | grep -v '^/$' | head -15); do
-            listar "$d"
-            for e in $(grep -oE '<d:href>[^<]+/</d:href>' resp.xml | sed 's/<[^>]*>//g;s#.*/public.php/webdav##' | grep -v "^$d$" | grep -iE 'cnpj|regime|tribut|cadastr|dados' | head -6); do
-              listar "$e"
+          filhos() { grep -oE '<d:href>[^<]+/</d:href>' resp.xml | sed 's/<[^>]*>//g;s#.*/public.php/webdav##' | grep -v "^$1$"; }
+          for raiz in /Dados/Cadastros/CNPJ/ /Dados/Obrigacoes_Acessorias/ECF/; do
+            listar "$raiz"
+            for d in $(filhos "$raiz" | head -12); do
+              listar "$d"
+              for e in $(filhos "$d" | tail -3); do listar "$e"; done
             done
           done
       - name: Sonda dos arquivos públicos
