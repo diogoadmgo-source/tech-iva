@@ -3,15 +3,19 @@
  * projeto já tem (import dinâmico, fora do bundle inicial). Só escreve o que
  * veio do banco; o diagnóstico de cada linha vem de diagnose().
  *
- * Abas: Resumo · Base diagnosticada · Saneamento (com colunas para o cliente
- * responder) · Metodologia.
+ * Abas: Resumo executivo · Base (uma linha por documento, colunas objetivas) ·
+ * Saneamento (com colunas para o cliente responder) · Detalhe e evidências ·
+ * Metodologia.
  */
 import type { Worksheet } from "exceljs";
-import { formatCnpj } from "./cnpj";
 import {
+  cnaeText,
   DIAGNOSIS_LABEL,
   DIAGNOSIS_ORDER,
   diagnose,
+  documento,
+  naturezaText,
+  PORTE_LABEL,
   type Diagnosis,
   type DiagnosisStatus,
 } from "./diagnosis";
@@ -19,48 +23,58 @@ import { basisText, CLASSIFICATION_LABEL, RELATIONSHIP_LABEL, sourceName } from 
 import type { PortfolioRow } from "./portfolio";
 
 export const EXPORT_COLUMNS = [
-  "CNPJ",
-  "Razão social (seu cadastro)",
-  "Razão social (Receita)",
+  "Documento",
+  "Tipo",
+  "Razão social",
+  "Natureza jurídica",
+  "Porte",
   "Matriz/Filial",
-  "Situação na Receita",
-  "UF",
-  "Município",
-  "Regime tributário identificado",
-  "Status do diagnóstico",
-  "Causa",
+  "Data de abertura",
+  "CNAE principal",
+  "Município/UF",
+  "Situação cadastral",
+  "Regime identificado",
+  "Referência",
+  "Status",
   "Ação recomendada",
-  "Prioridade",
-  "Alertas do cadastro",
-  "Fonte",
-  "Evidência completa",
-  "Relacionamento",
-  "Última consulta",
 ] as const;
-const WIDTHS = [20, 36, 36, 12, 16, 5, 20, 28, 34, 60, 46, 11, 40, 26, 70, 14, 17];
+const WIDTHS = [21, 7, 40, 30, 16, 12, 12, 44, 24, 14, 22, 16, 30, 46];
+
+type Item = { r: PortfolioRow; d: Diagnosis; rel: string };
+
+const isoToDate = (v?: string | null) =>
+  v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T12:00:00Z`) : null;
+const foraDaReceita = (d: Diagnosis) => d.status === "provavel_cpf" || d.status === "cnpj_nao_encontrado";
+
+function referencia(r: PortfolioRow, d: Diagnosis): string | null {
+  const b = r.tax_entities.public_classification_basis;
+  if (foraDaReceita(d) || d.status === "aguardando") return null;
+  if (b?.["ano_calendario"]) return `ECF ${String(b["ano_calendario"])}`;
+  if (b?.["competencia"]) return `Receita ${String(b["competencia"])}`;
+  return null;
+}
 
 export function toExportRow(r: PortfolioRow, d: Diagnosis = diagnose(r)): (string | Date | null)[] {
   const e = r.tax_entities;
-  const b = e.public_classification_basis;
-  const foraDaReceita = d.status === "provavel_cpf" || d.status === "cnpj_nao_encontrado";
+  const doc = documento(r, d);
+  const fora = foraDaReceita(d);
+  const local = [e.municipio, e.uf].filter(Boolean).join("/");
   return [
-    formatCnpj(r.cnpj),
-    r.declared_razao_social,
-    e.razao_social,
-    foraDaReceita ? "—" : e.is_matriz ? "Matriz" : "Filial",
-    e.situacao_cadastral ?? (foraDaReceita ? "Não consta" : null),
-    e.uf,
-    e.municipio,
-    d.regime,
+    doc.numero,
+    doc.tipo,
+    // Fora da Receita, a raiz pode coincidir com outra empresa: não mostra dados dela.
+    (fora ? null : e.razao_social) ?? (r.declared_razao_social ? `${r.declared_razao_social} (seu cadastro)` : null),
+    fora ? null : naturezaText(e.natureza_juridica, e.natureza_descricao),
+    fora || !e.porte ? null : (PORTE_LABEL[e.porte] ?? e.porte),
+    fora ? "—" : e.is_matriz ? "Matriz" : "Filial",
+    isoToDate(e.data_abertura),
+    cnaeText(e.cnae_principal, e.cnae_descricao),
+    local || null,
+    e.situacao_cadastral ?? (fora ? "Não consta" : null),
+    fora ? "—" : CLASSIFICATION_LABEL[e.public_classification],
+    referencia(r, d),
     DIAGNOSIS_LABEL[d.status],
-    d.causa,
     d.acao,
-    d.prioridade,
-    d.alertas.join(" · ") || null,
-    b?.["fonte"] ? sourceName(String(b["fonte"])) : null,
-    basisText(b) || null,
-    RELATIONSHIP_LABEL[r.relationship],
-    e.last_consulted_at ? new Date(e.last_consulted_at) : null,
   ];
 }
 
@@ -79,6 +93,7 @@ const C = {
   badInk: "FF991B1B",
   idle: "FFF1F5F9",
   input: "FFFFFBEB",
+  card: "FFF1F5F9",
 };
 const TONE: Record<DiagnosisStatus, [string, string]> = {
   identificado: [C.ok, C.okInk],
@@ -119,7 +134,7 @@ function table(
     const row = ws.addRow(v);
     row.eachCell({ includeEmpty: true }, (c, col) => {
       c.font = { name: FONT, size: 10, color: { argb: C.ink } };
-      c.alignment = { vertical: "top", wrapText: col > 1 };
+      c.alignment = { vertical: "top", wrapText: col > 2 };
       c.border = border;
       if (i % 2 === 1) c.fill = fill(C.zebra);
     });
@@ -135,6 +150,20 @@ function table(
 }
 
 const pct = (a: number, t: number) => (t ? a / t : 0);
+const nf = (v: number) => v.toLocaleString("pt-BR");
+const pf = (a: number, t: number) =>
+  `${(pct(a, t) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+
+/** Uma linha por documento: o mesmo CNPJ como cliente e fornecedor vira uma só. */
+function porDocumento(rows: PortfolioRow[]): Item[] {
+  const map = new Map<string, { r: PortfolioRow; rels: Set<string> }>();
+  for (const r of rows) {
+    const cur = map.get(r.cnpj);
+    if (cur) cur.rels.add(RELATIONSHIP_LABEL[r.relationship]);
+    else map.set(r.cnpj, { r, rels: new Set([RELATIONSHIP_LABEL[r.relationship]]) });
+  }
+  return [...map.values()].map(({ r, rels }) => ({ r, d: diagnose(r), rel: [...rels].join(" e ") }));
+}
 
 export async function buildWorkbook(
   rows: PortfolioRow[],
@@ -144,67 +173,133 @@ export async function buildWorkbook(
   const wb = new ExcelJS.Workbook();
   wb.creator = "TECH-IVA";
   wb.created = new Date();
-  const items = rows.map((r) => ({ r, d: diagnose(r) }));
-  const diag = items.map((x) => x.d);
-  const total = rows.length;
+  const items = porDocumento(rows);
+  const total = items.length;
+  const count = (f: (x: Item) => boolean) => items.filter(f).length;
   const competencias = [
     ...new Set(
-      rows
-        .map((r) => r.tax_entities.public_classification_basis?.["competencia"])
+      items
+        .map((x) => x.r.tax_entities.public_classification_basis?.["competencia"])
         .filter((v): v is string => typeof v === "string" && /^\d{4}-\d{2}$/.test(v)),
     ),
   ].sort();
 
-  // ------------------------------------------------------------------ Resumo
-  const rs = wb.addWorksheet("Resumo", {
+  // -------------------------------------------------------- Resumo executivo
+  const rs = wb.addWorksheet("Resumo executivo", {
     views: [{ showGridLines: false }],
     properties: { tabColor: { argb: C.head } },
   });
-  rs.columns = [{ width: 3 }, { width: 46 }, { width: 14 }, { width: 11 }, { width: 62 }];
-  const title = rs.getCell("B2");
-  title.value = "Diagnóstico tributário da base de CNPJs";
-  title.font = { name: FONT, size: 18, bold: true, color: { argb: C.ink } };
-  const info: [string, string | Date | number][] = [
-    ["Empresa", meta.empresa ?? "—"],
-    ["Gerado em", new Date()],
-    ["Dados da Receita (competência)", competencias.length ? competencias.join(", ") : "—"],
-    ["Recorte exportado", meta.filtro],
-    ["CNPJs nesta planilha", total],
+  rs.columns = [{ width: 3 }, { width: 30 }, { width: 14 }, { width: 11 }, { width: 70 }];
+  rs.getCell("B2").value = "Diagnóstico tributário da base de CNPJs";
+  rs.getCell("B2").font = { name: FONT, size: 18, bold: true, color: { argb: C.ink } };
+  rs.getCell("B3").value = [
+    meta.empresa ?? null,
+    `gerado em ${new Date().toLocaleDateString("pt-BR")}`,
+    competencias.length ? `dados da Receita de ${competencias.join(", ")}` : null,
+    meta.filtro !== "Toda a base" ? `recorte: ${meta.filtro}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  rs.getCell("B3").font = { name: FONT, size: 10, color: { argb: C.muted } };
+
+  const identificados = count((x) => x.d.status === "identificado");
+  const acao = count((x) => x.d.precisaAcao);
+  const cpf = count((x) => x.d.status === "provavel_cpf");
+  const inexistente = count((x) => x.d.status === "cnpj_nao_encontrado");
+  const ressalva = count((x) => x.d.status === "ressalva");
+  const semFonte = count((x) => x.d.status === "sem_fonte_publica");
+  const inativos = count(
+    (x) => !!x.r.tax_entities.situacao_cadastral && x.r.tax_entities.situacao_cadastral !== "ATIVA",
+  );
+
+  // Cartões: número grande + legenda.
+  const cards: [string, string, string][] = [
+    [nf(total), "documentos analisados", C.ink],
+    [pf(identificados, total), `com regime identificado (${nf(identificados)})`, C.okInk],
+    [nf(acao), "pedem ação do cliente", C.warnInk],
+    [nf(cpf + inexistente), "números a corrigir no cadastro", C.badInk],
   ];
-  info.forEach(([k, v], i) => {
-    const r = rs.getRow(4 + i);
-    r.getCell(2).value = k;
-    r.getCell(2).font = { name: FONT, size: 10, color: { argb: C.muted } };
-    r.getCell(3).value = v;
-    r.getCell(3).font = { name: FONT, size: 10, bold: true, color: { argb: C.ink } };
-    if (v instanceof Date) r.getCell(3).numFmt = "dd/mm/yyyy hh:mm";
+  cards.forEach(([v, l, ink], i) => {
+    const row = 5 + i * 2;
+    const a = rs.getCell(row, 2);
+    a.value = v;
+    a.font = { name: FONT, size: 20, bold: true, color: { argb: ink } };
+    const b = rs.getCell(row, 3);
+    rs.mergeCells(row, 3, row, 5);
+    b.value = l;
+    b.font = { name: FONT, size: 11, color: { argb: C.muted } };
+    b.alignment = { vertical: "middle" };
   });
 
-  let line = 11;
-  const block = (titulo: string, header: string[], data: (string | number)[][], tones?: ([string, string] | null)[]) => {
-    rs.getCell(line, 2).value = titulo;
+  let line = 14;
+  const titulo = (t: string) => {
+    rs.getCell(line, 2).value = t;
     rs.getCell(line, 2).font = { name: FONT, size: 12, bold: true, color: { argb: C.ink } };
     line++;
-    header.forEach((h, i) => (rs.getCell(line, 2 + i).value = h));
-    for (let i = 0; i < header.length; i++) {
+  };
+  titulo("Conclusões");
+  const regimeAno = [
+    ...new Set(
+      items
+        .map((x) => x.r.tax_entities.public_classification_basis?.["ano_calendario"])
+        .filter((v) => v !== undefined && v !== null)
+        .map(String),
+    ),
+  ].sort();
+  const conclusoes = [
+    `${pf(identificados, total)} da base tem regime identificado em fonte oficial da Receita: Simples e MEI pela opção vigente; Lucro Real e Presumido pela última ECF publicada${regimeAno.length ? ` (ano-calendário ${regimeAno.join(", ")})` : ""}.`,
+    ressalva
+      ? `${nf(ressalva)} empresas saíram do Simples e ainda não têm ECF posterior à saída: o regime atual precisa ser confirmado com o parceiro.`
+      : null,
+    semFonte
+      ? `${nf(semFonte)} empresas não têm fonte pública que indique o regime (sem Simples e sem ECF publicada): solicitar ao parceiro.`
+      : null,
+    cpf
+      ? `${nf(cpf)} números são CPF cadastrados como CNPJ (com "000" na frente). Pessoa física não tem regime de empresa: corrigir o cadastro.`
+      : null,
+    inexistente ? `${nf(inexistente)} CNPJs não existem na Receita: conferir a digitação.` : null,
+    inativos
+      ? `${nf(inativos)} cadastros estão baixados, inaptos ou suspensos na Receita: avaliar se ainda devem ficar na base.`
+      : null,
+  ].filter((t): t is string => !!t);
+  for (const t of conclusoes) {
+    rs.mergeCells(line, 2, line, 5);
+    const c = rs.getCell(line, 2);
+    c.value = `•  ${t}`;
+    c.font = { name: FONT, size: 11, color: { argb: C.ink } };
+    c.alignment = { wrapText: true, vertical: "top" };
+    rs.getRow(line).height = 32;
+    line++;
+  }
+  line++;
+
+  const block = (
+    t: string,
+    header: string[],
+    data: (string | number)[][],
+    tones?: ([string, string] | null)[],
+  ) => {
+    titulo(t);
+    header.forEach((h, i) => {
       const c = rs.getCell(line, 2 + i);
+      c.value = h;
       c.fill = fill(C.head);
       c.font = { name: FONT, bold: true, size: 10, color: { argb: "FFFFFFFF" } };
       c.border = border;
-      c.alignment = { vertical: "middle" };
-    }
+    });
     line++;
     data.forEach((v, j) => {
       v.forEach((x, i) => {
         const c = rs.getCell(line, 2 + i);
         c.value = x;
         c.border = border;
-        c.font = { name: FONT, size: 10, color: { argb: C.ink }, bold: i === 0 && Boolean(tones?.[j]) };
+        c.font = { name: FONT, size: 10, color: { argb: C.ink } };
         c.alignment = { vertical: "top", wrapText: i === 3 };
         if (i === 2 && typeof x === "number") c.numFmt = "0.0%";
-        if (i === 0 && tones?.[j]) {
-          c.fill = fill(tones[j]![0]);
-          c.font = { name: FONT, size: 10, bold: true, color: { argb: tones[j]![1] } };
+        const tone = tones?.[j];
+        if (i === 0 && tone) {
+          c.fill = fill(tone[0]);
+          c.font = { name: FONT, size: 10, bold: true, color: { argb: tone[1] } };
         }
       });
       line++;
@@ -212,29 +307,16 @@ export async function buildWorkbook(
     line++;
   };
 
-  const porStatus = DIAGNOSIS_ORDER.map((s) => {
-    const n = diag.filter((d) => d.status === s).length;
-    const acao = diag.find((d) => d.status === s)?.acao ?? "";
-    return { s, n, acao };
-  }).filter((x) => x.n > 0);
-  block(
-    "Resultado do diagnóstico",
-    ["Status", "CNPJs", "% da base", "O que fazer"],
-    [
-      ...porStatus.map((x) => [DIAGNOSIS_LABEL[x.s], x.n, pct(x.n, total), x.acao]),
-      ["Total", total, 1, ""],
-    ],
-    [...porStatus.map((x) => TONE[x.s]), null],
-  );
-
   const regimes = new Map<string, number>();
-  for (const r of rows) {
-    const k = CLASSIFICATION_LABEL[r.tax_entities.public_classification];
+  for (const x of items) {
+    const k = foraDaReceita(x.d)
+      ? "Não é CNPJ válido na Receita"
+      : CLASSIFICATION_LABEL[x.r.tax_entities.public_classification];
     regimes.set(k, (regimes.get(k) ?? 0) + 1);
   }
   block(
-    "Por regime tributário (fonte pública)",
-    ["Regime", "CNPJs", "% da base", "Observação"],
+    "Regime tributário",
+    ["Regime", "Documentos", "% da base", "Observação"],
     [...regimes.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([k, n]) => [
@@ -242,41 +324,43 @@ export async function buildWorkbook(
         n,
         pct(n, total),
         k === "Lucro Real" || k === "Lucro Presumido"
-          ? "Pelo ano-calendário da última ECF publicada (histórico, não o regime vigente)."
+          ? "Pela última ECF publicada (histórico declarado, não o regime vigente)."
           : k === "Excluído do Simples"
-            ? "Saiu do Simples; o regime atual depende de confirmação."
-            : "",
+            ? "Saiu do Simples; regime atual a confirmar."
+            : k === "Não é CNPJ válido na Receita"
+              ? "Provável CPF ou CNPJ digitado errado."
+              : "",
       ]),
   );
 
-  const alertas = new Map<string, number>();
-  for (const d of diag) for (const a of d.alertas) {
-    const k = a.startsWith("Situação na Receita") ? `Situação na Receita: ${(a.split(": ")[1] ?? "").split(" desde")[0]}` : a;
-    alertas.set(k, (alertas.get(k) ?? 0) + 1);
-  }
-  if (alertas.size)
-    block(
-      "Alertas de cadastro (além do regime)",
-      ["Alerta", "CNPJs", "% da base", ""],
-      [...alertas.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => [k, n, pct(n, total), ""]),
-    );
+  const porStatus = DIAGNOSIS_ORDER.map((s) => ({
+    s,
+    n: count((x) => x.d.status === s),
+    acao: items.find((x) => x.d.status === s && !x.r.tax_entities.situacao_cadastral?.match(/BAIXADA|INAPTA|SUSPENSA|NULA/))?.d.acao ??
+      items.find((x) => x.d.status === s)?.d.acao ??
+      "",
+  })).filter((x) => x.n > 0);
+  block(
+    "Status do diagnóstico e o que fazer",
+    ["Status", "Documentos", "% da base", "O que fazer"],
+    [...porStatus.map((x) => [DIAGNOSIS_LABEL[x.s], x.n, pct(x.n, total), x.acao]), ["Total", total, 1, ""]],
+    [...porStatus.map((x) => TONE[x.s]), null],
+  );
   rs.getCell(line, 2).value =
-    "Detalhe por CNPJ na aba \"Base diagnosticada\". As linhas que pedem ação estão na aba \"Saneamento\", com colunas para a sua resposta.";
+    'Detalhe por documento na aba "Base". As linhas que pedem ação estão em "Saneamento", com colunas para a sua resposta.';
   rs.getCell(line, 2).font = { name: FONT, size: 10, italic: true, color: { argb: C.muted } };
 
-  // ---------------------------------------------------------- Base completa
-  const ws = wb.addWorksheet("Base diagnosticada", {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 1 }],
-  });
+  // ------------------------------------------------------------------- Base
+  const ws = wb.addWorksheet("Base", { views: [{ state: "frozen", xSplit: 1, ySplit: 1 }] });
   table(
     ws,
     [...EXPORT_COLUMNS],
     items.map((x) => toExportRow(x.r, x.d)),
     WIDTHS,
     (i) => (items[i] ? TONE[items[i].d.status] : null),
-    9,
+    13,
   );
-  ws.getColumn(17).numFmt = "dd/mm/yyyy hh:mm";
+  ws.getColumn(7).numFmt = "dd/mm/yyyy";
 
   // ------------------------------------------------------------- Saneamento
   const PRI = { Alta: 0, Média: 1, Baixa: 2, "—": 3 } as const;
@@ -293,37 +377,39 @@ export async function buildWorkbook(
     properties: { tabColor: { argb: "FFF59E0B" } },
   });
   const SN_HEAD = [
-    "CNPJ",
-    "Razão social (seu cadastro)",
-    "Razão social (Receita)",
+    "Documento",
+    "Tipo",
+    "Nome no seu cadastro",
     "Prioridade",
-    "Status do diagnóstico",
-    "Causa",
+    "Status",
+    "Motivo",
     "Ação recomendada",
-    "CNPJ correto (preencher)",
+    "Documento correto (preencher)",
     "Regime atual informado (preencher)",
     "Observação (preencher)",
   ];
   table(
     sn,
     SN_HEAD,
-    fila.map(({ r, d }) => [
-      formatCnpj(r.cnpj),
-      r.declared_razao_social,
-      r.tax_entities.razao_social,
-      d.prioridade,
-      DIAGNOSIS_LABEL[d.status],
-      d.causa,
-      d.acao,
-      null,
-      null,
-      null,
-    ]),
-    [20, 34, 34, 11, 32, 60, 44, 22, 26, 34],
+    fila.map(({ r, d }) => {
+      const doc = documento(r, d);
+      return [
+        doc.numero,
+        doc.tipo,
+        r.declared_razao_social ?? r.tax_entities.razao_social,
+        d.prioridade,
+        DIAGNOSIS_LABEL[d.status],
+        d.causa,
+        d.acao,
+        null,
+        null,
+        null,
+      ];
+    }),
+    [21, 7, 34, 11, 30, 60, 44, 24, 26, 34],
     (i) => (fila[i] ? TONE[fila[i].d.status] : null),
     5,
   );
-  // Colunas de resposta do cliente: destacadas e com lista no regime.
   styleHeader(sn, 1, SN_HEAD.length);
   for (const col of [8, 9, 10]) {
     sn.getRow(1).getCell(col).fill = fill("FFB45309");
@@ -337,18 +423,41 @@ export async function buildWorkbook(
     };
   if (!fila.length) sn.addRow(["Nenhuma linha precisa de ação neste recorte."]);
 
+  // ---------------------------------------------------- Detalhe e evidências
+  const dt = wb.addWorksheet("Detalhe e evidências", {
+    views: [{ state: "frozen", xSplit: 1, ySplit: 1 }],
+  });
+  table(
+    dt,
+    ["Documento", "Nome no seu cadastro", "Relacionamento", "Motivo do diagnóstico", "Alertas do cadastro", "Fonte", "Evidência", "Última consulta"],
+    items.map(({ r, d, rel }) => [
+      documento(r, d).numero,
+      r.declared_razao_social,
+      rel,
+      d.causa,
+      d.alertas.join(" · ") || null,
+      r.tax_entities.public_classification_basis?.["fonte"]
+        ? sourceName(String(r.tax_entities.public_classification_basis["fonte"]))
+        : null,
+      basisText(r.tax_entities.public_classification_basis) || null,
+      r.tax_entities.last_consulted_at ? new Date(r.tax_entities.last_consulted_at) : null,
+    ]),
+    [21, 34, 20, 60, 40, 26, 80, 17],
+  );
+  dt.getColumn(8).numFmt = "dd/mm/yyyy hh:mm";
+
   // ------------------------------------------------------------ Metodologia
   const mt = wb.addWorksheet("Metodologia", { views: [{ showGridLines: false }] });
   mt.columns = [{ width: 3 }, { width: 34 }, { width: 100 }];
   mt.getCell("B2").value = "Como cada linha foi diagnosticada";
   mt.getCell("B2").font = { name: FONT, size: 14, bold: true, color: { argb: C.ink } };
   const notas: [string, string][] = [
-    ["Fontes", "Dados abertos oficiais da Receita Federal: Simples Nacional e SIMEI, cadastro de Empresas e Estabelecimentos, e regime declarado na ECF. Cruzamento em lote, com a competência indicada no Resumo."],
+    ["Fontes", "Dados abertos oficiais da Receita Federal: Simples Nacional e SIMEI, cadastro de Empresas e Estabelecimentos (razão social, natureza jurídica, porte, abertura, CNAE, endereço e situação) e regime declarado na ECF. Cruzamento em lote, na competência indicada no Resumo."],
     [DIAGNOSIS_LABEL.identificado, "Optante pelo Simples ou SIMEI na Receita, ou Lucro Real/Presumido declarado na ECF. Real e Presumido vêm sempre com o ano-calendário da ECF: é histórico declarado, não o regime vigente."],
     [DIAGNOSIS_LABEL.ressalva, "Excluído do Simples sem ECF publicada depois da saída. O regime atual precisa ser confirmado."],
     [DIAGNOSIS_LABEL.sem_fonte_publica, "Nunca optou pelo Simples e não há ECF publicada para a empresa (matriz). Não optar pelo Simples nunca é tratado como Lucro Presumido ou Lucro Real."],
     [DIAGNOSIS_LABEL.cnpj_nao_encontrado, "O número não existe no cadastro de CNPJ da Receita."],
-    [DIAGNOSIS_LABEL.provavel_cpf, "O número não existe no cadastro de CNPJ e, sem os três zeros iniciais, é um CPF válido (pessoa física)."],
+    [DIAGNOSIS_LABEL.provavel_cpf, "O número não existe no cadastro de CNPJ e, sem os três zeros iniciais, é um CPF válido (pessoa física). A planilha mostra o número no formato de CPF."],
     [DIAGNOSIS_LABEL.aguardando, "O CNPJ entrou na base depois do último processamento."],
     ["Filiais", "A ECF é declarada pela matriz: a filial recebe o regime da empresa (mesma raiz de 8 dígitos)."],
     ["Prioridade", "Alta: corrigir o número ou o cadastro inativo. Média: confirmar o regime com o parceiro. Baixa: conferência simples."],

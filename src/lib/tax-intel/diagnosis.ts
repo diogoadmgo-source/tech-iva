@@ -3,6 +3,7 @@
  * status, uma causa e uma ação: nada sai sem resposta. Só lê o que o banco
  * gravou (classe e base da classificação); não deduz regime nenhum.
  */
+import { formatCnpj } from "./cnpj";
 import { classificationText, type TaxClassification } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
@@ -167,4 +168,35 @@ export function diagnose(r: PortfolioRow): Diagnosis {
         ? "Conferir a razão social no seu cadastro."
         : "Nenhuma ação necessária.",
   };
+}
+
+// ------------------------------------------------------------ cadastro
+export const PORTE_LABEL: Record<string, string> = {
+  "00": "Não informado",
+  "01": "Microempresa",
+  "03": "Empresa de pequeno porte",
+  "05": "Demais",
+};
+
+/** CNPJ que é, na verdade, CPF com "000" na frente → CPF formatado. */
+export function documento(r: PortfolioRow, d: Diagnosis): { tipo: "CNPJ" | "CPF"; numero: string } {
+  if (d.status === "provavel_cpf" && /^000\d{11}$/.test(r.cnpj)) {
+    const c = r.cnpj.slice(3);
+    return { tipo: "CPF", numero: `${c.slice(0, 3)}.${c.slice(3, 6)}.${c.slice(6, 9)}-${c.slice(9)}` };
+  }
+  return { tipo: "CNPJ", numero: formatCnpj(r.cnpj) };
+}
+
+/** 4530703 → "4530-7/03 · descrição". */
+export function cnaeText(code?: string | null, desc?: string | null): string | null {
+  if (!code || !/^\d{7}$/.test(code)) return null;
+  const f = `${code.slice(0, 4)}-${code.slice(4, 5)}/${code.slice(5)}`;
+  return desc ? `${f} · ${desc}` : f;
+}
+
+/** 2062 → "206-2 · descrição". */
+export function naturezaText(code?: string | null, desc?: string | null): string | null {
+  if (!code || !/^\d{4}$/.test(code)) return null;
+  const f = `${code.slice(0, 3)}-${code.slice(3)}`;
+  return desc ? `${f} · ${desc}` : f;
 }

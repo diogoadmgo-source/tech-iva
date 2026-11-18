@@ -544,8 +544,9 @@ async function scanRegime(ctx) {
   report.datasets[ds].matched = acc.size;
 }
 
-async function loadMunicipios(ctx) {
-  const f = (await ctx.origin.files("cnpj", ctx.competencia)).find((x) => /^municipios\.zip$/i.test(x.name));
+// Tabelas de código → descrição publicadas junto com o CNPJ (Municipios, Cnaes, Naturezas).
+async function loadTable(ctx, re) {
+  const f = (await ctx.origin.files("cnpj", ctx.competencia)).find((x) => re.test(x.name));
   const map = new Map();
   if (!f) return map;
   const dl = await ctx.origin.fetchFile(f, ctx.tmp, ctx.stats);
@@ -607,7 +608,11 @@ export async function main(argv = process.argv.slice(2)) {
 
   let status = "concluida", error = null;
   try {
-    if (a.datasets.includes("receita_estabelecimentos")) ctx.municipios = await loadMunicipios(ctx);
+    if (a.datasets.includes("receita_estabelecimentos")) {
+      ctx.municipios = await loadTable(ctx, /^municipios\.zip$/i);
+      ctx.cnaes = await loadTable(ctx, /^cnaes\.zip$/i);
+    }
+    if (a.datasets.includes("receita_empresas")) ctx.naturezas = await loadTable(ctx, /^naturezas\.zip$/i);
     // Registra de antemão todos os arquivos da execução ("pendente"), para o
     // app mostrar o andamento real (arquivos lidos / total) desde o início.
     for (const ds of a.datasets) {
