@@ -465,7 +465,7 @@ async function scanDataset(ds, ctx) {
 }
 
 async function scanRegime(ctx) {
-  const { targets, db, origin, tmp, stats, report } = ctx;
+  const { roots, db, origin, tmp, stats, report } = ctx;
   const ds = "receita_regime_tributario";
   const files = await origin.files("regime", ctx.competencia);
   report.datasets[ds] = { files: [], matched: 0, not_found: 0, inserted: 0, cached: 0 };
@@ -473,7 +473,10 @@ async function scanRegime(ctx) {
     const entries = await origin.entries("regime").catch((e) => [`(listagem falhou: ${e.message})`]);
     throw new LayoutError(`regime tributário: nenhum .zip na pasta publicada; itens: ${entries.slice(0, 30).join(", ")}`);
   }
-  const acc = new Map(); // cnpj -> linhas
+  // A ECF é declarada pela matriz: casa pela raiz (8 dígitos), para que a filial
+  // cuja matriz não está na base também receba o regime. Cada linha leva o CNPJ
+  // declarante; o banco confere que ele é da mesma raiz.
+  const acc = new Map(); // raiz -> linhas
   for (const f of files) {
     const t0 = Date.now();
     const dl = await origin.fetchFile(f, tmp, stats);
@@ -496,15 +499,16 @@ async function scanRegime(ctx) {
           n++;
           const fields = parseLine(line, sep);
           const cnpj = cnpjStrip(fields[idx.cnpj]).padStart(14, "0");
-          if (!targets.has(cnpj)) continue;
+          const raiz = cnpj.slice(0, 8);
+          if (!roots.has(raiz)) continue;
           const ano = (fields[idx.ano] ?? "").trim();
           const forma = (fields[idx.forma] ?? "").trim();
           if (!/^\d{4}$/.test(ano) || !forma) { stats.rejected++; continue; }
           matched++;
-          const l = acc.get(cnpj) ?? [];
-          l.push({ ano, forma, cnpj_da_scp: idx.cnpj_da_scp !== undefined ? (fields[idx.cnpj_da_scp] ?? "").trim() : "",
+          const l = acc.get(raiz) ?? [];
+          l.push({ cnpj, ano, forma, cnpj_da_scp: idx.cnpj_da_scp !== undefined ? (fields[idx.cnpj_da_scp] ?? "").trim() : "",
             quantidade: idx.quantidade !== undefined ? (fields[idx.quantidade] ?? "").trim() : "", arquivo: f.name });
-          acc.set(cnpj, l);
+          acc.set(raiz, l);
         }
       }
     }
@@ -524,13 +528,14 @@ async function scanRegime(ctx) {
     report.datasets[ds].cached += r.cached;
     pending = [];
   };
-  for (const cnpj of targets) {
-    const linhas = acc.get(cnpj);
+  for (const raiz of roots) {
+    const linhas = acc.get(raiz);
     if (linhas) {
-      pending.push({ key: cnpj, status: "ok", raw: { linhas }, n: { linhas: linhas.map(({ arquivo, ...r }) => r) } });
-      if (ctx.publicSample?.has(cnpj)) report.sample[ds] = { ...(report.sample[ds] ?? {}), [cnpj]: linhas };
+      pending.push({ key: raiz, status: "ok", raw: { linhas }, n: { linhas: linhas.map(({ arquivo, ...r }) => r) } });
+      if (ctx.publicSample && [...ctx.publicSample].some((c) => c.startsWith(raiz)))
+        report.sample[ds] = { ...(report.sample[ds] ?? {}), [raiz]: linhas };
     } else {
-      pending.push({ key: cnpj, status: "nao_encontrado" });
+      pending.push({ key: raiz, status: "nao_encontrado" });
       report.datasets[ds].not_found++;
     }
     if (pending.length >= BATCH) await flush();

@@ -241,6 +241,7 @@ function CarteiraPage() {
           : await loadPortfolioAll(tenantId, filters, sort, (l) => setExporting(l));
       const blob = await buildWorkbook(data, {
         filtro: source === "selecao" ? `${n(data.length)} selecionados` : describe(filters),
+        empresa: shell.data?.tenant.name ?? null,
       });
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `base-de-cnpjs-${stamp}.xlsx`);
