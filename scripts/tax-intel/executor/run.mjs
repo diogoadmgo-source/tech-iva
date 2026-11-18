@@ -226,6 +226,30 @@ class NoDb {
   async close() {}
 }
 
+// Lê a cadeia de certificados que o servidor Postgres apresenta (dados públicos),
+// para diagnosticar falhas de verificação TLS. Não envia credenciais.
+export async function describeServerChain(raw) {
+  const u = new URL(raw);
+  const net = await import("node:net"), tls = await import("node:tls");
+  const host = u.hostname, port = Number(u.port || 5432);
+  const sock = net.connect(port, host);
+  await new Promise((ok, ko) => { sock.once("connect", ok); sock.once("error", ko); });
+  const req = Buffer.alloc(8); req.writeInt32BE(8, 0); req.writeInt32BE(80877103, 4);
+  sock.write(req);
+  const resp = await new Promise((ok, ko) => { sock.once("data", ok); sock.once("error", ko); });
+  if (resp[0] !== 0x53) { sock.destroy(); return "servidor não aceitou TLS"; }
+  const t = tls.connect({ socket: sock, servername: host, rejectUnauthorized: false });
+  await new Promise((ok, ko) => { t.once("secureConnect", ok); t.once("error", ko); });
+  const out = []; let c = t.getPeerCertificate(true); const seen = new Set();
+  while (c && c.fingerprint256 && !seen.has(c.fingerprint256)) {
+    seen.add(c.fingerprint256);
+    out.push(`[${c.subject?.CN ?? "?"} ← emitido por ${c.issuer?.CN ?? "?"} (sha256 ${c.fingerprint256.slice(0, 11)})]`);
+    c = c.issuerCertificate;
+  }
+  t.destroy();
+  return out.join(" ");
+}
+
 // Descreve o endereço do banco sem a senha, para diagnosticar segredos mal formados.
 export function describeDbUrl(raw) {
   const arrobas = (raw.match(/@/g) ?? []).length;
@@ -256,7 +280,13 @@ class PgDb {
     try {
       await this.c.connect();
     } catch (e) {
-      const dica = /CERT|SELF_SIGNED/.test(e.code ?? "") ? "; o certificado do Supabase não confere com o do servidor" : "";
+      let dica = "";
+      if (/CERT|SELF_SIGNED/.test(e.code ?? "")) {
+        const fonte = process.env.TAX_INGESTOR_DB_CA?.trim() ? "segredo TAX_INGESTOR_DB_CA" : "arquivo supabase-root-2021-ca.crt";
+        let nossa = "?";
+        try { const x = new (await import("node:crypto")).X509Certificate(ca); nossa = `${x.subject.replace(/\n/g, ", ")} (sha256 ${x.fingerprint256.slice(0, 11)})`; } catch { nossa = "certificado ilegível"; }
+        dica = `; certificado usado (${fonte}): ${nossa}; cadeia do servidor: ${await describeServerChain(this.url).catch((x) => `não lida (${x.message})`)}`;
+      }
       throw new Error(`conexão ao banco falhou (${e.code ?? e.message})${dica}; endereço lido: ${describeDbUrl(this.url)}`);
     }
   }
