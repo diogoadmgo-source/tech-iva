@@ -143,7 +143,7 @@ na `main`:
 
 - `sonda`: sem segredo, publica o relatório como artefato.
 - `carga`: exige o ambiente `tax-intel-producao` com aprovação manual e o
-  segredo `TAX_INGESTOR_DATABASE_URL` nesse ambiente. Não publica artefato
+  segredos `TAX_INGESTOR_DATABASE_URL` e `TAX_INGESTOR_DB_CA` (certificado raiz do Supabase, baixado em Database Settings → SSL Configuration; é público, mas fica no ambiente para não depender de arquivo no repositório) nesse ambiente. Não publica artefato
   (o repositório é público); o log só tem contagens.
 
 ## Reversão
