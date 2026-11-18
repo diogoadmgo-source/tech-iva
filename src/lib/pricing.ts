@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csv-safe";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -281,9 +282,9 @@ export function scenarioCsv(detail: PriceScenarioDetail): string {
   const body = detail.lines
     .map((l) =>
       [
-        l.sku ?? "",
-        l.name.replace(/;/g, ","),
-        l.ncm ?? "",
+        csvCell(l.sku),
+        csvCell(l.name),
+        csvCell(l.ncm),
         money(l.cost_cents),
         money(l.input_credit_cents),
         money(l.current_price_cents),

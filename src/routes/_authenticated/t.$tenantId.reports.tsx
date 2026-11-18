@@ -200,7 +200,7 @@ function ReportsPage() {
 
 async function openReport(path: string | null) {
   if (!path) return;
-  const { data, error } = await supabase.storage.from("reports").createSignedUrl(path, 300);
+  const { data, error } = await supabase.storage.from("reports").createSignedUrl(path, 30);
   if (error || !data) {
     toast.error("Não foi possível abrir o relatório.");
     return;

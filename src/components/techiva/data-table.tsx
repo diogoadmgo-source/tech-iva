@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csv-safe";
 import {
   type ColumnDef,
   flexRender,
@@ -29,10 +30,7 @@ function toCsv<T>(columns: ColumnDef<T, unknown>[], rows: T[]) {
       keys
         .map((k) => {
           const v = (r as Record<string, unknown>)[k];
-          if (v === null || v === undefined) return "";
-          const t = String(v).replace(/;/g, ",");
-          // neutraliza fórmulas de planilha (=, +, -, @, tab, CR)
-          return /^[=+\-@\t\r]/.test(t) && !/^-?\d+([.,]\d+)?$/.test(t) ? `'${t}` : t;
+          return csvCell(v);
         })
         .join(";"),
     )

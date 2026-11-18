@@ -548,7 +548,7 @@ function InfoHintInline({ children }: { children: React.ReactNode }) {
 /** Abre o PDF gravado em Storage (reports/) com URL assinada. */
 async function supabaseReport(path: string) {
   const { supabase } = await import("@/integrations/supabase/client");
-  const { data, error } = await supabase.storage.from("reports").createSignedUrl(path, 300);
+  const { data, error } = await supabase.storage.from("reports").createSignedUrl(path, 30);
   if (error || !data) {
     toast.error("Não foi possível abrir o relatório.");
     return;
