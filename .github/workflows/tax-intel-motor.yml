@@ -118,7 +118,7 @@ jobs:
       - name: Carga das carteiras
         env:
           TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}
-          TAX_INGESTOR_DB_CA: ${{ secrets.TAX_INGESTOR_DB_CA }}
+          TAX_INGESTOR_DB_CA: ${{ secrets.TAX_INGESTOR_DB_CA || vars.TAX_INGESTOR_DB_CA }}
         run: >
           node scripts/tax-intel/executor/run.mjs
           --datasets "${{ inputs.datasets || 'receita_simples,receita_empresas,receita_estabelecimentos,receita_regime_tributario' }}"
