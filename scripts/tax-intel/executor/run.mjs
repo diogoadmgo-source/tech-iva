@@ -226,6 +226,19 @@ class NoDb {
   async close() {}
 }
 
+// Descreve o endereço do banco sem a senha, para diagnosticar segredos mal formados.
+export function describeDbUrl(raw) {
+  const arrobas = (raw.match(/@/g) ?? []).length;
+  let u;
+  try { u = new URL(raw); } catch { return `não é uma URL válida (${arrobas} "@")`; }
+  const especiais = /[@#/?:%\[\] ]/.test(decodeURIComponent(u.password || ""));
+  return [`protocolo=${u.protocol.replace(":", "")}`, `host=${u.hostname || "(vazio)"}`, `porta=${u.port || "(padrão)"}`,
+    `usuário=${decodeURIComponent(u.username) || "(vazio)"}`, `banco=${u.pathname.slice(1) || "(vazio)"}`,
+    `senha=${u.password ? "presente" : "ausente"}`, `"@" no texto=${arrobas}`,
+    ...(arrobas > 1 || raw.includes("#") ? ["provável caractere especial não codificado na senha"] : []),
+    ...(especiais ? ["senha com caractere especial"] : [])].join(", ");
+}
+
 class PgDb {
   constructor(url) { this.url = url; }
   async connect() {
@@ -235,7 +248,11 @@ class PgDb {
     }
     const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(this.url) || /sslmode=disable/.test(this.url);
     this.c = new pg.Client({ connectionString: this.url, ssl: local ? false : { rejectUnauthorized: true } });
-    await this.c.connect();
+    try {
+      await this.c.connect();
+    } catch (e) {
+      throw new Error(`conexão ao banco falhou (${e.code ?? e.message}); endereço lido: ${describeDbUrl(this.url)}`);
+    }
   }
   async q(sql, params) { return (await this.c.query(sql, params)).rows; }
   async start(comp, datasets, ghUrl) {
