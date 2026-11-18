@@ -93,7 +93,8 @@ export function Journey({
         : phase.kind === "concluido" && pendentes === 0
           ? "feito"
           : "atual";
-  const s3: StepState = classificados > 0 && !active ? "feito" : "bloqueado";
+  // Um reprocessamento não esconde o resultado anterior: ele continua baixável.
+  const s3: StepState = classificados > 0 ? "feito" : "bloqueado";
 
   return (
     <section aria-label="Passo a passo" className="panel-hero p-5 sm:p-6">
@@ -156,7 +157,9 @@ export function Journey({
                 com resultado
               </p>
               <p className="text-xs text-muted-foreground">
-                Excel com regime, fonte e evidência de cada CNPJ.
+                {active
+                  ? "Resultado do último processamento. Atualiza quando o atual terminar."
+                  : "Excel com regime, fonte e evidência de cada CNPJ."}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button asChild size="sm" className="cta-lift">
@@ -178,7 +181,7 @@ export function Journey({
           ) : (
             <p className="text-xs text-muted-foreground">
               {active
-                ? "Disponível assim que o processamento terminar."
+                ? "Disponível assim que o primeiro processamento terminar."
                 : "Liberado depois do primeiro processamento."}
             </p>
           )}

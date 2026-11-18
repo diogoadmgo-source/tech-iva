@@ -48,10 +48,11 @@ pela raiz a cada execução.
 
 | Ordem | Classe | Quando |
 |---|---|---|
+| 0 | nao_identificado (CNPJ inexistente) | o número não consta em Estabelecimentos; se for "000" + CPF válido, a base marca `provavel_cpf` (0252) |
 | 1 | consulta_pendente | nenhuma consulta ao Simples para a raiz |
 | 2 | mei_simei | opção pelo SIMEI ativa |
 | 3 | simples_nacional | opção pelo Simples ativa |
-| 4 | lucro_real / lucro_presumido | ECF de ano **posterior** à última saída do Simples, com uma única forma de tributação no ano; o ano vai na base |
+| 4 | lucro_real / lucro_presumido | ECF da empresa (raiz; declarada pela matriz) de ano posterior à saída do Simples, ou do próprio ano quando a saída foi antes de 31/12 (0252), com uma única forma de tributação no ano; o ano vai na base |
 | 5 | excluido_simples | saiu do Simples e não há ECF posterior que decida |
 | 6 | nao_identificado | nunca optou e não há ECF; a base diz "Ausência de opção pelo Simples não indica Lucro Presumido nem Lucro Real." |
 
@@ -63,9 +64,10 @@ Cada CNPJ guarda, em `public_classification_basis`: fonte, competência dos
 dados (ou ano-calendário da ECF), datas de opção/exclusão, aviso quando houver e
 o id da execução. Cada consulta fica em `tax_consultations` (imutável) com
 fonte, competência, data, status, linha bruta e linha normalizada. O painel
-mostra isso no detalhe do CNPJ e o Excel traz as colunas "Fonte da
-classificação", "Referência (competência ou ano da ECF)" e "Base da
-classificação".
+mostra isso no detalhe do CNPJ. O Excel é o diagnóstico para o cliente sanear a
+base (`src/lib/tax-intel/diagnosis.ts`): toda linha sai com status, causa, ação
+recomendada e prioridade, e as abas são Resumo, Base diagnosticada, Saneamento
+(com colunas para o cliente responder) e Metodologia.
 
 ## Idempotência, cache e retomada
 
