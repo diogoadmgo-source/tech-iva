@@ -247,14 +247,16 @@ class PgDb {
       throw new Error("Pacote `pg` não encontrado. Rode `bun install`.");
     }
     const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(this.url) || /sslmode=disable/.test(this.url);
-    // O pooler do Supabase usa certificado da CA própria do Supabase (não pública):
-    // a raiz vem em TAX_INGESTOR_DB_CA (Database Settings → SSL Configuration).
-    const ca = process.env.TAX_INGESTOR_DB_CA?.trim() || undefined;
+    // O pooler do Supabase usa certificado da CA própria do Supabase (não pública).
+    // A raiz pública "Supabase Root 2021 CA" (Database Settings → SSL Configuration)
+    // vem junto do executor; TAX_INGESTOR_DB_CA pode substituí-la.
+    const ca = local ? undefined : (process.env.TAX_INGESTOR_DB_CA?.trim()
+      || await readFile(new URL("./supabase-root-2021-ca.crt", import.meta.url), "utf8"));
     this.c = new pg.Client({ connectionString: this.url, ssl: local ? false : { rejectUnauthorized: true, ...(ca ? { ca } : {}) } });
     try {
       await this.c.connect();
     } catch (e) {
-      const dica = /CERT|SELF_SIGNED/.test(e.code ?? "") ? (ca ? "; o certificado em TAX_INGESTOR_DB_CA não confere" : "; falta o segredo TAX_INGESTOR_DB_CA (certificado do Supabase)") : "";
+      const dica = /CERT|SELF_SIGNED/.test(e.code ?? "") ? "; o certificado do Supabase não confere com o do servidor" : "";
       throw new Error(`conexão ao banco falhou (${e.code ?? e.message})${dica}; endereço lido: ${describeDbUrl(this.url)}`);
     }
   }
