@@ -43,17 +43,31 @@ jobs:
           node-version: "22"
       - name: Diagnóstico do endereço da Receita
         continue-on-error: true
+        # A raiz de arquivos.receitafederal.gov.br redireciona para um
+        # compartilhamento público do Nextcloud (index.php/s/<token>). Lista as
+        # pastas pelo WebDAV público para achar CNPJ e regime tributário.
         run: |
-          for u in \
-            https://arquivos.receitafederal.gov.br/ \
-            https://arquivos.receitafederal.gov.br/dados/ \
-            https://arquivos.receitafederal.gov.br/dados/cnpj/ \
-            https://arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj/ \
-            https://arquivos.receitafederal.gov.br/dados/cnpj/regime_tributario/ \
-            https://arquivos.receitafederal.gov.br/CNPJ/ ; do
-            echo "=== $u"
-            curl -sS -L -o pagina.html -w 'HTTP %{http_code} final=%{url_effective}\n' --max-time 60 "$u" || true
-            grep -oiE 'href="[^"]+"' pagina.html | head -40 || true
+          raiz=$(curl -sS -L -o /dev/null -w '%{url_effective}' --max-time 60 https://arquivos.receitafederal.gov.br/)
+          echo "raiz: $raiz"
+          token=${raiz##*/s/}; token=${token%%[/?]*}
+          echo "token: $token"
+          listar() {
+            echo "=== PROPFIND $1"
+            curl -sS -X PROPFIND -H 'Depth: 1' -u "$token:" --max-time 60 \
+              -w '\nHTTP %{http_code}\n' "https://arquivos.receitafederal.gov.br/public.php/webdav$1" \
+              | tee resp.xml | grep -oE '<d:href>[^<]+</d:href>|<d:getcontentlength>[0-9]+|<d:getlastmodified>[^<]+|^HTTP [0-9]+' | sed 's/<[^>]*>//g' | head -80
+          }
+          listar /
+          head -c 600 resp.xml; echo
+          echo "=== PROPFIND dav/files (Nextcloud 29+)"
+          curl -sS -X PROPFIND -H 'Depth: 1' --max-time 60 -w '\nHTTP %{http_code}\n' \
+            "https://arquivos.receitafederal.gov.br/public.php/dav/files/$token/" \
+            | grep -oE '<d:href>[^<]+</d:href>|^HTTP [0-9]+' | sed 's/<[^>]*>//g' | head -40
+          for d in $(grep -oE '<d:href>[^<]+/</d:href>' resp.xml | sed 's/<[^>]*>//g;s#.*/public.php/webdav##' | grep -v '^/$' | head -15); do
+            listar "$d"
+            for e in $(grep -oE '<d:href>[^<]+/</d:href>' resp.xml | sed 's/<[^>]*>//g;s#.*/public.php/webdav##' | grep -v "^$d$" | grep -iE 'cnpj|regime|tribut|cadastr|dados' | head -6); do
+              listar "$e"
+            done
           done
       - name: Sonda dos arquivos públicos
         run: >
