@@ -15,7 +15,7 @@ import { receitaDate, regimeHeader, DATASETS } from "../../../scripts/tax-intel/
 // @ts-expect-error módulo .mjs sem tipos
 import { cnpjValid } from "../../../scripts/tax-intel/executor/cnpj.mjs";
 // @ts-expect-error módulo .mjs sem tipos
-import { parseListing, main, AMOSTRA_PUBLICA } from "../../../scripts/tax-intel/executor/run.mjs";
+import { parsePropfind, parsePropfindEtags, REGIME_FILE, main, AMOSTRA_PUBLICA } from "../../../scripts/tax-intel/executor/run.mjs";
 import { isValidCnpj, cnpjCheckDigits } from "./cnpj";
 
 const hasZip = (() => {
@@ -81,10 +81,30 @@ describe("layout", () => {
     expect(regimeHeader(["ano", "cnpj"]).erro).toMatch(/forma/);
   });
 
-  it("listagem de diretório: só itens relativos", () => {
-    const html =
-      '<a href="../">..</a><a href="2026-10/">2026-10/</a><a href="Simples.zip">x</a><a href="https://x/y">y</a><a href="/abs">z</a>';
-    expect(parseListing(html)).toEqual(["2026-10/", "Simples.zip"]);
+  it("listagem WebDAV (formato real do Nextcloud da Receita, nov/2026)", () => {
+    const xml =
+      '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">' +
+      "<d:response><d:href>/public.php/webdav/Dados/Cadastros/CNPJ/</d:href></d:response>" +
+      "<d:response><d:href>/public.php/webdav/Dados/Cadastros/CNPJ/2024-03/</d:href></d:response>" +
+      "<d:response><d:href>/public.php/webdav/Dados/Cadastros/CNPJ/2026-11/</d:href></d:response>" +
+      "<d:response><d:href>/public.php/webdav/Dados/Cadastros/CNPJ/Leia%20me.pdf</d:href></d:response>" +
+      "</d:multistatus>";
+    expect(parsePropfind(xml, "/public.php/webdav/Dados/Cadastros/CNPJ/")).toEqual(["2024-03/", "2026-11/", "Leia me.pdf"]);
+  });
+
+  it("ETag de cada arquivo (base da verificação diária)", () => {
+    const xml =
+      '<d:multistatus xmlns:d="DAV:">' +
+      "<d:response><d:href>/public.php/webdav/Dados/X/</d:href><d:propstat><d:prop><d:getetag>&quot;dir1&quot;</d:getetag></d:prop></d:propstat></d:response>" +
+      "<d:response><d:href>/public.php/webdav/Dados/X/Simples.zip</d:href><d:propstat><d:prop><d:getetag>&quot;abc123&quot;</d:getetag></d:prop></d:propstat></d:response>" +
+      "</d:multistatus>";
+    expect(parsePropfindEtags(xml, "/public.php/webdav/Dados/X/")).toEqual({ "Simples.zip": "abc123" });
+  });
+
+  it("regime: só os arquivos de forma de tributação da ECF", () => {
+    const nomes = ["entidades-lucro-real.zip", "entidades-lucro-presumido.zip", "entidades-lucro-arbitrado.zip",
+      "entidades-imunes-e-isentas.zip", "renuncia-irpj-csll-ecf.csv"];
+    expect(nomes.filter((n) => REGIME_FILE.test(n))).toEqual(nomes.slice(0, 3));
   });
 });
 
@@ -166,11 +186,12 @@ describe.skipIf(!hasZip)("ZIP e varredura ponta a ponta (arquivos sintéticos)",
     "Estabelecimentos0.zip",
   );
   zipOf(comp, "Municipios.csv", '"7107";"SÃO PAULO"', "Municipios.zip");
+  // Formato real publicado (ECF, nov/2026): vírgula, um zip por forma de tributação.
   zipOf(
     reg,
     "Lucro Real.csv",
-    `ano;cnpj;cnpj_da_scp;forma_de_tributacao;quantidade_de_escrituracoes\n2024;${alvo};;LUCRO REAL;1`,
-    "Lucro Real.zip",
+    `ano,cnpj,cnpj_da_scp,forma_de_tributacao,quantidade_de_escrituracoes\n2024,${alvo},,LUCRO REAL,1`,
+    "entidades-lucro-real.zip",
   );
   const alvos = join(dir, "alvos.txt");
   writeFileSync(alvos, `${alvo}\n`);

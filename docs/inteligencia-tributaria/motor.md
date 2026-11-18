@@ -24,9 +24,25 @@ A matriz de fontes, cobertura, limitações e custo está em
    classe muda.
 
 Fontes: Simples/SIMEI (`Simples.zip`), Empresas, Estabelecimentos (+ Municípios)
-dos Dados Abertos do CNPJ, e o regime tributário declarado na ECF
-(`regime_tributario/`). Layout do regime: lido pelo **cabeçalho**, porque ainda
-não foi confirmado num arquivo real (ver a sonda abaixo).
+dos Dados Abertos do CNPJ, e o regime tributário declarado na ECF. Layout do
+regime: lido pelo **cabeçalho**.
+
+**Endereço (conferido em 18/11/2026 pelo runner do GitHub):** as pastas antigas
+`/dados/cnpj/dados_abertos_cnpj/` e `/dados/cnpj/regime_tributario/` dão 404. A
+raiz de `arquivos.receitafederal.gov.br` redireciona para um compartilhamento
+público do Nextcloud (`index.php/s/<token>`), lido pelo WebDAV público
+(`public.php/webdav`, usuário = token, senha vazia). O executor descobre o token
+pela raiz a cada execução.
+
+- CNPJ: `/Dados/Cadastros/CNPJ/AAAA-MM/` (Empresas0-9, Estabelecimentos0-9,
+  Simples, Socios0-9, Municipios etc.).
+- Regime (ECF): `/Dados/Obrigacoes_Acessorias/ECF/entidades-lucro-real.zip`,
+  `entidades-lucro-presumido.zip` (um CSV por ano, 2019 a 2024) e
+  `entidades-lucro-arbitrado.zip`. CSV separado por **vírgula**, colunas
+  `ano,cnpj,cnpj_da_scp,forma_de_tributacao,quantidade_de_escrituracoes`.
+  Anos cobertos pelos dicionários: Real e Arbitrado 2016 a 2024, Presumido
+  2019 a 2024. Formas mistas aparecem em todos os arquivos das formas
+  abrangidas. `entidades-imunes-e-isentas.zip` existe mas não é lido.
 
 ## Regras de classificação (0242, `tax_classify_compute`)
 
@@ -110,8 +126,20 @@ alter role tax_ingestor login password '<senha forte, guardada no cofre>';
 `TAX_INGESTOR_DATABASE_URL` aponta para o pooler em modo sessão com esse
 usuário. Nunca `service_role`.
 
-O workflow `.github/workflows/tax-intel-motor.yml` só roda manualmente
-(`workflow_dispatch`) e só depois de estar na `main`:
+O workflow `.github/workflows/tax-intel-motor.yml` roda manualmente
+(`workflow_dispatch`) e, desde 18/11/2026 (autorizado pelo usuário), também
+todo dia às 06:30 de Brasília pela verificação diária. Só vale depois de estar
+na `main`:
+
+- `verificar` (agendado): lê só a listagem da Receita, sem baixar arquivo, e
+  calcula a impressão digital da competência mais recente do CNPJ e dos
+  arquivos do regime (ETag de cada arquivo). Se essa impressão já foi
+  carregada (marcada no cache do Actions ao fim de uma carga completa), não faz
+  nada. Se mudou, dispara a `carga` com todas as fontes.
+  CNPJ/Simples saem por mês; a ECF, uma vez por ano.
+  Com aprovação obrigatória no ambiente `tax-intel-producao`, a carga diária
+  fica esperando alguém aprovar; para ser automática, o ambiente não pode
+  exigir revisor.
 
 - `sonda`: sem segredo, publica o relatório como artefato.
 - `carga`: exige o ambiente `tax-intel-producao` com aprovação manual e o

@@ -1,13 +1,21 @@
 name: Inteligência Tributária · Motor em massa
 
-# Execução MANUAL do motor (scripts/tax-intel/executor/run.mjs).
-#   sonda: sem banco e sem segredo. Baixa os arquivos públicos da Receita,
-#          confere o layout e mede volume e tempo. Só cruza a amostra pública.
-#   carga: grava no Supabase com o papel tax_ingestor (nunca service_role).
-#          Exige o ambiente "tax-intel-producao", com aprovação manual, e o
-#          segredo TAX_INGESTOR_DATABASE_URL nesse ambiente.
-# Nada roda sozinho: não há gatilho de push nem de agenda.
+# Motor de consulta em massa (scripts/tax-intel/executor/run.mjs).
+#   sonda:     manual. Sem banco e sem segredo. Baixa os arquivos públicos da
+#              Receita, confere o layout e mede volume e tempo. Só cruza a
+#              amostra pública.
+#   carga:     manual, ou automática pela verificação diária. Grava no Supabase
+#              com o papel tax_ingestor (nunca service_role), no ambiente
+#              "tax-intel-producao" com o segredo TAX_INGESTOR_DATABASE_URL.
+#   verificar: todo dia às 06:30 (Brasília). Lê só a listagem da Receita (sem
+#              baixar arquivo) e calcula uma impressão digital da competência
+#              mais recente do CNPJ e dos arquivos do regime (ECF). Se essa
+#              impressão já foi carregada, não faz nada; se mudou, roda a carga.
+#              Autorizado pelo usuário em 18/11/2026.
+# O agendamento só vale para o workflow da branch principal.
 on:
+  schedule:
+    - cron: "30 9 * * *"
   workflow_dispatch:
     inputs:
       modo:
@@ -32,8 +40,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verificar:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      novo: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      impressao: ${{ steps.pub.outputs.impressao }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: O que a Receita publicou
+        id: pub
+        run: |
+          mkdir -p .receita-publicacao
+          node scripts/tax-intel/executor/run.mjs --publicacao .receita-publicacao/publicacao.json
+          echo "impressao=$(node -p "require('./.receita-publicacao/publicacao.json').impressao")" >> "$GITHUB_OUTPUT"
+      - name: Já carregado?
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .receita-publicacao
+          key: receita-publicacao-${{ steps.pub.outputs.impressao }}
+          lookup-only: true
+      - name: Resultado
+        run: |
+          if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
+            echo "Nada novo na Receita desde a última carga."
+          else
+            echo "Publicação nova (impressão ${{ steps.pub.outputs.impressao }}): a carga vai rodar."
+          fi
+
   sonda:
-    if: inputs.modo == 'sonda'
+    if: github.event_name == 'workflow_dispatch' && inputs.modo == 'sonda'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -54,7 +95,11 @@ jobs:
           path: relatorio-sonda.json
 
   carga:
-    if: inputs.modo == 'carga'
+    needs: verificar
+    if: >-
+      always() && (
+        (github.event_name == 'workflow_dispatch' && inputs.modo == 'carga') ||
+        (github.event_name == 'schedule' && needs.verificar.outputs.novo == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 300
     environment: tax-intel-producao
@@ -70,9 +115,23 @@ jobs:
           TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}
         run: >
           node scripts/tax-intel/executor/run.mjs
-          --datasets "${{ inputs.datasets }}"
+          --datasets "${{ inputs.datasets || 'receita_simples,receita_empresas,receita_estabelecimentos,receita_regime_tributario' }}"
           ${{ inputs.competencia && format('--competencia {0}', inputs.competencia) || '' }}
           --tmp "$RUNNER_TEMP/receita"
+      # Marca a publicação como carregada para a verificação diária não repetir.
+      # Só quando a carga foi da competência mais recente com todas as fontes.
+      - name: Impressão da publicação carregada
+        id: pub
+        if: inputs.competencia == '' && (inputs.datasets == '' || inputs.datasets == 'receita_simples,receita_empresas,receita_estabelecimentos,receita_regime_tributario')
+        run: |
+          mkdir -p .receita-publicacao
+          node scripts/tax-intel/executor/run.mjs --publicacao .receita-publicacao/publicacao.json
+          echo "impressao=$(node -p "require('./.receita-publicacao/publicacao.json').impressao")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: steps.pub.outputs.impressao != ''
+        with:
+          path: .receita-publicacao
+          key: receita-publicacao-${{ steps.pub.outputs.impressao }}
       # Sem artefato na carga: o repositório é público. O log só tem contagens e
       # nomes de arquivo (nenhum CNPJ da carteira); o resumo completo fica no banco
       # (tax_ingest_runs e tax_ingest_summary).

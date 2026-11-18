@@ -61,6 +61,12 @@ import {
   type SortKey,
 } from "@/lib/tax-intel/portfolio";
 import type { RelationshipKind } from "@/lib/tax-intel/relationship";
+import {
+  isRunning,
+  loadLatestRun,
+  type LatestRun,
+  type RunStatus,
+} from "@/lib/tax-intel/run-status";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { cn } from "@/lib/utils";
 
@@ -174,11 +180,22 @@ function CarteiraPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Andamento do motor: enquanto houver execução aberta, a carteira se
+  // atualiza sozinha e as linhas já gravadas aparecem com a nova classe.
+  const run = useQuery({
+    enabled: allowedKind,
+    queryKey: ["tax-run-latest"],
+    queryFn: loadLatestRun,
+    refetchInterval: (query) => (isRunning(query.state.data) ? 10_000 : 60_000),
+  });
+  const running = isRunning(run.data);
+
   const q = useQuery({
     enabled: allowedKind,
     queryKey: ["tax-portfolio", tenantId, filters, sort, page, pageSize],
     queryFn: () => loadPortfolioPage(tenantId, filters, sort, page, pageSize),
     placeholderData: keepPreviousData,
+    refetchInterval: running ? 15_000 : false,
   });
 
   const rows = q.data?.rows ?? [];
@@ -303,6 +320,8 @@ function CarteiraPage() {
         }
       />
       <ModuleTabs tenantId={tenantId} />
+
+      {run.data ? <RunBanner run={run.data} /> : null}
 
       <Rise index={1} className="panel sheen">
         {/* Barra de filtros */}
@@ -943,5 +962,44 @@ function DetailSheet({
         </Tabs>
       ) : null}
     </SideSheet>
+  );
+}
+
+function RunBanner({ run }: { run: LatestRun }) {
+  const hora = (iso: string) =>
+    new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  if (isRunning(run)) {
+    const pct = run.files_total ? Math.round((run.files_done / run.files_total) * 100) : 0;
+    return (
+      <div
+        role="status"
+        className="mb-3 rounded-lg border border-border/60 bg-muted/40 p-3 text-sm"
+      >
+        <div className="flex items-center gap-2">
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+          <span className="font-medium text-foreground">
+            Consulta à Receita em andamento · competência {run.competencia}
+          </span>
+        </div>
+        <p className="mt-1 text-muted-foreground">
+          {n(run.files_done)} de {n(run.files_total)} arquivos lidos ({pct}%), {n(run.rows_scanned)}{" "}
+          linhas da Receita varridas
+          {run.targets_count !== null ? ` para ${n(run.targets_count)} CNPJs da carteira` : ""}.
+          Iniciada em {hora(run.started_at)}. As linhas abaixo se atualizam sozinhas.
+        </p>
+      </div>
+    );
+  }
+  const texto: Record<RunStatus, string> = {
+    iniciada: "",
+    concluida: "concluída",
+    falhou: "falhou",
+    abortada_layout: "interrompida: arquivo da Receita fora do layout",
+  };
+  return (
+    <p className="mb-3 text-xs text-muted-foreground">
+      Última consulta à Receita (competência {run.competencia}): {texto[run.status]}
+      {run.finished_at ? ` em ${hora(run.finished_at)}` : ""}.
+    </p>
   );
 }
