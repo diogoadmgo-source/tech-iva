@@ -204,6 +204,12 @@ export type PortfolioRow = {
     razao_social: string | null;
     situacao_cadastral: string | null;
     situacao_data?: string | null;
+    data_abertura?: string | null;
+    cnae_principal?: string | null;
+    cnae_descricao?: string | null;
+    natureza_juridica?: string | null;
+    natureza_descricao?: string | null;
+    porte?: string | null;
     uf: string | null;
     municipio: string | null;
     public_classification: TaxClassification;
@@ -214,7 +220,7 @@ export type PortfolioRow = {
 
 const SELECT =
   "tenant_id, cnpj, relationship, declared_razao_social, declared_nome_fantasia, first_import_id, last_import_id, created_at, " +
-  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, situacao_data, uf, municipio, public_classification, public_classification_basis, last_consulted_at)";
+  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, situacao_data, data_abertura, cnae_principal, cnae_descricao, natureza_juridica, natureza_descricao, porte, uf, municipio, public_classification, public_classification_basis, last_consulted_at)";
 
 const ORDER: Record<SortKey, string> = {
   cnpj: "cnpj",

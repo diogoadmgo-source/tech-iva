@@ -55,7 +55,8 @@ export const DATASETS = {
     files: /^empresas\d*\.zip$/i,
     columns: 7,
     keyOf: (f) => f[0],
-    normalize: (f) => ({ razao_social: f[1].trim(), natureza_juridica: f[2], porte: f[5] }),
+    normalize: (f, ctx) => ({ razao_social: f[1].trim(), natureza_juridica: f[2].trim(),
+      natureza_descricao: ctx?.naturezas?.get(f[2].trim()) ?? "", porte: f[5].trim() }),
     raw: (f) => ({ cnpj_basico: f[0], razao_social: f[1], natureza_juridica: f[2], qualificacao_responsavel: f[3],
       capital_social: f[4], porte: f[5], ente_federativo: f[6] }),
   },
@@ -74,6 +75,10 @@ export const DATASETS = {
         uf: f[19].trim(),
         municipio: ctx.municipios?.get(f[20].trim()) ?? "",
         municipio_codigo_rfb: f[20].trim(),
+        // Data de abertura fora do formato não descarta a linha: fica vazia.
+        data_abertura: receitaDate(f[10]) ?? null,
+        cnae_principal: f[11].trim(),
+        cnae_descricao: ctx.cnaes?.get(f[11].trim()) ?? "",
       };
     },
     // Só o que a classificação e a tela usam; endereço, telefone e e-mail ficam de fora.
