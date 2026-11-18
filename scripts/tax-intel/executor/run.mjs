@@ -273,16 +273,15 @@ class PgDb {
     const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(this.url) || /sslmode=disable/.test(this.url);
     // O pooler do Supabase usa certificado da CA própria do Supabase (não pública).
     // A raiz pública "Supabase Root 2021 CA" (Database Settings → SSL Configuration)
-    // vem junto do executor; TAX_INGESTOR_DB_CA pode substituí-la.
-    const ca = local ? undefined : (process.env.TAX_INGESTOR_DB_CA?.trim()
-      || await readFile(new URL("./supabase-root-2021-ca.crt", import.meta.url), "utf8"));
+    // vem junto do executor (sha256 80:70:25:AD…, a mesma raiz que o pooler apresenta).
+    const ca = local ? undefined : await readFile(new URL("./supabase-root-2021-ca.crt", import.meta.url), "utf8");
     this.c = new pg.Client({ connectionString: this.url, ssl: local ? false : { rejectUnauthorized: true, ...(ca ? { ca } : {}) } });
     try {
       await this.c.connect();
     } catch (e) {
       let dica = "";
       if (/CERT|SELF_SIGNED/.test(e.code ?? "")) {
-        const fonte = process.env.TAX_INGESTOR_DB_CA?.trim() ? "segredo TAX_INGESTOR_DB_CA" : "arquivo supabase-root-2021-ca.crt";
+        const fonte = "arquivo supabase-root-2021-ca.crt";
         let nossa = "?";
         try { const x = new (await import("node:crypto")).X509Certificate(ca); nossa = `${x.subject.replace(/\n/g, ", ")} (sha256 ${x.fingerprint256.slice(0, 11)})`; } catch { nossa = "certificado ilegível"; }
         dica = `; certificado usado (${fonte}): ${nossa}; cadeia do servidor: ${await describeServerChain(this.url).catch((x) => `não lida (${x.message})`)}`;
