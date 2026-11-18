@@ -151,3 +151,15 @@ na `main`:
 `rollback-0242.sql` remove as 11 funções, o papel `tax_ingestor` e a linha do
 histórico. Não apaga dados gravados pelo motor nas tabelas da 0240.
 Front-end e executor: reverter o commit.
+
+## Cache dos arquivos da Receita
+
+O servidor da Receita entrega cerca de 0,6 MB/s e derruba downloads longos. Por isso:
+
+- **Retomada:** cada download que cai continua do byte em que parou (HTTP Range). São até 12 tentativas, e um download parado há 2 minutos é abortado e retomado.
+- **Cache mensal:** os arquivos da competência mais recente (~5 GB, dado público) ficam no cache do GitHub Actions.
+  - A chave é a impressão da publicação: competência mais o ETag de cada arquivo. Se a Receita republicar um arquivo, a chave muda e o cache velho não é usado.
+  - Na primeira carga do mês, tudo é baixado. Daí em diante, cada "Processar agora" lê do cache e leva minutos, não horas.
+  - A verificação diária restaura o cache, o que o mantém vivo: o GitHub apaga um cache depois de 7 dias sem uso.
+  - Um arquivo só vale como cache se o download terminou (o `.sha256` ao lado dele marca isso).
+  - Uma competência escolhida à mão no disparo manual não usa o cache.

@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 // @ts-expect-error módulo .mjs sem tipos
@@ -50,4 +50,33 @@ describe("download com retomada", () => {
     expect(seen[0]).toBe("inteiro");
     expect(seen.slice(1).every((s) => /^bytes=\d+-$/.test(s) && s !== "bytes=0-")).toBe(true);
   }, 120_000);
+
+  it("guarda no cache e, na próxima vez, não baixa de novo", async () => {
+    const cache = mkdtempSync(join(tmpdir(), "cache-"));
+    const tmp = mkdtempSync(join(tmpdir(), "dl-"));
+    const f = { name: "Y.zip", url: `${base}/Dados/Cadastros/CNPJ/2026-11/Y.zip` };
+    const s1 = { bytes_downloaded: 0, peak_disk_bytes: 0 };
+    const r1 = await new Origin({ token: "t", cache }).fetchFile(f, tmp, s1);
+    expect(r1.keep).toBe(true);
+    expect(existsSync(`${r1.path}.sha256`)).toBe(true);
+    const before = seen.length;
+    const s2 = { bytes_downloaded: 0, peak_disk_bytes: 0 };
+    const r2 = await new Origin({ token: "t", cache }).fetchFile(f, tmp, s2);
+    expect(seen.length).toBe(before);
+    expect(r2.sha256).toBe(r1.sha256);
+    expect(r2.sha256).toBe(createHash("sha256").update(body).digest("hex"));
+    expect(s2.bytes_downloaded).toBe(0);
+  });
+
+  it("arquivo sem .sha256 (download interrompido) não vale como cache", async () => {
+    const cache = mkdtempSync(join(tmpdir(), "cache-"));
+    const tmp = mkdtempSync(join(tmpdir(), "dl-"));
+    const f = { name: "Z.zip", url: `${base}/Z.zip` };
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(join(cache, "Z.zip"), "parcial");
+    const before = seen.length;
+    const r = await new Origin({ token: "t", cache }).fetchFile(f, tmp, { bytes_downloaded: 0, peak_disk_bytes: 0 });
+    expect(seen.length).toBe(before + 1);
+    expect(r.size).toBe(body.length);
+  });
 });
