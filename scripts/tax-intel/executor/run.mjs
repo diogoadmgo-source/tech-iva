@@ -19,7 +19,7 @@
 // Regra de log: nenhum CNPJ da carteira é impresso. Só agregados, nomes de
 // arquivos públicos e, na sonda, os CNPJs da amostra pública.
 import { createHash } from "node:crypto";
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, mkdtemp, rm, stat, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, basename } from "node:path";
@@ -67,6 +67,8 @@ function parseArgs(argv) {
 }
 
 const log = (...m) => console.log(new Date().toISOString().slice(11, 19), ...m);
+const IDLE_MS = 120_000;
+const MAX_TRIES = 12;
 const mb = (b) => `${(b / 1048576).toFixed(1)} MB`;
 
 // ---------------------------------------------------------------- origem
@@ -117,7 +119,7 @@ export function parsePropfindEtags(xml, dirPath) {
 // Regime declarado na ECF: um arquivo por forma de tributação.
 export const REGIME_FILE = /^entidades-lucro-(real|presumido|arbitrado)\.zip$/i;
 
-class Origin {
+export class Origin {
   constructor(a) {
     this.local = a.local;
     this.token = a.token ?? process.env.RECEITA_SHARE_TOKEN;
@@ -179,29 +181,54 @@ class Origin {
       const buf = await readFile(f.url);
       return { path: f.url, size: buf.length, sha256: createHash("sha256").update(buf).digest("hex"), local: true };
     }
+    // O servidor da Receita derruba conexões longas ("terminated"). Cada nova
+    // tentativa continua do byte em que parou (HTTP Range), e um download parado
+    // por 2 minutos é abortado e retomado.
     const path = join(tmp, f.name);
-    for (let t = 1; ; t++) {
+    // O sha256 é calculado do arquivo em disco no fim: depois de uma queda, o
+    // ponto de retomada é o tamanho real gravado, não o que passou pelo stream.
+    let size = 0, next = 256 * 1048576, fails = 0;
+    await rm(path, { force: true });
+    for (;;) {
+      const ctrl = new AbortController();
+      let idle = setTimeout(() => ctrl.abort(new Error("download parado há 2 min")), IDLE_MS);
       try {
-        const r = await fetch(f.url, { headers: { "user-agent": UA, ...(await this.auth()) } });
+        const headers = { "user-agent": UA, ...(await this.auth()) };
+        if (size > 0) headers.range = `bytes=${size}-`;
+        const r = await fetch(f.url, { headers, signal: ctrl.signal });
         if (!r.ok || !r.body) throw new Error(`HTTP ${r.status} em ${f.name}`);
-        const h = createHash("sha256");
-        let size = 0, next = 256 * 1048576;
+        if (size > 0 && r.status !== 206) {
+          // Servidor ignorou o Range e mandou o arquivo inteiro: recomeça do
+          // zero com esta resposta, sem misturar bytes.
+          log(`  ${f.name}: servidor não retomou do byte ${size}; recomeçando do início`);
+          size = 0; next = 256 * 1048576;
+          await rm(path, { force: true });
+        }
         const meter = new Transform({
           transform(chunk, _e, cb) {
-            h.update(chunk); size += chunk.length;
+            clearTimeout(idle);
+            idle = setTimeout(() => ctrl.abort(new Error("download parado há 2 min")), IDLE_MS);
+            size += chunk.length;
             if (size >= next) { log(`  ${f.name}: ${mb(size)} baixados`); next += 256 * 1048576; }
             cb(null, chunk);
           },
         });
-        await pipeline(Readable.fromWeb(r.body), meter, createWriteStream(path));
+        await pipeline(Readable.fromWeb(r.body), meter, createWriteStream(path, { flags: "a" }));
+        clearTimeout(idle);
+        size = (await stat(path)).size;
+        const h = createHash("sha256");
+        for await (const chunk of createReadStream(path)) h.update(chunk);
         stats.bytes_downloaded += size;
         stats.peak_disk_bytes = Math.max(stats.peak_disk_bytes, size);
         return { path, size, sha256: h.digest("hex") };
       } catch (e) {
-        await rm(path, { force: true });
-        if (t >= 4) throw e;
-        log(`  ${f.name}: falha (${e.message}); nova tentativa ${t + 1}/4`);
-        await new Promise((ok) => setTimeout(ok, 5000 * t * t));
+        clearTimeout(idle);
+        size = await stat(path).then((x) => x.size, () => 0);
+        fails++;
+        if (fails >= MAX_TRIES) throw e;
+        const wait = Math.min(60_000, 5000 * fails);
+        log(`  ${f.name}: falha (${e.message}) em ${mb(size)}; retomando (${fails + 1}/${MAX_TRIES}) em ${wait / 1000}s`);
+        await new Promise((ok) => setTimeout(ok, wait));
       }
     }
   }
