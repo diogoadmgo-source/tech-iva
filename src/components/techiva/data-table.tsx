@@ -29,7 +29,10 @@ function toCsv<T>(columns: ColumnDef<T, unknown>[], rows: T[]) {
       keys
         .map((k) => {
           const v = (r as Record<string, unknown>)[k];
-          return v === null || v === undefined ? "" : String(v).replace(/;/g, ",");
+          if (v === null || v === undefined) return "";
+          const t = String(v).replace(/;/g, ",");
+          // neutraliza fórmulas de planilha (=, +, -, @, tab, CR)
+          return /^[=+\-@\t\r]/.test(t) && !/^-?\d+([.,]\d+)?$/.test(t) ? `'${t}` : t;
         })
         .join(";"),
     )

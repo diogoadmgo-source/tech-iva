@@ -19,7 +19,7 @@ const INPUT = z.discriminatedUnion("kind", [
     tenantId: z.string().uuid(),
     provider: z.string().min(1).max(40).default("dfe"),
     /** conteúdo do .pfx em base64 (nunca é persistido em claro nem logado) */
-    file: z.string().min(100),
+    file: z.string().min(100).max(200_000), // ~150 KB de PFX; certificados A1 têm poucos KB
     password: z.string().min(1).max(200),
     acknowledged: z.literal(true),
     /** usos que o cliente autorizou explicitamente (lista fechada) */

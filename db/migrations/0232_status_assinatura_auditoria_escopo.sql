@@ -1,0 +1,2 @@
+-- Ver migration aplicada: trigger tenants_guard_status (status só pela plataforma),
+-- subs_write só is_platform(), audit_overview filtrado por in_scope(p_tenant).
