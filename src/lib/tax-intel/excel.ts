@@ -62,9 +62,10 @@ export function toExportRow(r: PortfolioRow, d: Diagnosis = diagnose(r)): (strin
   return [
     doc.numero,
     doc.tipo,
-    e.razao_social ?? (r.declared_razao_social ? `${r.declared_razao_social} (seu cadastro)` : null),
-    naturezaText(e.natureza_juridica, e.natureza_descricao),
-    e.porte ? (PORTE_LABEL[e.porte] ?? e.porte) : null,
+    // Fora da Receita, a raiz pode coincidir com outra empresa: não mostra dados dela.
+    (fora ? null : e.razao_social) ?? (r.declared_razao_social ? `${r.declared_razao_social} (seu cadastro)` : null),
+    fora ? null : naturezaText(e.natureza_juridica, e.natureza_descricao),
+    fora || !e.porte ? null : (PORTE_LABEL[e.porte] ?? e.porte),
     fora ? "—" : e.is_matriz ? "Matriz" : "Filial",
     isoToDate(e.data_abertura),
     cnaeText(e.cnae_principal, e.cnae_descricao),
