@@ -41,6 +41,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Diagnóstico do endereço da Receita
+        continue-on-error: true
+        run: |
+          for u in \
+            https://arquivos.receitafederal.gov.br/ \
+            https://arquivos.receitafederal.gov.br/dados/ \
+            https://arquivos.receitafederal.gov.br/dados/cnpj/ \
+            https://arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj/ \
+            https://arquivos.receitafederal.gov.br/dados/cnpj/regime_tributario/ \
+            https://arquivos.receitafederal.gov.br/CNPJ/ ; do
+            echo "=== $u"
+            curl -sS -L -o pagina.html -w 'HTTP %{http_code} final=%{url_effective}\n' --max-time 60 "$u" || true
+            grep -oiE 'href="[^"]+"' pagina.html | head -40 || true
+          done
       - name: Sonda dos arquivos públicos
         run: >
           node scripts/tax-intel/executor/run.mjs --sonda
