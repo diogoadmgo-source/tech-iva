@@ -126,8 +126,20 @@ alter role tax_ingestor login password '<senha forte, guardada no cofre>';
 `TAX_INGESTOR_DATABASE_URL` aponta para o pooler em modo sessão com esse
 usuário. Nunca `service_role`.
 
-O workflow `.github/workflows/tax-intel-motor.yml` só roda manualmente
-(`workflow_dispatch`) e só depois de estar na `main`:
+O workflow `.github/workflows/tax-intel-motor.yml` roda manualmente
+(`workflow_dispatch`) e, desde 18/11/2026 (autorizado pelo usuário), também
+todo dia às 06:30 de Brasília pela verificação diária. Só vale depois de estar
+na `main`:
+
+- `verificar` (agendado): lê só a listagem da Receita, sem baixar arquivo, e
+  calcula a impressão digital da competência mais recente do CNPJ e dos
+  arquivos do regime (ETag de cada arquivo). Se essa impressão já foi
+  carregada (marcada no cache do Actions ao fim de uma carga completa), não faz
+  nada. Se mudou, dispara a `carga` com todas as fontes.
+  CNPJ/Simples saem por mês; a ECF, uma vez por ano.
+  Com aprovação obrigatória no ambiente `tax-intel-producao`, a carga diária
+  fica esperando alguém aprovar; para ser automática, o ambiente não pode
+  exigir revisor.
 
 - `sonda`: sem segredo, publica o relatório como artefato.
 - `carga`: exige o ambiente `tax-intel-producao` com aprovação manual e o

@@ -15,7 +15,7 @@ import { receitaDate, regimeHeader, DATASETS } from "../../../scripts/tax-intel/
 // @ts-expect-error módulo .mjs sem tipos
 import { cnpjValid } from "../../../scripts/tax-intel/executor/cnpj.mjs";
 // @ts-expect-error módulo .mjs sem tipos
-import { parsePropfind, REGIME_FILE, main, AMOSTRA_PUBLICA } from "../../../scripts/tax-intel/executor/run.mjs";
+import { parsePropfind, parsePropfindEtags, REGIME_FILE, main, AMOSTRA_PUBLICA } from "../../../scripts/tax-intel/executor/run.mjs";
 import { isValidCnpj, cnpjCheckDigits } from "./cnpj";
 
 const hasZip = (() => {
@@ -90,6 +90,15 @@ describe("layout", () => {
       "<d:response><d:href>/public.php/webdav/Dados/Cadastros/CNPJ/Leia%20me.pdf</d:href></d:response>" +
       "</d:multistatus>";
     expect(parsePropfind(xml, "/public.php/webdav/Dados/Cadastros/CNPJ/")).toEqual(["2024-03/", "2026-11/", "Leia me.pdf"]);
+  });
+
+  it("ETag de cada arquivo (base da verificação diária)", () => {
+    const xml =
+      '<d:multistatus xmlns:d="DAV:">' +
+      "<d:response><d:href>/public.php/webdav/Dados/X/</d:href><d:propstat><d:prop><d:getetag>&quot;dir1&quot;</d:getetag></d:prop></d:propstat></d:response>" +
+      "<d:response><d:href>/public.php/webdav/Dados/X/Simples.zip</d:href><d:propstat><d:prop><d:getetag>&quot;abc123&quot;</d:getetag></d:prop></d:propstat></d:response>" +
+      "</d:multistatus>";
+    expect(parsePropfindEtags(xml, "/public.php/webdav/Dados/X/")).toEqual({ "Simples.zip": "abc123" });
   });
 
   it("regime: só os arquivos de forma de tributação da ECF", () => {

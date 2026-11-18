@@ -52,6 +52,7 @@ function parseArgs(argv) {
     if (k === "--competencia") a.competencia = next();
     else if (k === "--datasets") a.datasets = next().split(",").map((s) => s.trim()).filter(Boolean);
     else if (k === "--sonda") a.sonda = true;
+    else if (k === "--publicacao") a.publicacao = next();
     else if (k === "--amostra-publica") a.amostra = true;
     else if (k === "--alvos") a.alvos = next();
     else if (k === "--fonte-local") a.local = next();
@@ -96,6 +97,23 @@ export function parsePropfind(xml, dirPath) {
   return [...new Set(out)];
 }
 
+/** Como parsePropfind, mas com o ETag de cada item (muda quando o arquivo muda). */
+export function parsePropfindEtags(xml, dirPath) {
+  const out = {};
+  for (const m of xml.matchAll(/<d:response>([\s\S]*?)<\/d:response>/gi)) {
+    const href = /<d:href>([^<]+)<\/d:href>/i.exec(m[1]);
+    if (!href) continue;
+    const full = decodeURIComponent(href[1]);
+    const i = full.indexOf(dirPath);
+    if (i < 0) continue;
+    const rest = full.slice(i + dirPath.length);
+    if (!rest || rest.slice(0, -1).includes("/")) continue;
+    const etag = /<d:getetag>([^<]*)<\/d:getetag>/i.exec(m[1]);
+    out[rest] = etag ? etag[1].replace(/&quot;|"/g, "") : "";
+  }
+  return out;
+}
+
 // Regime declarado na ECF: um arquivo por forma de tributação.
 export const REGIME_FILE = /^entidades-lucro-(real|presumido|arbitrado)\.zip$/i;
 
@@ -118,6 +136,24 @@ class Origin {
   async list(path) {
     const xml = await fetchText(`${DAV_ROOT}${path}`, { method: "PROPFIND", headers: { depth: "1", ...(await this.auth()) } });
     return parsePropfind(xml, `/public.php/webdav${path}`);
+  }
+  /**
+   * Impressão digital do que a Receita publicou (sem baixar nada): competência
+   * mais recente do CNPJ + ETag de cada arquivo dela e dos arquivos do regime.
+   * Muda quando sai competência nova ou quando um arquivo é republicado.
+   */
+  async publicacao() {
+    const dav = async (path) => parsePropfindEtags(
+      await fetchText(`${DAV_ROOT}${path}`, { method: "PROPFIND", headers: { depth: "1", ...(await this.auth()) } }),
+      `/public.php/webdav${path}`);
+    const months = await this.months();
+    const competencia = months[months.length - 1];
+    const cnpj = await dav(`${PATH_CNPJ}${competencia}/`);
+    const regime = Object.fromEntries(Object.entries(await dav(PATH_REGIME)).filter(([n]) => REGIME_FILE.test(n)));
+    const linhas = (o) => Object.keys(o).sort().map((k) => `${k}=${o[k]}`);
+    const body = [`competencia=${competencia}`, ...linhas(cnpj), ...linhas(regime)].join("\n");
+    return { competencia, arquivos_cnpj: Object.keys(cnpj).length, arquivos_regime: Object.keys(regime),
+      impressao: createHash("sha256").update(body).digest("hex").slice(0, 32) };
   }
   async months() {
     const names = this.local ? (await readdir(this.local)).map((n) => `${n}/`) : await this.list(PATH_CNPJ);
@@ -417,6 +453,13 @@ export async function main(argv = process.argv.slice(2)) {
   const a = parseArgs(argv);
   const t0 = Date.now();
   const origin = new Origin(a);
+  if (a.publicacao) {
+    // Só confere o que está publicado; não baixa arquivo nem toca no banco.
+    const p = await origin.publicacao();
+    await writeFile(a.publicacao, JSON.stringify(p, null, 2));
+    log(`publicação: competência ${p.competencia}, ${p.arquivos_cnpj} arquivos do CNPJ, regime ${p.arquivos_regime.join(", ")}, impressão ${p.impressao}`);
+    return p;
+  }
   const stats = { bytes_downloaded: 0, peak_disk_bytes: 0, rows_scanned: 0, rows_matched: 0, rejected: 0 };
   const report = { competencia: null, modo: a.sonda ? "sonda" : process.env.TAX_INGESTOR_DATABASE_URL ? "banco" : "sem-banco",
     datasets: {}, sample: {}, stats };
