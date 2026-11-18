@@ -226,6 +226,43 @@ class NoDb {
   async close() {}
 }
 
+// Lê a cadeia de certificados que o servidor Postgres apresenta (dados públicos),
+// para diagnosticar falhas de verificação TLS. Não envia credenciais.
+export async function describeServerChain(raw) {
+  const u = new URL(raw);
+  const net = await import("node:net"), tls = await import("node:tls");
+  const host = u.hostname, port = Number(u.port || 5432);
+  const sock = net.connect(port, host);
+  await new Promise((ok, ko) => { sock.once("connect", ok); sock.once("error", ko); });
+  const req = Buffer.alloc(8); req.writeInt32BE(8, 0); req.writeInt32BE(80877103, 4);
+  sock.write(req);
+  const resp = await new Promise((ok, ko) => { sock.once("data", ok); sock.once("error", ko); });
+  if (resp[0] !== 0x53) { sock.destroy(); return "servidor não aceitou TLS"; }
+  const t = tls.connect({ socket: sock, servername: host, rejectUnauthorized: false });
+  await new Promise((ok, ko) => { t.once("secureConnect", ok); t.once("error", ko); });
+  const out = []; let c = t.getPeerCertificate(true); const seen = new Set();
+  while (c && c.fingerprint256 && !seen.has(c.fingerprint256)) {
+    seen.add(c.fingerprint256);
+    out.push(`[${c.subject?.CN ?? "?"} ← emitido por ${c.issuer?.CN ?? "?"} (sha256 ${c.fingerprint256.slice(0, 11)})]`);
+    c = c.issuerCertificate;
+  }
+  t.destroy();
+  return out.join(" ");
+}
+
+// Descreve o endereço do banco sem a senha, para diagnosticar segredos mal formados.
+export function describeDbUrl(raw) {
+  const arrobas = (raw.match(/@/g) ?? []).length;
+  let u;
+  try { u = new URL(raw); } catch { return `não é uma URL válida (${arrobas} "@")`; }
+  const especiais = /[@#/?:%\[\] ]/.test(decodeURIComponent(u.password || ""));
+  return [`protocolo=${u.protocol.replace(":", "")}`, `host=${u.hostname || "(vazio)"}`, `porta=${u.port || "(padrão)"}`,
+    `usuário=${decodeURIComponent(u.username) || "(vazio)"}`, `banco=${u.pathname.slice(1) || "(vazio)"}`,
+    `senha=${u.password ? "presente" : "ausente"}`, `"@" no texto=${arrobas}`,
+    ...(arrobas > 1 || raw.includes("#") ? ["provável caractere especial não codificado na senha"] : []),
+    ...(especiais ? ["senha com caractere especial"] : [])].join(", ");
+}
+
 class PgDb {
   constructor(url) { this.url = url; }
   async connect() {
@@ -234,8 +271,23 @@ class PgDb {
       throw new Error("Pacote `pg` não encontrado. Rode `bun install`.");
     }
     const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(this.url) || /sslmode=disable/.test(this.url);
-    this.c = new pg.Client({ connectionString: this.url, ssl: local ? false : { rejectUnauthorized: true } });
-    await this.c.connect();
+    // O pooler do Supabase usa certificado da CA própria do Supabase (não pública).
+    // A raiz pública "Supabase Root 2021 CA" (Database Settings → SSL Configuration)
+    // vem junto do executor (sha256 80:70:25:AD…, a mesma raiz que o pooler apresenta).
+    const ca = local ? undefined : await readFile(new URL("./supabase-root-2021-ca.crt", import.meta.url), "utf8");
+    this.c = new pg.Client({ connectionString: this.url, ssl: local ? false : { rejectUnauthorized: true, ...(ca ? { ca } : {}) } });
+    try {
+      await this.c.connect();
+    } catch (e) {
+      let dica = "";
+      if (/CERT|SELF_SIGNED/.test(e.code ?? "")) {
+        const fonte = "arquivo supabase-root-2021-ca.crt";
+        let nossa = "?";
+        try { const x = new (await import("node:crypto")).X509Certificate(ca); nossa = `${x.subject.replace(/\n/g, ", ")} (sha256 ${x.fingerprint256.slice(0, 11)})`; } catch { nossa = "certificado ilegível"; }
+        dica = `; certificado usado (${fonte}): ${nossa}; cadeia do servidor: ${await describeServerChain(this.url).catch((x) => `não lida (${x.message})`)}`;
+      }
+      throw new Error(`conexão ao banco falhou (${e.code ?? e.message})${dica}; endereço lido: ${describeDbUrl(this.url)}`);
+    }
   }
   async q(sql, params) { return (await this.c.query(sql, params)).rows; }
   async start(comp, datasets, ghUrl) {
@@ -500,6 +552,14 @@ export async function main(argv = process.argv.slice(2)) {
   let status = "concluida", error = null;
   try {
     if (a.datasets.includes("receita_estabelecimentos")) ctx.municipios = await loadMunicipios(ctx);
+    // Registra de antemão todos os arquivos da execução ("pendente"), para o
+    // app mostrar o andamento real (arquivos lidos / total) desde o início.
+    for (const ds of a.datasets) {
+      const plan = ds === "receita_regime_tributario"
+        ? await origin.files("regime", competencia)
+        : (await origin.files("cnpj", competencia)).filter((f) => DATASETS[ds].files.test(f.name));
+      for (const f of plan) await db.file(f.name, null, null, null, 0, 0, 0, "pendente");
+    }
     for (const ds of a.datasets) {
       if (ds === "receita_regime_tributario") await scanRegime(ctx);
       else await scanDataset(ds, ctx);

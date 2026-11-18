@@ -109,7 +109,12 @@ jobs:
         with:
           node-version: "22"
       - name: Dependências
-        run: npm install --no-save --no-package-lock pg@8.16.3
+        # Instala só o pg numa pasta própria do executor: o npm falha na raiz
+        # (projeto usa bun.lock). O import("pg") do run.mjs resolve por aqui.
+        working-directory: scripts/tax-intel/executor
+        run: |
+          echo '{"private":true,"type":"module"}' > package.json
+          npm install --no-save --no-package-lock --no-audit --no-fund pg@8.16.3
       - name: Carga das carteiras
         env:
           TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}

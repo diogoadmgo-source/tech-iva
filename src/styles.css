@@ -973,3 +973,77 @@ select:-webkit-autofill {
     transition: none;
   }
 }
+
+/* ==========================================================================
+   Inteligência Tributária · processamento da Base de CNPJs
+   ========================================================================== */
+
+/* faixa de luz correndo dentro da barra de progresso enquanto o motor trabalha */
+@keyframes proc-flow {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 40px 0;
+  }
+}
+.proc-bar[data-active="true"] {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in oklab, white 22%, transparent) 0 10px,
+    transparent 10px 20px
+  );
+  background-size: 40px 40px;
+  animation: proc-flow 900ms linear infinite;
+}
+
+/* anel que pulsa em volta do ícone do passo em andamento */
+@keyframes proc-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+.proc-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid currentColor;
+  animation: proc-ring 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+/* fila: três pontos respirando */
+@keyframes proc-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+.proc-dots > span {
+  animation: proc-dot 1.2s ease-in-out infinite;
+}
+.proc-dots > span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.proc-dots > span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proc-bar[data-active="true"],
+  .proc-ring::before,
+  .proc-dots > span {
+    animation: none;
+  }
+}

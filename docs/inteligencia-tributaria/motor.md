@@ -143,7 +143,7 @@ na `main`:
 
 - `sonda`: sem segredo, publica o relatório como artefato.
 - `carga`: exige o ambiente `tax-intel-producao` com aprovação manual e o
-  segredo `TAX_INGESTOR_DATABASE_URL` nesse ambiente. Não publica artefato
+  segredo `TAX_INGESTOR_DATABASE_URL` nesse ambiente. O TLS do pooler é verificado com a raiz pública Supabase Root 2021 CA, que fica em `scripts/tax-intel/executor/supabase-root-2021-ca.crt` (sha256 80:70:25:AD…, válida até 2031-04-26). Não publica artefato
   (o repositório é público); o log só tem contagens.
 
 ## Reversão

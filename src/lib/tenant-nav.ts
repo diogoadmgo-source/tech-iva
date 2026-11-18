@@ -162,7 +162,12 @@ function companyGroups(isCompany: boolean): NavGroup[] {
       label: "Inteligência Tributária",
       items: [
         { label: "Painel", block: "IT.3", icon: Gauge, to: "/t/$tenantId/tributario" },
-        { label: "Carteira", block: "IT.3", icon: Table2, to: "/t/$tenantId/tributario/carteira" },
+        {
+          label: "Base de CNPJs",
+          block: "IT.3",
+          icon: Table2,
+          to: "/t/$tenantId/tributario/carteira",
+        },
         {
           label: "Importações",
           block: "IT.1",

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { to: "/t/$tenantId/tributario", label: "Visão geral", icon: Gauge, exact: true },
-  { to: "/t/$tenantId/tributario/carteira", label: "Carteira", icon: Table2, exact: false },
+  { to: "/t/$tenantId/tributario/carteira", label: "Base de CNPJs", icon: Table2, exact: false },
   {
     to: "/t/$tenantId/tributario/importacoes",
     label: "Importações",

@@ -79,7 +79,13 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "tax.import.create": "Importação iniciada",
   "tax.import.finalize": "Importação concluída",
   "tax.import.cancel": "Importação cancelada",
+  "tax.processing.request": "Processamento solicitado",
+  "tax.processing.dispatch": "Processamento enviado ao motor",
+  "tax.processing.fail": "Falha ao acionar o processamento",
 };
+
+/** Nome da lista de CNPJs da empresa (escolhido pelo usuário em 18/11/2026). */
+export const BASE_LABEL = "Base de CNPJs";
 
 export const n = (v: number | null | undefined) => (v ?? 0).toLocaleString("pt-BR");
 export const pct = (part: number, total: number) =>

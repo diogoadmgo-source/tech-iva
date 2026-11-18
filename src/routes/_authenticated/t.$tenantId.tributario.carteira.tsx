@@ -61,12 +61,7 @@ import {
   type SortKey,
 } from "@/lib/tax-intel/portfolio";
 import type { RelationshipKind } from "@/lib/tax-intel/relationship";
-import {
-  isRunning,
-  loadLatestRun,
-  type LatestRun,
-  type RunStatus,
-} from "@/lib/tax-intel/run-status";
+import { isActive, loadProcessingStatus, phaseOf, type Phase } from "@/lib/tax-intel/processing";
 import { useShellData } from "@/lib/tenant-shell-data";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +72,8 @@ type Search = {
   estrutura?: "matriz" | "filial" | undefined;
   alfa?: boolean | undefined;
   importacao?: string | undefined;
+  /** Vindo do passo "Baixar o resultado": gera o Excel assim que a tela abre. */
+  exportar?: boolean | undefined;
 };
 
 const UUID = /^[0-9a-f-]{36}$/;
@@ -95,10 +92,11 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/tributario/car
       typeof s["importacao"] === "string" && UUID.test(s["importacao"])
         ? s["importacao"]
         : undefined,
+    exportar: s["exportar"] === true || s["exportar"] === "true" ? true : undefined,
   }),
   head: () => ({
     meta: [
-      { title: "Carteira · Inteligência Tributária · TECH-IVA" },
+      { title: "Base de CNPJs · Inteligência Tributária · TECH-IVA" },
       { name: "description", content: "Clientes e fornecedores com classificação tributária." },
     ],
   }),
@@ -127,7 +125,7 @@ function describe(f: PortfolioFilters): string {
   if (f.classe !== "todas") parts.push(CLASSIFICATION_LABEL[f.classe]);
   if (f.alfanumerico) parts.push("Alfanuméricos");
   if (f.importId) parts.push(`importação ${f.importId.slice(0, 8)}`);
-  return parts.length ? parts.join(" · ") : "Toda a carteira";
+  return parts.length ? parts.join(" · ") : "Toda a base";
 }
 
 function CarteiraPage() {
@@ -180,15 +178,17 @@ function CarteiraPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Andamento do motor: enquanto houver execução aberta, a carteira se
-  // atualiza sozinha e as linhas já gravadas aparecem com a nova classe.
-  const run = useQuery({
+  // Andamento do motor: enquanto o processamento roda, a base se atualiza
+  // sozinha e as linhas já gravadas aparecem com a nova classe.
+  const proc = useQuery({
     enabled: allowedKind,
-    queryKey: ["tax-run-latest"],
-    queryFn: loadLatestRun,
-    refetchInterval: (query) => (isRunning(query.state.data) ? 10_000 : 60_000),
+    queryKey: ["tax-processing", tenantId],
+    queryFn: () => loadProcessingStatus(tenantId),
+    refetchInterval: (query) =>
+      query.state.data && isActive(phaseOf(query.state.data)) ? 5_000 : 60_000,
   });
-  const running = isRunning(run.data);
+  const phase = proc.data ? phaseOf(proc.data) : null;
+  const running = phase ? isActive(phase) : false;
 
   const q = useQuery({
     enabled: allowedKind,
@@ -243,7 +243,7 @@ function CarteiraPage() {
         filtro: source === "selecao" ? `${n(data.length)} selecionados` : describe(filters),
       });
       const stamp = new Date().toISOString().slice(0, 10);
-      downloadBlob(blob, `carteira-tributaria-${stamp}.xlsx`);
+      downloadBlob(blob, `base-de-cnpjs-${stamp}.xlsx`);
       toast.success(`Excel gerado com ${n(data.length)} linhas.`);
     } catch (e) {
       toast.error(`Não foi possível exportar: ${(e as Error).message}`, {
@@ -253,6 +253,16 @@ function CarteiraPage() {
       setExporting(null);
     }
   }
+
+  // Atalho do passo "Baixar o resultado": exporta toda a base uma vez.
+  const autoExported = useRef(false);
+  useEffect(() => {
+    if (!search.exportar || autoExported.current || !q.data) return;
+    autoExported.current = true;
+    void navigate({ search: (prev: Search) => ({ ...prev, exportar: undefined }), replace: true });
+    void exportRows("filtro");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.exportar, q.data]);
 
   async function copySelected() {
     const text = [...new Set([...selected.values()].map((r) => r.cnpj))].join("\n");
@@ -267,11 +277,11 @@ function CarteiraPage() {
   if (shell.data && !allowedKind) {
     return (
       <Page>
-        <PageHeader eyebrow="inteligência tributária" title="Carteira" />
+        <PageHeader eyebrow="inteligência tributária" title="Base de CNPJs" />
         <EmptyState
           icon={Building2}
           title="Disponível em empresa ou unidade"
-          hint="A carteira de clientes e fornecedores pertence a uma empresa. Abra a empresa."
+          hint="A base de CNPJs de clientes e fornecedores pertence a uma empresa. Abra a empresa."
         />
       </Page>
     );
@@ -281,8 +291,8 @@ function CarteiraPage() {
     <Page className="max-w-7xl">
       <PageHeader
         eyebrow="inteligência tributária"
-        title="Carteira"
-        helpTitle="Sobre a carteira"
+        title="Base de CNPJs"
+        helpTitle="Sobre a base de CNPJs"
         help={
           <>
             <p>
@@ -321,7 +331,7 @@ function CarteiraPage() {
       />
       <ModuleTabs tenantId={tenantId} />
 
-      {run.data ? <RunBanner run={run.data} /> : null}
+      {phase ? <RunBanner phase={phase} tenantId={tenantId} /> : null}
 
       <Rise index={1} className="panel sheen">
         {/* Barra de filtros */}
@@ -486,7 +496,7 @@ function CarteiraPage() {
                     UF / Município
                   </th>
                   <SortTh k="created_at" sort={sort} onSort={toggleSort} align="right">
-                    Na carteira desde
+                    Na base desde
                   </SortTh>
                 </tr>
               </thead>
@@ -601,7 +611,7 @@ function CarteiraPage() {
                 ) : (
                   <EmptyState
                     icon={Table2}
-                    title="Carteira vazia"
+                    title="Base vazia"
                     hint="Importe a base de clientes e fornecedores para começar."
                     action={
                       <Button asChild size="sm" className="cta-lift">
@@ -843,7 +853,7 @@ function DetailSheet({
 
             <section>
               <h3 className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Na sua carteira
+                Na sua base
               </h3>
               {d.isLoading ? (
                 <Skeleton className="h-16" />
@@ -965,41 +975,53 @@ function DetailSheet({
   );
 }
 
-function RunBanner({ run }: { run: LatestRun }) {
+function RunBanner({ phase, tenantId }: { phase: Phase; tenantId: string }) {
   const hora = (iso: string) =>
     new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-  if (isRunning(run)) {
-    const pct = run.files_total ? Math.round((run.files_done / run.files_total) * 100) : 0;
+  if (phase.kind === "rodando" || phase.kind === "na_fila") {
+    const pct = phase.kind === "rodando" ? Math.max(phase.pct, 4) : 4;
     return (
       <div
         role="status"
-        className="mb-3 rounded-lg border border-border/60 bg-muted/40 p-3 text-sm"
+        className="mb-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm"
       >
-        <div className="flex items-center gap-2">
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-          <span className="font-medium text-foreground">
-            Consulta à Receita em andamento · competência {run.competencia}
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 font-medium text-foreground">
+            <Loader2 className="size-4 animate-spin text-primary" aria-hidden />
+            {phase.kind === "rodando" ? "Processando com a Receita" : "Processamento na fila"}
           </span>
+          {phase.kind === "rodando" ? (
+            <span className="font-mono tabular text-sm font-semibold">{phase.pct}%</span>
+          ) : null}
         </div>
-        <p className="mt-1 text-muted-foreground">
-          {n(run.files_done)} de {n(run.files_total)} arquivos lidos ({pct}%), {n(run.rows_scanned)}{" "}
-          linhas da Receita varridas
-          {run.targets_count !== null ? ` para ${n(run.targets_count)} CNPJs da carteira` : ""}.
-          Iniciada em {hora(run.started_at)}. As linhas abaixo se atualizam sozinhas.
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div
+            data-active="true"
+            className="proc-bar h-full rounded-full bg-primary transition-[width] duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Iniciado em {hora(phase.desde)}. As linhas abaixo se atualizam sozinhas.
         </p>
       </div>
     );
   }
-  const texto: Record<RunStatus, string> = {
-    iniciada: "",
-    concluida: "concluída",
-    falhou: "falhou",
-    abortada_layout: "interrompida: arquivo da Receita fora do layout",
-  };
+  if (phase.kind === "nunca") {
+    return (
+      <p className="mb-3 text-xs text-muted-foreground">
+        Esta base ainda não foi processada.{" "}
+        <Link to="/t/$tenantId/tributario" params={{ tenantId }} className="text-primary underline">
+          Processar agora
+        </Link>
+      </p>
+    );
+  }
   return (
     <p className="mb-3 text-xs text-muted-foreground">
-      Última consulta à Receita (competência {run.competencia}): {texto[run.status]}
-      {run.finished_at ? ` em ${hora(run.finished_at)}` : ""}.
+      {phase.kind === "concluido"
+        ? `Último processamento concluído em ${hora(phase.em)} · dados da Receita de ${phase.competencia}.`
+        : `Último processamento não concluiu (${phase.motivo}).`}
     </p>
   );
 }
