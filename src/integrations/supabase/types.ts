@@ -4845,6 +4845,44 @@ export type Database = {
           },
         ]
       }
+      tax_processing_requests: {
+        Row: {
+          dispatched_at: string | null
+          error: string | null
+          id: string
+          requested_at: string
+          requested_by: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          dispatched_at?: string | null
+          error?: string | null
+          id?: string
+          requested_at?: string
+          requested_by: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          dispatched_at?: string | null
+          error?: string | null
+          id?: string
+          requested_at?: string
+          requested_by?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_processing_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tax_regime_events: {
         Row: {
           after: Json | null
@@ -6345,6 +6383,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      tax_mark_processing_request: {
+        Args: { p_error?: string; p_request: string; p_status: string }
+        Returns: undefined
+      }
       tax_normalize_ecf: {
         Args: { p: string }
         Returns: Database["public"]["Enums"]["tax_ecf_regime"]
@@ -6354,6 +6396,8 @@ export type Database = {
         Returns: Database["public"]["Enums"]["tax_relationship_kind"][]
       }
       tax_portfolio_status: { Args: { p_tenant: string }; Returns: Json }
+      tax_processing_status: { Args: { p_tenant: string }; Returns: Json }
+      tax_request_processing: { Args: { p_tenant: string }; Returns: Json }
       tax_scope_tenants: { Args: never; Returns: string[] }
       tax_storage_tenant: { Args: { p_name: string }; Returns: string }
       tenant_context: { Args: { p_tenant: string }; Returns: Json }
