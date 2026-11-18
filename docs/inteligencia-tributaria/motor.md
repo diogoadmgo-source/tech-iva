@@ -24,9 +24,25 @@ A matriz de fontes, cobertura, limitações e custo está em
    classe muda.
 
 Fontes: Simples/SIMEI (`Simples.zip`), Empresas, Estabelecimentos (+ Municípios)
-dos Dados Abertos do CNPJ, e o regime tributário declarado na ECF
-(`regime_tributario/`). Layout do regime: lido pelo **cabeçalho**, porque ainda
-não foi confirmado num arquivo real (ver a sonda abaixo).
+dos Dados Abertos do CNPJ, e o regime tributário declarado na ECF. Layout do
+regime: lido pelo **cabeçalho**.
+
+**Endereço (conferido em 18/11/2026 pelo runner do GitHub):** as pastas antigas
+`/dados/cnpj/dados_abertos_cnpj/` e `/dados/cnpj/regime_tributario/` dão 404. A
+raiz de `arquivos.receitafederal.gov.br` redireciona para um compartilhamento
+público do Nextcloud (`index.php/s/<token>`), lido pelo WebDAV público
+(`public.php/webdav`, usuário = token, senha vazia). O executor descobre o token
+pela raiz a cada execução.
+
+- CNPJ: `/Dados/Cadastros/CNPJ/AAAA-MM/` (Empresas0-9, Estabelecimentos0-9,
+  Simples, Socios0-9, Municipios etc.).
+- Regime (ECF): `/Dados/Obrigacoes_Acessorias/ECF/entidades-lucro-real.zip`,
+  `entidades-lucro-presumido.zip` (um CSV por ano, 2019 a 2024) e
+  `entidades-lucro-arbitrado.zip`. CSV separado por **vírgula**, colunas
+  `ano,cnpj,cnpj_da_scp,forma_de_tributacao,quantidade_de_escrituracoes`.
+  Anos cobertos pelos dicionários: Real e Arbitrado 2016 a 2024, Presumido
+  2019 a 2024. Formas mistas aparecem em todos os arquivos das formas
+  abrangidas. `entidades-imunes-e-isentas.zip` existe mas não é lido.
 
 ## Regras de classificação (0242, `tax_classify_compute`)
 

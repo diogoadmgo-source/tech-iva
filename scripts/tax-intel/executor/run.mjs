@@ -30,8 +30,14 @@ import { lineBatches, parseLine, firstField } from "./csv.mjs";
 import { DATASETS, regimeHeader, isRaiz } from "./layouts.mjs";
 import { cnpjValid, cnpjStrip } from "./cnpj.mjs";
 
-export const BASE_CNPJ = "https://arquivos.receitafederal.gov.br/dados/cnpj/dados_abertos_cnpj/";
-export const BASE_REGIME = "https://arquivos.receitafederal.gov.br/dados/cnpj/regime_tributario/";
+// Desde nov/2026 a Receita publica num compartilhamento público do Nextcloud:
+// a raiz do site redireciona para index.php/s/<token>, e as pastas são lidas
+// pelo WebDAV público (usuário = token, senha vazia). As URLs antigas
+// (/dados/cnpj/dados_abertos_cnpj/ e /dados/cnpj/regime_tributario/) dão 404.
+export const RECEITA_SITE = "https://arquivos.receitafederal.gov.br/";
+export const DAV_ROOT = "https://arquivos.receitafederal.gov.br/public.php/webdav";
+export const PATH_CNPJ = "/Dados/Cadastros/CNPJ/";
+export const PATH_REGIME = "/Dados/Obrigacoes_Acessorias/ECF/";
 // Grandes empresas de capital aberto/estatais: dado público, pode aparecer no log da sonda.
 export const AMOSTRA_PUBLICA = ["00000000000191", "33000167000101", "00360305000104", "60701190000104"];
 const ORDER = ["receita_simples", "receita_empresas", "receita_estabelecimentos", "receita_regime_tributario"];
@@ -51,8 +57,7 @@ function parseArgs(argv) {
     else if (k === "--fonte-local") a.local = next();
     else if (k === "--relatorio") a.relatorio = next();
     else if (k === "--tmp") a.tmp = next();
-    else if (k === "--base-cnpj") a.baseCnpj = next();
-    else if (k === "--base-regime") a.baseRegime = next();
+    else if (k === "--token-receita") a.token = next();
     else throw new Error(`opção desconhecida: ${k}`);
   }
   for (const d of a.datasets) if (!ORDER.includes(d)) throw new Error(`conjunto desconhecido: ${d}`);
@@ -64,10 +69,10 @@ const log = (...m) => console.log(new Date().toISOString().slice(11, 19), ...m);
 const mb = (b) => `${(b / 1048576).toFixed(1)} MB`;
 
 // ---------------------------------------------------------------- origem
-async function fetchText(url) {
+async function fetchText(url, init = {}) {
   for (let t = 1; ; t++) {
     try {
-      const r = await fetch(url, { headers: { "user-agent": UA } });
+      const r = await fetch(url, { ...init, headers: { "user-agent": UA, ...(init.headers ?? {}) } });
       if (!r.ok) throw new Error(`HTTP ${r.status} em ${url}`);
       return await r.text();
     } catch (e) {
@@ -77,43 +82,60 @@ async function fetchText(url) {
   }
 }
 
-/** Links de uma listagem HTML de diretório (Apache/nginx). */
-export function parseListing(html) {
+/** Nomes (pastas terminam em "/") de uma resposta PROPFIND Depth 1, sem a própria pasta. */
+export function parsePropfind(xml, dirPath) {
   const out = [];
-  for (const m of html.matchAll(/href="([^"?#]+)"/gi)) {
-    const h = decodeURIComponent(m[1]);
-    if (h.startsWith("/") || h.startsWith("..") || /^[a-z]+:/i.test(h)) continue;
-    out.push(h);
+  for (const m of xml.matchAll(/<d:href>([^<]+)<\/d:href>/gi)) {
+    const href = decodeURIComponent(m[1]);
+    const i = href.indexOf(dirPath);
+    if (i < 0) continue;
+    const rest = href.slice(i + dirPath.length);
+    if (!rest || rest.slice(0, -1).includes("/")) continue;
+    out.push(rest);
   }
   return [...new Set(out)];
 }
 
+// Regime declarado na ECF: um arquivo por forma de tributação.
+export const REGIME_FILE = /^entidades-lucro-(real|presumido|arbitrado)\.zip$/i;
+
 class Origin {
   constructor(a) {
     this.local = a.local;
-    this.baseCnpj = a.baseCnpj ?? BASE_CNPJ;
-    this.baseRegime = a.baseRegime ?? BASE_REGIME;
+    this.token = a.token ?? process.env.RECEITA_SHARE_TOKEN;
+  }
+  async auth() {
+    if (!this.token) {
+      // Descobre o token pelo redirecionamento da raiz do site.
+      const r = await fetch(RECEITA_SITE, { headers: { "user-agent": UA }, redirect: "follow" });
+      const m = /\/index\.php\/s\/([A-Za-z0-9]+)/.exec(r.url);
+      if (!m) throw new Error(`não achei o compartilhamento público da Receita (raiz foi para ${r.url}, HTTP ${r.status})`);
+      this.token = m[1];
+      log(`origem: compartilhamento público ${r.url}`);
+    }
+    return { authorization: `Basic ${Buffer.from(`${this.token}:`).toString("base64")}` };
+  }
+  async list(path) {
+    const xml = await fetchText(`${DAV_ROOT}${path}`, { method: "PROPFIND", headers: { depth: "1", ...(await this.auth()) } });
+    return parsePropfind(xml, `/public.php/webdav${path}`);
   }
   async months() {
-    const names = this.local
-      ? (await readdir(this.local)).map((n) => `${n}/`)
-      : parseListing(await fetchText(this.baseCnpj));
+    const names = this.local ? (await readdir(this.local)).map((n) => `${n}/`) : await this.list(PATH_CNPJ);
     return names.filter((n) => /^\d{4}-\d{2}\/$/.test(n)).map((n) => n.slice(0, 7)).sort();
   }
   async files(kind, competencia) {
+    const keep = (n) => (kind === "regime" ? REGIME_FILE.test(n) : n.toLowerCase().endsWith(".zip"));
     if (this.local) {
       const dir = kind === "regime" ? join(this.local, "regime_tributario") : join(this.local, competencia);
-      return (await readdir(dir)).filter((n) => n.toLowerCase().endsWith(".zip")).sort().map((n) => ({ name: n, url: join(dir, n) }));
+      return (await readdir(dir)).filter(keep).sort().map((n) => ({ name: n, url: join(dir, n) }));
     }
-    const base = kind === "regime" ? this.baseRegime : `${this.baseCnpj}${competencia}/`;
-    return parseListing(await fetchText(base))
-      .filter((n) => n.toLowerCase().endsWith(".zip"))
-      .sort()
-      .map((n) => ({ name: basename(n), url: new URL(n, base).toString() }));
+    const path = kind === "regime" ? PATH_REGIME : `${PATH_CNPJ}${competencia}/`;
+    return (await this.list(path)).filter(keep).sort()
+      .map((n) => ({ name: n, url: `${DAV_ROOT}${path}${encodeURIComponent(n)}` }));
   }
   async entries(kind) {
     if (this.local) return readdir(kind === "regime" ? join(this.local, "regime_tributario") : this.local);
-    return parseListing(await fetchText(kind === "regime" ? this.baseRegime : this.baseCnpj));
+    return this.list(kind === "regime" ? PATH_REGIME : PATH_CNPJ);
   }
   /** Baixa para disco (ou usa o arquivo local) e devolve { path, size, sha256 }. */
   async fetchFile(f, tmp, stats) {
@@ -124,7 +146,7 @@ class Origin {
     const path = join(tmp, f.name);
     for (let t = 1; ; t++) {
       try {
-        const r = await fetch(f.url, { headers: { "user-agent": UA } });
+        const r = await fetch(f.url, { headers: { "user-agent": UA, ...(await this.auth()) } });
         if (!r.ok || !r.body) throw new Error(`HTTP ${r.status} em ${f.name}`);
         const h = createHash("sha256");
         let size = 0, next = 256 * 1048576;
@@ -317,21 +339,23 @@ async function scanRegime(ctx) {
     const t0 = Date.now();
     const dl = await origin.fetchFile(f, tmp, stats);
     await db.file(f.name, dl.size, dl.sha256, null, 0, 0, 0, "processando");
-    let n = 0, matched = 0, idx = null, header = null;
+    let n = 0, matched = 0, idx = null, header = null, sep = ";";
     for (const member of await listZip(dl.path)) {
       let first = true;
       for await (const batch of lineBatches(openMember(dl.path, member))) {
         for (const line of batch) {
           if (first) {
             first = false;
-            header = parseLine(line);
+            // Arquivos de nov/2026 vêm separados por vírgula; aceita ";" também.
+            sep = line.includes(";") ? ";" : ",";
+            header = parseLine(line, sep);
             const h = regimeHeader(header);
             if (h.erro) throw new LayoutError(`${f.name}: cabeçalho inesperado (${h.erro}): ${header.join(" | ").slice(0, 300)}`);
             idx = h.idx;
             continue;
           }
           n++;
-          const fields = parseLine(line);
+          const fields = parseLine(line, sep);
           const cnpj = cnpjStrip(fields[idx.cnpj]).padStart(14, "0");
           if (!targets.has(cnpj)) continue;
           const ano = (fields[idx.ano] ?? "").trim();
