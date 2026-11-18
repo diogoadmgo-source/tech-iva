@@ -73,13 +73,13 @@ jobs:
             echo "--- $f"
             curl -sS -u "$token:" --max-time 60 "$dav/Dados/Obrigacoes_Acessorias/ECF/entidades-regime-tributario-dicionarios/entidades-$f-dicionario.csv" | iconv -f latin1 -t utf-8 | head -20
           done
-          echo "=== cabeçalho e 2 linhas de cada zip do regime"
+          echo "=== cabeçalho de cada zip do regime"
           mkdir -p "$RUNNER_TEMP/rg"
           for f in lucro-real lucro-presumido lucro-arbitrado imunes-e-isentas; do
             curl -sS -u "$token:" --max-time 300 -o "$RUNNER_TEMP/rg/$f.zip" "$dav/Dados/Obrigacoes_Acessorias/ECF/entidades-$f.zip"
             echo "--- $f ($(stat -c %s "$RUNNER_TEMP/rg/$f.zip") bytes)"
             unzip -l "$RUNNER_TEMP/rg/$f.zip" | head -8
-            unzip -p "$RUNNER_TEMP/rg/$f.zip" | head -3 | iconv -f latin1 -t utf-8 -c
+            unzip -p "$RUNNER_TEMP/rg/$f.zip" | head -1 | iconv -f latin1 -t utf-8 -c
             echo "linhas: $(unzip -p "$RUNNER_TEMP/rg/$f.zip" | wc -l)"
           done
       - name: Sonda dos arquivos públicos
