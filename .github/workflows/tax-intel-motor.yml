@@ -43,7 +43,7 @@ jobs:
   verificar:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
       novo: ${{ steps.cache.outputs.cache-hit != 'true' }}
       impressao: ${{ steps.pub.outputs.impressao }}
@@ -65,6 +65,18 @@ jobs:
           path: .receita-publicacao
           key: receita-publicacao-${{ steps.pub.outputs.impressao }}
           lookup-only: true
+      # Mantém vivo o cache dos arquivos do mês (o GitHub apaga após 7 dias sem
+      # uso), para o botão "Processar agora" não baixar tudo da Receita de novo.
+      - name: Espaço em disco
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Mantém o cache dos arquivos
+        if: steps.cache.outputs.cache-hit == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/receita-cache
+          key: receita-arquivos-v1-${{ steps.pub.outputs.impressao }}-manter
+          restore-keys: receita-arquivos-v1-${{ steps.pub.outputs.impressao }}-
       - name: Resultado
         run: |
           if [ "${{ steps.cache.outputs.cache-hit }}" = "true" ]; then
@@ -115,6 +127,27 @@ jobs:
         run: |
           echo '{"private":true,"type":"module"}' > package.json
           npm install --no-save --no-package-lock --no-audit --no-fund pg@8.16.3
+      # Cache dos arquivos da Receita (~5 GB por mês, dado público): a chave é a
+      # impressão da publicação (competência + ETag de cada arquivo), então um
+      # arquivo republicado nunca é lido do cache velho. Só na competência mais
+      # recente; uma competência escolhida à mão baixa tudo da Receita.
+      - name: Publicação da Receita (chave do cache)
+        id: arq
+        if: inputs.competencia == ''
+        run: |
+          node scripts/tax-intel/executor/run.mjs --publicacao "$RUNNER_TEMP/publicacao.json"
+          echo "impressao=$(node -p "require(process.env.RUNNER_TEMP + '/publicacao.json').impressao")" >> "$GITHUB_OUTPUT"
+      - name: Espaço em disco para o cache
+        if: steps.arq.outputs.impressao != ''
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL && df -h "$RUNNER_TEMP"
+      - name: Arquivos da Receita do cache
+        id: arqcache
+        if: steps.arq.outputs.impressao != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/receita-cache
+          key: receita-arquivos-v1-${{ steps.arq.outputs.impressao }}-${{ github.run_id }}
+          restore-keys: receita-arquivos-v1-${{ steps.arq.outputs.impressao }}-
       - name: Carga das carteiras
         env:
           TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}
@@ -122,7 +155,23 @@ jobs:
           node scripts/tax-intel/executor/run.mjs
           --datasets "${{ inputs.datasets || 'receita_simples,receita_empresas,receita_estabelecimentos,receita_regime_tributario' }}"
           ${{ inputs.competencia && format('--competencia {0}', inputs.competencia) || '' }}
+          ${{ steps.arq.outputs.impressao != '' && format('--cache {0}/receita-cache', runner.temp) || '' }}
           --tmp "$RUNNER_TEMP/receita"
+      # Guarda de novo só se esta carga baixou algum arquivo (cache novo ou
+      # incompleto). Também depois de falha: a próxima tentativa aproveita o que
+      # já veio. Arquivo interrompido não tem .sha256 e é baixado de novo.
+      - name: Algo novo para guardar?
+        id: novos
+        if: always() && steps.arq.outputs.impressao != ''
+        run: |
+          n=$(find "$RUNNER_TEMP/receita-cache" -name '*.sha256' -newer "$RUNNER_TEMP/publicacao.json" 2>/dev/null | wc -l)
+          echo "arquivos novos no cache: $n"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/save@v4
+        if: always() && steps.novos.outputs.n != '' && steps.novos.outputs.n != '0'
+        with:
+          path: ${{ runner.temp }}/receita-cache
+          key: receita-arquivos-v1-${{ steps.arq.outputs.impressao }}-${{ github.run_id }}
       # Marca a publicação como carregada para a verificação diária não repetir.
       # Só quando a carga foi da competência mais recente com todas as fontes.
       - name: Impressão da publicação carregada

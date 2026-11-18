@@ -13,13 +13,15 @@
 //   --fonte-local DIR       lê DIR/AAAA-MM/*.zip e DIR/regime_tributario/*.zip em vez da internet (testes)
 //   --relatorio arq.json    grava o relatório local (na carga, nunca publicado como artefato)
 //   --tmp DIR               pasta temporária dos downloads (padrão: tmp do sistema)
+//   --cache DIR             guarda os arquivos baixados em DIR e reaproveita os que já estão lá
+//                           (o workflow guarda DIR no cache do GitHub, por publicação da Receita)
 //
 // Com banco: TAX_INGESTOR_DATABASE_URL (papel tax_ingestor, nunca service_role).
 //
 // Regra de log: nenhum CNPJ da carteira é impresso. Só agregados, nomes de
 // arquivos públicos e, na sonda, os CNPJs da amostra pública.
 import { createHash } from "node:crypto";
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, mkdtemp, rm, stat, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, basename } from "node:path";
@@ -58,6 +60,7 @@ function parseArgs(argv) {
     else if (k === "--fonte-local") a.local = next();
     else if (k === "--relatorio") a.relatorio = next();
     else if (k === "--tmp") a.tmp = next();
+    else if (k === "--cache") a.cache = next();
     else if (k === "--token-receita") a.token = next();
     else throw new Error(`opção desconhecida: ${k}`);
   }
@@ -67,6 +70,10 @@ function parseArgs(argv) {
 }
 
 const log = (...m) => console.log(new Date().toISOString().slice(11, 19), ...m);
+const IDLE_MS = 120_000;
+const MAX_TRIES = 12;
+/** Nome do arquivo no cache: o caminho público inteiro, para não misturar competências. */
+export const cacheName = (url) => decodeURIComponent(new URL(url).pathname).replace(/^\/+/, "").replace(/[^A-Za-z0-9._-]+/g, "_");
 const mb = (b) => `${(b / 1048576).toFixed(1)} MB`;
 
 // ---------------------------------------------------------------- origem
@@ -117,10 +124,11 @@ export function parsePropfindEtags(xml, dirPath) {
 // Regime declarado na ECF: um arquivo por forma de tributação.
 export const REGIME_FILE = /^entidades-lucro-(real|presumido|arbitrado)\.zip$/i;
 
-class Origin {
+export class Origin {
   constructor(a) {
     this.local = a.local;
     this.token = a.token ?? process.env.RECEITA_SHARE_TOKEN;
+    this.cache = a.cache ?? null;
   }
   async auth() {
     if (!this.token) {
@@ -179,29 +187,72 @@ class Origin {
       const buf = await readFile(f.url);
       return { path: f.url, size: buf.length, sha256: createHash("sha256").update(buf).digest("hex"), local: true };
     }
-    const path = join(tmp, f.name);
-    for (let t = 1; ; t++) {
+    // Cache local (restaurado do cache do GitHub): um arquivo só vale se o
+    // download terminou, o que é marcado pelo .sha256 ao lado dele.
+    const cached = this.cache ? join(this.cache, cacheName(f.url)) : null;
+    if (cached) {
+      const sha = await readFile(`${cached}.sha256`, "utf8").catch(() => null);
+      const st = sha ? await stat(cached).catch(() => null) : null;
+      if (sha && st) {
+        log(`  ${f.name}: do cache (${mb(st.size)})`);
+        stats.from_cache = (stats.from_cache ?? 0) + 1;
+        return { path: cached, size: st.size, sha256: sha.trim(), keep: true };
+      }
+      await mkdir(this.cache, { recursive: true });
+    }
+    // O servidor da Receita derruba conexões longas ("terminated"). Cada nova
+    // tentativa continua do byte em que parou (HTTP Range), e um download parado
+    // por 2 minutos é abortado e retomado.
+    const path = cached ?? join(tmp, f.name);
+    // O sha256 é calculado do arquivo em disco no fim: depois de uma queda, o
+    // ponto de retomada é o tamanho real gravado, não o que passou pelo stream.
+    let size = 0, next = 256 * 1048576, fails = 0;
+    await rm(path, { force: true });
+    for (;;) {
+      const ctrl = new AbortController();
+      let idle = setTimeout(() => ctrl.abort(new Error("download parado há 2 min")), IDLE_MS);
       try {
-        const r = await fetch(f.url, { headers: { "user-agent": UA, ...(await this.auth()) } });
+        const headers = { "user-agent": UA, ...(await this.auth()) };
+        if (size > 0) headers.range = `bytes=${size}-`;
+        const r = await fetch(f.url, { headers, signal: ctrl.signal });
         if (!r.ok || !r.body) throw new Error(`HTTP ${r.status} em ${f.name}`);
-        const h = createHash("sha256");
-        let size = 0, next = 256 * 1048576;
+        if (size > 0 && r.status !== 206) {
+          // Servidor ignorou o Range e mandou o arquivo inteiro: recomeça do
+          // zero com esta resposta, sem misturar bytes.
+          log(`  ${f.name}: servidor não retomou do byte ${size}; recomeçando do início`);
+          size = 0; next = 256 * 1048576;
+          await rm(path, { force: true });
+        }
         const meter = new Transform({
           transform(chunk, _e, cb) {
-            h.update(chunk); size += chunk.length;
+            clearTimeout(idle);
+            idle = setTimeout(() => ctrl.abort(new Error("download parado há 2 min")), IDLE_MS);
+            size += chunk.length;
             if (size >= next) { log(`  ${f.name}: ${mb(size)} baixados`); next += 256 * 1048576; }
             cb(null, chunk);
           },
         });
-        await pipeline(Readable.fromWeb(r.body), meter, createWriteStream(path));
+        await pipeline(Readable.fromWeb(r.body), meter, createWriteStream(path, { flags: "a" }));
+        clearTimeout(idle);
+        size = (await stat(path)).size;
+        const h = createHash("sha256");
+        for await (const chunk of createReadStream(path)) h.update(chunk);
         stats.bytes_downloaded += size;
         stats.peak_disk_bytes = Math.max(stats.peak_disk_bytes, size);
-        return { path, size, sha256: h.digest("hex") };
+        const sha256 = h.digest("hex");
+        if (cached) {
+          await writeFile(`${cached}.sha256`, sha256);
+          stats.to_cache = (stats.to_cache ?? 0) + 1;
+        }
+        return { path, size, sha256, keep: !!cached };
       } catch (e) {
-        await rm(path, { force: true });
-        if (t >= 4) throw e;
-        log(`  ${f.name}: falha (${e.message}); nova tentativa ${t + 1}/4`);
-        await new Promise((ok) => setTimeout(ok, 5000 * t * t));
+        clearTimeout(idle);
+        size = await stat(path).then((x) => x.size, () => 0);
+        fails++;
+        if (fails >= MAX_TRIES) throw e;
+        const wait = Math.min(60_000, 5000 * fails);
+        log(`  ${f.name}: falha (${e.message}) em ${mb(size)}; retomando (${fails + 1}/${MAX_TRIES}) em ${wait / 1000}s`);
+        await new Promise((ok) => setTimeout(ok, wait));
       }
     }
   }
@@ -400,7 +451,7 @@ async function scanDataset(ds, ctx) {
     report.datasets[ds].files.push({ name: f.name, size: dl.size, sha256: dl.sha256, rows: n, matched,
       layout_checked: checked, layout_bad: bad, seconds: Math.round((Date.now() - t0) / 1000) });
     log(`${ds} · ${f.name}: ${mb(dl.size)}, ${n.toLocaleString("pt-BR")} linhas, ${matched} da carteira, ${Math.round((Date.now() - t0) / 1000)} s`);
-    if (!dl.local) await rm(dl.path, { force: true });
+    if (!dl.local && !dl.keep) await rm(dl.path, { force: true });
   }
   // Varredura completa: o que não apareceu é "não encontrado" naquela competência.
   for (const key of want) {
@@ -463,7 +514,7 @@ async function scanRegime(ctx) {
     report.datasets[ds].files.push({ name: f.name, size: dl.size, sha256: dl.sha256, rows: n, matched, header,
       seconds: Math.round((Date.now() - t0) / 1000) });
     log(`${ds} · ${f.name}: ${mb(dl.size)}, ${n.toLocaleString("pt-BR")} linhas, ${matched} da carteira`);
-    if (!dl.local) await rm(dl.path, { force: true });
+    if (!dl.local && !dl.keep) await rm(dl.path, { force: true });
   }
   let pending = [];
   const flush = async () => {
@@ -496,7 +547,7 @@ async function loadMunicipios(ctx) {
   for (const member of await listZip(dl.path))
     for await (const batch of lineBatches(openMember(dl.path, member)))
       for (const line of batch) { const [c, d] = parseLine(line); if (c) map.set(c.trim(), (d ?? "").trim()); }
-  if (!dl.local) await rm(dl.path, { force: true });
+  if (!dl.local && !dl.keep) await rm(dl.path, { force: true });
   return map;
 }
 
