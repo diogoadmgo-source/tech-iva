@@ -20,7 +20,7 @@
 // arquivos públicos e, na sonda, os CNPJs da amostra pública.
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdtemp, rm, stat, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, basename } from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -396,7 +396,9 @@ export async function main(argv = process.argv.slice(2)) {
   const stats = { bytes_downloaded: 0, peak_disk_bytes: 0, rows_scanned: 0, rows_matched: 0, rejected: 0 };
   const report = { competencia: null, modo: a.sonda ? "sonda" : process.env.TAX_INGESTOR_DATABASE_URL ? "banco" : "sem-banco",
     datasets: {}, sample: {}, stats };
-  const tmp = await mkdtemp(join(a.tmp ?? tmpdir(), "tax-intel-"));
+  const base = a.tmp ?? tmpdir();
+  await mkdir(base, { recursive: true });
+  const tmp = await mkdtemp(join(base, "tax-intel-"));
 
   const months = await origin.months();
   if (!months.length) throw new Error("nenhuma competência publicada encontrada na origem");
