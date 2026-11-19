@@ -57,6 +57,7 @@ import { Route as AuthenticatedTTenantIdSettingsUsersRouteImport } from './route
 import { Route as AuthenticatedTTenantIdTributarioIndexRouteImport } from './routes/_authenticated/t.$tenantId.tributario.index'
 import { Route as AuthenticatedTTenantIdTributarioCarteiraRouteImport } from './routes/_authenticated/t.$tenantId.tributario.carteira'
 import { Route as AuthenticatedTTenantIdTributarioImportacoesRouteImport } from './routes/_authenticated/t.$tenantId.tributario.importacoes'
+import { Route as AuthenticatedTTenantIdTributarioSimplesHibridoRouteImport } from './routes/_authenticated/t.$tenantId.tributario.simples-hibrido'
 import { Route as ApiPublicRtcApuracaoRefRouteImport } from './routes/api/public/rtc.apuracao.$ref'
 
 const IndexRoute = IndexRouteImport.update({
@@ -330,6 +331,12 @@ const AuthenticatedTTenantIdTributarioImportacoesRoute =
     path: '/tributario/importacoes',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
+const AuthenticatedTTenantIdTributarioSimplesHibridoRoute =
+  AuthenticatedTTenantIdTributarioSimplesHibridoRouteImport.update({
+    id: '/tributario/simples-hibrido',
+    path: '/tributario/simples-hibrido',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
 const ApiPublicRtcApuracaoRefRoute = ApiPublicRtcApuracaoRefRouteImport.update({
   id: '/api/public/rtc/apuracao/$ref',
   path: '/api/public/rtc/apuracao/$ref',
@@ -382,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
   '/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
+  '/t/$tenantId/tributario/simples-hibrido': typeof AuthenticatedTTenantIdTributarioSimplesHibridoRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
   '/t/$tenantId/tributario/': typeof AuthenticatedTTenantIdTributarioIndexRoute
@@ -431,6 +439,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
   '/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
+  '/t/$tenantId/tributario/simples-hibrido': typeof AuthenticatedTTenantIdTributarioSimplesHibridoRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/t/$tenantId/settings': typeof AuthenticatedTTenantIdSettingsIndexRoute
   '/t/$tenantId/tributario': typeof AuthenticatedTTenantIdTributarioIndexRoute
@@ -483,6 +492,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/settings/users': typeof AuthenticatedTTenantIdSettingsUsersRoute
   '/_authenticated/t/$tenantId/tributario/carteira': typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   '/_authenticated/t/$tenantId/tributario/importacoes': typeof AuthenticatedTTenantIdTributarioImportacoesRoute
+  '/_authenticated/t/$tenantId/tributario/simples-hibrido': typeof AuthenticatedTTenantIdTributarioSimplesHibridoRoute
   '/api/public/rtc/apuracao/$ref': typeof ApiPublicRtcApuracaoRefRoute
   '/_authenticated/t/$tenantId/settings/': typeof AuthenticatedTTenantIdSettingsIndexRoute
   '/_authenticated/t/$tenantId/tributario/': typeof AuthenticatedTTenantIdTributarioIndexRoute
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/settings/users'
     | '/t/$tenantId/tributario/carteira'
     | '/t/$tenantId/tributario/importacoes'
+    | '/t/$tenantId/tributario/simples-hibrido'
     | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings/'
     | '/t/$tenantId/tributario/'
@@ -584,6 +595,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/settings/users'
     | '/t/$tenantId/tributario/carteira'
     | '/t/$tenantId/tributario/importacoes'
+    | '/t/$tenantId/tributario/simples-hibrido'
     | '/api/public/rtc/apuracao/$ref'
     | '/t/$tenantId/settings'
     | '/t/$tenantId/tributario'
@@ -635,6 +647,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/settings/users'
     | '/_authenticated/t/$tenantId/tributario/carteira'
     | '/_authenticated/t/$tenantId/tributario/importacoes'
+    | '/_authenticated/t/$tenantId/tributario/simples-hibrido'
     | '/api/public/rtc/apuracao/$ref'
     | '/_authenticated/t/$tenantId/settings/'
     | '/_authenticated/t/$tenantId/tributario/'
@@ -998,6 +1011,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdTributarioImportacoesRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
+    '/_authenticated/t/$tenantId/tributario/simples-hibrido': {
+      id: '/_authenticated/t/$tenantId/tributario/simples-hibrido'
+      path: '/tributario/simples-hibrido'
+      fullPath: '/t/$tenantId/tributario/simples-hibrido'
+      preLoaderRoute: typeof AuthenticatedTTenantIdTributarioSimplesHibridoRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
     '/api/public/rtc/apuracao/$ref': {
       id: '/api/public/rtc/apuracao/$ref'
       path: '/api/public/rtc/apuracao/$ref'
@@ -1036,6 +1056,7 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdSettingsUsersRoute: typeof AuthenticatedTTenantIdSettingsUsersRoute
   AuthenticatedTTenantIdTributarioCarteiraRoute: typeof AuthenticatedTTenantIdTributarioCarteiraRoute
   AuthenticatedTTenantIdTributarioImportacoesRoute: typeof AuthenticatedTTenantIdTributarioImportacoesRoute
+  AuthenticatedTTenantIdTributarioSimplesHibridoRoute: typeof AuthenticatedTTenantIdTributarioSimplesHibridoRoute
   AuthenticatedTTenantIdSettingsIndexRoute: typeof AuthenticatedTTenantIdSettingsIndexRoute
   AuthenticatedTTenantIdTributarioIndexRoute: typeof AuthenticatedTTenantIdTributarioIndexRoute
 }
@@ -1075,6 +1096,8 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
       AuthenticatedTTenantIdTributarioCarteiraRoute,
     AuthenticatedTTenantIdTributarioImportacoesRoute:
       AuthenticatedTTenantIdTributarioImportacoesRoute,
+    AuthenticatedTTenantIdTributarioSimplesHibridoRoute:
+      AuthenticatedTTenantIdTributarioSimplesHibridoRoute,
     AuthenticatedTTenantIdSettingsIndexRoute:
       AuthenticatedTTenantIdSettingsIndexRoute,
     AuthenticatedTTenantIdTributarioIndexRoute:

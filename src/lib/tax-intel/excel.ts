@@ -19,6 +19,7 @@ import {
   type Diagnosis,
   type DiagnosisStatus,
 } from "./diagnosis";
+import { ibsCbsText, raizOf, type ConsultaRegistrada } from "./consulta-optantes";
 import { basisText, CLASSIFICATION_LABEL, RELATIONSHIP_LABEL, sourceName } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
@@ -35,12 +36,16 @@ export const EXPORT_COLUMNS = [
   "Situação cadastral",
   "Regime identificado",
   "Referência",
+  "IBS/CBS regime regular (Simples)",
   "Status",
   "Ação recomendada",
 ] as const;
-const WIDTHS = [21, 7, 40, 30, 16, 12, 12, 44, 24, 14, 22, 16, 30, 46];
+const WIDTHS = [21, 7, 40, 30, 16, 12, 12, 44, 24, 14, 22, 16, 30, 30, 46];
+/** Coluna do Status na aba Base (1 = A). */
+const COL_STATUS = 14;
 
-type Item = { r: PortfolioRow; d: Diagnosis; rel: string };
+type Consultas = Map<string, ConsultaRegistrada>;
+type Item = { r: PortfolioRow; d: Diagnosis; rel: string; ibs: ConsultaRegistrada | null };
 
 const isoToDate = (v?: string | null) =>
   v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T12:00:00Z`) : null;
@@ -54,7 +59,20 @@ function referencia(r: PortfolioRow, d: Diagnosis): string | null {
   return null;
 }
 
-export function toExportRow(r: PortfolioRow, d: Diagnosis = diagnose(r)): (string | Date | null)[] {
+function ibsCbsColuna(r: PortfolioRow, d: Diagnosis, c: ConsultaRegistrada | null): string | null {
+  if (foraDaReceita(d)) return "—";
+  if (d.status === "aguardando") return null;
+  const k = r.tax_entities.public_classification;
+  if (k === "simples_nacional") return ibsCbsText(c);
+  if (k === "mei_simei") return "Não se aplica (MEI)";
+  return "Não se aplica (fora do Simples)";
+}
+
+export function toExportRow(
+  r: PortfolioRow,
+  d: Diagnosis = diagnose(r),
+  ibs: ConsultaRegistrada | null = null,
+): (string | Date | null)[] {
   const e = r.tax_entities;
   const doc = documento(r, d);
   const fora = foraDaReceita(d);
@@ -73,6 +91,7 @@ export function toExportRow(r: PortfolioRow, d: Diagnosis = diagnose(r)): (strin
     e.situacao_cadastral ?? (fora ? "Não consta" : null),
     fora ? "—" : CLASSIFICATION_LABEL[e.public_classification],
     referencia(r, d),
+    ibsCbsColuna(r, d, ibs),
     DIAGNOSIS_LABEL[d.status],
     d.acao,
   ];
@@ -155,25 +174,28 @@ const pf = (a: number, t: number) =>
   `${(pct(a, t) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
 /** Uma linha por documento: o mesmo CNPJ como cliente e fornecedor vira uma só. */
-function porDocumento(rows: PortfolioRow[]): Item[] {
+function porDocumento(rows: PortfolioRow[], consultas: Consultas): Item[] {
   const map = new Map<string, { r: PortfolioRow; rels: Set<string> }>();
   for (const r of rows) {
     const cur = map.get(r.cnpj);
     if (cur) cur.rels.add(RELATIONSHIP_LABEL[r.relationship]);
     else map.set(r.cnpj, { r, rels: new Set([RELATIONSHIP_LABEL[r.relationship]]) });
   }
-  return [...map.values()].map(({ r, rels }) => ({ r, d: diagnose(r), rel: [...rels].join(" e ") }));
+  return [...map.values()].map(({ r, rels }) => {
+    const ibs = consultas.get(raizOf(r.cnpj)) ?? null;
+    return { r, ibs, d: diagnose(r, new Date(), ibs), rel: [...rels].join(" e ") };
+  });
 }
 
 export async function buildWorkbook(
   rows: PortfolioRow[],
-  meta: { filtro: string; empresa?: string | null },
+  meta: { filtro: string; empresa?: string | null; consultas?: Consultas },
 ) {
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "TECH-IVA";
   wb.created = new Date();
-  const items = porDocumento(rows);
+  const items = porDocumento(rows, meta.consultas ?? new Map());
   const total = items.length;
   const count = (f: (x: Item) => boolean) => items.filter(f).length;
   const competencias = [
@@ -209,6 +231,13 @@ export async function buildWorkbook(
   const ressalva = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification === "excluido_simples");
   const ecfAntiga = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification !== "excluido_simples");
   const semFonte = count((x) => x.d.status === "sem_fonte_publica");
+  const simples = count((x) => x.r.tax_entities.public_classification === "simples_nacional");
+  const simplesConsultados = count(
+    (x) => x.r.tax_entities.public_classification === "simples_nacional" && !!x.ibs,
+  );
+  const regular = count(
+    (x) => x.r.tax_entities.public_classification === "simples_nacional" && (x.ibs?.ibs === "sim" || x.ibs?.cbs === "sim"),
+  );
   const inativos = count(
     (x) => !!x.r.tax_entities.situacao_cadastral && x.r.tax_entities.situacao_cadastral !== "ATIVA",
   );
@@ -262,6 +291,9 @@ export async function buildWorkbook(
       ? `${nf(cpf)} números são CPF cadastrados como CNPJ (com "000" na frente). Pessoa física não tem regime de empresa: corrigir o cadastro.`
       : null,
     inexistente ? `${nf(inexistente)} CNPJs não existem na Receita: conferir a digitação.` : null,
+    simples
+      ? `Simples híbrido: ${nf(simplesConsultados)} de ${nf(simples)} optantes do Simples consultados na Consulta Optantes${simplesConsultados ? ` (${nf(regular)} no regime regular de IBS ou CBS)` : ""}${simples > simplesConsultados ? `; ${nf(simples - simplesConsultados)} a confirmar no Saneamento` : ""}.`
+      : null,
     inativos
       ? `${nf(inativos)} cadastros estão baixados, inaptos ou suspensos na Receita: avaliar se ainda devem ficar na base.`
       : null,
@@ -359,10 +391,10 @@ export async function buildWorkbook(
   table(
     ws,
     [...EXPORT_COLUMNS],
-    items.map((x) => toExportRow(x.r, x.d)),
+    items.map((x) => toExportRow(x.r, x.d, x.ibs)),
     WIDTHS,
     (i) => (items[i] ? TONE[items[i].d.status] : null),
-    13,
+    COL_STATUS,
   );
   ws.getColumn(7).numFmt = "dd/mm/yyyy";
 
@@ -390,6 +422,7 @@ export async function buildWorkbook(
     "Ação recomendada",
     "Documento correto (preencher)",
     "Regime atual informado (preencher)",
+    "Optou pelo regime regular de IBS/CBS? (preencher)",
     "Observação (preencher)",
   ];
   table(
@@ -408,23 +441,31 @@ export async function buildWorkbook(
         null,
         null,
         null,
+        null,
       ];
     }),
-    [21, 7, 34, 11, 30, 60, 44, 24, 26, 34],
+    [21, 7, 34, 11, 30, 60, 44, 24, 26, 22, 34],
     (i) => (fila[i] ? TONE[fila[i].d.status] : null),
     5,
   );
   styleHeader(sn, 1, SN_HEAD.length);
-  for (const col of [8, 9, 10]) {
+  for (const col of [8, 9, 10, 11]) {
     sn.getRow(1).getCell(col).fill = fill("FFB45309");
     for (let r = 2; r <= fila.length + 1; r++) sn.getCell(r, col).fill = fill(C.input);
   }
-  for (let r = 2; r <= fila.length + 1; r++)
+  for (let r = 2; r <= fila.length + 1; r++) {
     sn.getCell(r, 9).dataValidation = {
       type: "list",
       allowBlank: true,
       formulae: ['"Simples Nacional,MEI (SIMEI),Lucro Presumido,Lucro Real,Imune ou isenta,Pessoa física,Cadastro inativo"'],
     };
+    if (fila[r - 2]?.r.tax_entities.public_classification === "simples_nacional")
+      sn.getCell(r, 10).dataValidation = {
+        type: "list",
+        allowBlank: true,
+        formulae: ['"Sim (IBS e CBS),Só IBS,Só CBS,Não"'],
+      };
+  }
   if (!fila.length) sn.addRow(["Nenhuma linha precisa de ação neste recorte."]);
 
   // ---------------------------------------------------- Detalhe e evidências
@@ -463,6 +504,7 @@ export async function buildWorkbook(
     [DIAGNOSIS_LABEL.cnpj_nao_encontrado, "O número não existe no cadastro de CNPJ da Receita."],
     [DIAGNOSIS_LABEL.provavel_cpf, "O número não existe no cadastro de CNPJ e, sem os três zeros iniciais, é um CPF válido (pessoa física). A planilha mostra o número no formato de CPF."],
     [DIAGNOSIS_LABEL.aguardando, "O CNPJ entrou na base depois do último processamento."],
+    ["Simples híbrido (IBS/CBS)", "A opção do Simples pelo regime regular de IBS e de CBS não está nos dados abertos da Receita. Só aparece na Consulta Optantes do Portal do Simples, um CNPJ por vez e protegida por captcha. Cada consulta foi feita por uma pessoa da equipe e gravada com a data; a opção vale para todos os estabelecimentos da empresa. Optante do Simples sem consulta registrada fica \"A confirmar\" e vai para o Saneamento."],
     ["Filiais", "A ECF é declarada pela matriz: a filial recebe o regime da empresa (mesma raiz de 8 dígitos)."],
     ["Prioridade", "Alta: corrigir o número ou o cadastro inativo. Média: confirmar o regime com o parceiro. Baixa: conferência simples."],
     ["Como responder", "Na aba Saneamento, preencha as colunas destacadas em amarelo e devolva a planilha. O regime informado tem lista de opções."],

@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "TECH-IVA · Consulta Optantes",
+  "version": "1.0.0",
+  "description": "Preenche o CNPJ na Consulta Optantes do Simples Nacional e devolve o resultado ao TECH-IVA. Quem consulta é você: a extensão não clica em Consultar nem mexe no captcha.",
+  "permissions": ["storage"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://consopt.www8.receita.fazenda.gov.br/*"],
+      "js": ["receita.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://*.lovable.app/*",
+        "https://*.lovableproject.com/*",
+        "http://localhost/*"
+      ],
+      "js": ["app.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

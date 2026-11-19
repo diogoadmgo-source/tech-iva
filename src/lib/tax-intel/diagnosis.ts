@@ -4,6 +4,7 @@
  * gravou (classe e base da classificação); não deduz regime nenhum.
  */
 import { formatCnpj } from "./cnpj";
+import { ibsCbsText, type ConsultaRegistrada } from "./consulta-optantes";
 import { CLASSIFICATION_LABEL, classificationText, type TaxClassification } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
@@ -83,7 +84,16 @@ const situacaoTexto = (r: PortfolioRow) => {
   return `${sit.charAt(0)}${sit.slice(1).toLowerCase()}${data ? ` desde ${data}` : ""}`;
 };
 
-export function diagnose(r: PortfolioRow, now: Date = new Date()): Diagnosis {
+/**
+ * `ibscbs`: consulta da opção pelo regime regular de IBS/CBS (Consulta
+ * Optantes, feita por pessoa). `undefined` = não verificado neste uso;
+ * `null` = verificado e sem consulta registrada.
+ */
+export function diagnose(
+  r: PortfolioRow,
+  now: Date = new Date(),
+  ibscbs?: ConsultaRegistrada | null,
+): Diagnosis {
   const e = r.tax_entities;
   const c: TaxClassification = e.public_classification;
   const b: Basis = e.public_classification_basis;
@@ -169,16 +179,27 @@ export function diagnose(r: PortfolioRow, now: Date = new Date()): Diagnosis {
         : c === "simples_nacional"
           ? `Optante pelo Simples Nacional${b?.["data_opcao_simples"] ? ` desde ${br(b["data_opcao_simples"])}` : ""}, segundo a Receita.`
           : "Identificado na fonte pública.";
+  // Simples: a opção pelo regime regular de IBS/CBS só sai na Consulta Optantes.
+  const ibsPendente = c === "simples_nacional" && ibscbs === null;
+  const ibsTexto =
+    c !== "simples_nacional" || ibscbs === undefined
+      ? ""
+      : ibscbs
+        ? ` Regime regular: ${ibsCbsText(ibscbs)}.`
+        : " Opção pelo regime regular de IBS/CBS ainda não consultada.";
+  const acoes = [
+    sit ? "Avaliar inativar o cadastro." : null,
+    !sit && alertas.length ? "Conferir a razão social no seu cadastro." : null,
+    !sit && ibsPendente
+      ? "Confirmar a opção pelo regime regular de IBS e CBS (Consulta Optantes do Simples)."
+      : null,
+  ].filter((a): a is string => !!a);
   return {
     status: "identificado", regime, alertas,
-    precisaAcao: Boolean(sit) || alertas.length > 0,
-    prioridade: sit ? "Alta" : alertas.length ? "Baixa" : "—",
-    causa: inativo + causa,
-    acao: sit
-      ? "Avaliar inativar o cadastro."
-      : alertas.length
-        ? "Conferir a razão social no seu cadastro."
-        : "Nenhuma ação necessária.",
+    precisaAcao: acoes.length > 0,
+    prioridade: sit ? "Alta" : acoes.length ? "Baixa" : "—",
+    causa: inativo + causa + ibsTexto,
+    acao: acoes.join(" ") || "Nenhuma ação necessária.",
   };
 }
 

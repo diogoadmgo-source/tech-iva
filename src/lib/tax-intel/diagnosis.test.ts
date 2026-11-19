@@ -85,6 +85,16 @@ describe("diagnóstico por linha", () => {
     expect(diagnose(row("12345678000195", "lucro_real", { ano_calendario: 2024 }), now).status).toBe("identificado");
   });
 
+  it("Simples sem Consulta Optantes pede confirmação de IBS/CBS, com prioridade baixa", () => {
+    const d = diagnose(ROWS[0]!, new Date(), null);
+    expect(d.status).toBe("identificado");
+    expect(d.precisaAcao).toBe(true);
+    expect(d.prioridade).toBe("Baixa");
+    expect(d.acao).toContain("IBS e CBS");
+    // Sem informar (undefined), nada muda.
+    expect(diagnose(ROWS[0]!).precisaAcao).toBe(false);
+  });
+
   it("razão social: ignora sufixo e acento, acusa empresa diferente", () => {
     expect(razaoDivergente("Padaria São João Ltda - ME", "PADARIA SAO JOAO LTDA")).toBe(false);
     expect(razaoDivergente("Transportes Alfa", "BETA COMERCIO DE ALIMENTOS LTDA")).toBe(true);
@@ -101,18 +111,35 @@ describe("Excel de saneamento", () => {
     const base = wb.getWorksheet("Base")!;
     expect(base.rowCount).toBe(ROWS.length + 1);
     for (let r = 2; r <= base.rowCount; r++) {
-      expect(String(base.getCell(r, 13).value ?? "")).not.toBe("");
       expect(String(base.getCell(r, 14).value ?? "")).not.toBe("");
+      expect(String(base.getCell(r, 15).value ?? "")).not.toBe("");
     }
     const sn = wb.getWorksheet("Saneamento")!;
-    // Pendências: ressalva, sem fonte, CPF, inexistente, aguardando, baixada.
-    expect(sn.rowCount).toBe(1 + 6);
+    // Pendências: ressalva, sem fonte, CPF, inexistente, aguardando, baixada e
+    // o optante do Simples sem Consulta Optantes registrada.
+    expect(sn.rowCount).toBe(1 + 7);
+    expect(base.getCell(2, 13).value).toBe("A confirmar");
+    expect(base.getCell(3, 13).value).toBe("Não se aplica (fora do Simples)");
     expect(sn.getCell(2, 4).value).toBe("Alta");
     // CPF no formato de CPF, com o tipo ao lado.
     const cpfRow = [...Array(base.rowCount).keys()].map((i) => i + 1).find((r) => base.getCell(r, 2).value === "CPF")!;
     expect(base.getCell(cpfRow, 1).value).toBe("748.239.818-04");
     // A raiz "00074823" pode ser de outra empresa: nada dela aparece na linha do CPF.
     expect(base.getCell(cpfRow, 4).value).toBeNull();
+  });
+
+  it("Simples com Consulta Optantes registrada sai do Saneamento e mostra a consulta", async () => {
+    const consultas = new Map([["11111111", {
+      raiz: "11111111", ibs: "sim" as const, cbs: "sim" as const, ibsDesde: "2027-01-01", cbsDesde: "2027-01-01",
+      consultadoEm: "2026-11-19", descricao: "", temArquivo: false,
+    }]]);
+    const blob = await buildWorkbook(ROWS, { filtro: "Toda a base", consultas });
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await blob.arrayBuffer());
+    expect(wb.getWorksheet("Base")!.getCell(2, 13).value).toBe(
+      "IBS e CBS: optante desde 01/01/2027 (consulta de 19/11/2026)",
+    );
+    expect(wb.getWorksheet("Saneamento")!.rowCount).toBe(1 + 6);
   });
 
   it("une cliente e fornecedor do mesmo CNPJ numa linha e mostra o cadastro", async () => {
