@@ -3,9 +3,9 @@
  * projeto já tem (import dinâmico, fora do bundle inicial). Só escreve o que
  * veio do banco; o diagnóstico de cada linha vem de diagnose().
  *
- * Abas: Resumo executivo · Base (uma linha por documento, colunas objetivas) ·
- * Saneamento (com colunas para o cliente responder) · Detalhe e evidências ·
- * Metodologia.
+ * Abas: Resumo executivo (relatório para a diretoria) · Saneamento (uma linha
+ * por documento, com todos os dados, o diagnóstico e as colunas para o cliente
+ * responder; as linhas que pedem ação vêm primeiro).
  */
 import type { Worksheet } from "exceljs";
 import {
@@ -19,37 +19,53 @@ import {
   type Diagnosis,
   type DiagnosisStatus,
 } from "./diagnosis";
-import { consultaEfetiva, ibsCbsText, raizOf, type ConsultaRegistrada } from "./consulta-optantes";
-import { basisText, CLASSIFICATION_LABEL, RELATIONSHIP_LABEL, sourceName } from "./labels";
+import {
+  consultaEfetiva,
+  ibsCbsDesde,
+  ibsCbsOpcao,
+  raizOf,
+  type ConsultaRegistrada,
+} from "./consulta-optantes";
+import { CLASSIFICATION_LABEL, RELATIONSHIP_LABEL } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
-export const EXPORT_COLUMNS = [
-  "Documento",
-  "Tipo",
-  "Razão social",
-  "Natureza jurídica",
-  "Porte",
-  "Matriz/Filial",
-  "Data de abertura",
-  "CNAE principal",
-  "Município/UF",
-  "Situação cadastral",
-  "Regime identificado",
-  "Referência",
-  "IBS/CBS regime regular (Simples)",
-  "Status",
-  "Ação recomendada",
+/** Colunas da aba Saneamento: [título, largura, grupo]. */
+export const SANEAMENTO_COLUMNS = [
+  ["Documento", 21, "Documento"],
+  ["Tipo", 7, "Documento"],
+  ["Razão social", 40, "Documento"],
+  ["Relacionamento", 18, "Documento"],
+  ["Natureza jurídica", 30, "Cadastro na Receita"],
+  ["Porte", 16, "Cadastro na Receita"],
+  ["Matriz/Filial", 11, "Cadastro na Receita"],
+  ["Data de abertura", 12, "Cadastro na Receita"],
+  ["CNAE principal", 40, "Cadastro na Receita"],
+  ["Município/UF", 22, "Cadastro na Receita"],
+  ["Situação cadastral", 13, "Cadastro na Receita"],
+  ["Regime identificado", 20, "Regime tributário"],
+  ["Referência", 13, "Regime tributário"],
+  ["Regime regular IBS/CBS", 18, "Regime tributário"],
+  ["Data da opção IBS/CBS", 13, "Regime tributário"],
+  ["Prioridade", 10, "Diagnóstico"],
+  ["Status", 28, "Diagnóstico"],
+  ["Motivo", 60, "Diagnóstico"],
+  ["Ação recomendada", 44, "Diagnóstico"],
+  ["Documento correto", 22, "Sua resposta (preencher)"],
+  ["Regime atual informado", 24, "Sua resposta (preencher)"],
+  ["Observação", 34, "Sua resposta (preencher)"],
 ] as const;
-const WIDTHS = [21, 7, 40, 30, 16, 12, 12, 44, 24, 14, 22, 16, 30, 30, 46];
-/** Coluna do Status na aba Base (1 = A). */
-const COL_STATUS = 14;
+const COL = (t: (typeof SANEAMENTO_COLUMNS)[number][0]) =>
+  SANEAMENTO_COLUMNS.findIndex((c) => c[0] === t) + 1;
+const DATE_COLS = ["Data de abertura", "Data da opção IBS/CBS"] as const;
+const INPUT_FROM = COL("Documento correto");
 
 type Consultas = Map<string, ConsultaRegistrada>;
 type Item = { r: PortfolioRow; d: Diagnosis; rel: string; ibs: ConsultaRegistrada | null };
 
 const isoToDate = (v?: string | null) =>
   v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T12:00:00Z`) : null;
-const foraDaReceita = (d: Diagnosis) => d.status === "provavel_cpf" || d.status === "cnpj_nao_encontrado";
+const foraDaReceita = (d: Diagnosis) =>
+  d.status === "provavel_cpf" || d.status === "cnpj_nao_encontrado";
 
 function referencia(r: PortfolioRow, d: Diagnosis): string | null {
   const b = r.tax_entities.public_classification_basis;
@@ -59,19 +75,25 @@ function referencia(r: PortfolioRow, d: Diagnosis): string | null {
   return null;
 }
 
-function ibsCbsColuna(r: PortfolioRow, d: Diagnosis, c: ConsultaRegistrada | null): string | null {
-  if (foraDaReceita(d)) return "—";
-  if (d.status === "aguardando") return null;
+/** Opção IBS/CBS e a data, em colunas separadas. */
+function ibsCbsColunas(
+  r: PortfolioRow,
+  d: Diagnosis,
+  c: ConsultaRegistrada | null,
+): [string | null, Date | null] {
+  if (foraDaReceita(d)) return ["—", null];
+  if (d.status === "aguardando") return [null, null];
   const k = r.tax_entities.public_classification;
-  if (k === "simples_nacional") return ibsCbsText(c);
-  if (k === "mei_simei") return "Não se aplica (MEI)";
-  return "Não se aplica (fora do Simples)";
+  if (k === "simples_nacional") return [ibsCbsOpcao(c), isoToDate(ibsCbsDesde(c))];
+  if (k === "mei_simei") return ["Não se aplica (MEI)", null];
+  return ["Não se aplica", null];
 }
 
-export function toExportRow(
+export function toSaneamentoRow(
   r: PortfolioRow,
   d: Diagnosis = diagnose(r),
   ibs: ConsultaRegistrada | null = null,
+  rel: string | null = null,
 ): (string | Date | null)[] {
   const e = r.tax_entities;
   const doc = documento(r, d);
@@ -81,7 +103,9 @@ export function toExportRow(
     doc.numero,
     doc.tipo,
     // Fora da Receita, a raiz pode coincidir com outra empresa: não mostra dados dela.
-    (fora ? null : e.razao_social) ?? (r.declared_razao_social ? `${r.declared_razao_social} (seu cadastro)` : null),
+    (fora ? null : e.razao_social) ??
+      (r.declared_razao_social ? `${r.declared_razao_social} (seu cadastro)` : null),
+    rel,
     fora ? null : naturezaText(e.natureza_juridica, e.natureza_descricao),
     fora || !e.porte ? null : (PORTE_LABEL[e.porte] ?? e.porte),
     fora ? "—" : e.is_matriz ? "Matriz" : "Filial",
@@ -91,9 +115,14 @@ export function toExportRow(
     e.situacao_cadastral ?? (fora ? "Não consta" : null),
     fora ? "—" : CLASSIFICATION_LABEL[e.public_classification],
     referencia(r, d),
-    ibsCbsColuna(r, d, ibs),
+    ...ibsCbsColunas(r, d, ibs),
+    d.prioridade,
     DIAGNOSIS_LABEL[d.status],
+    d.causa,
     d.acao,
+    null,
+    null,
+    null,
   ];
 }
 
@@ -113,6 +142,7 @@ const C = {
   idle: "FFF1F5F9",
   input: "FFFFFBEB",
   card: "FFF1F5F9",
+  accent: "FF2563EB",
 };
 const TONE: Record<DiagnosisStatus, [string, string]> = {
   identificado: [C.ok, C.okInk],
@@ -122,54 +152,19 @@ const TONE: Record<DiagnosisStatus, [string, string]> = {
   provavel_cpf: [C.bad, C.badInk],
   aguardando: [C.idle, C.muted],
 };
-const fill = (argb: string) => ({ type: "pattern" as const, pattern: "solid" as const, fgColor: { argb } });
+const fill = (argb: string) => ({
+  type: "pattern" as const,
+  pattern: "solid" as const,
+  fgColor: { argb },
+});
 const thin = { style: "thin" as const, color: { argb: C.line } };
 const border = { top: thin, left: thin, bottom: thin, right: thin };
 const FONT = "Calibri";
 
-function styleHeader(ws: Worksheet, row: number, cols: number, argb = C.head) {
-  const r = ws.getRow(row);
-  r.height = 30;
-  for (let i = 1; i <= cols; i++) {
-    const c = r.getCell(i);
-    c.fill = fill(argb);
-    c.font = { name: FONT, bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
-    c.alignment = { vertical: "middle", wrapText: true };
-    c.border = border;
-  }
-}
-
-function table(
-  ws: Worksheet,
-  header: string[],
-  rows: (string | number | Date | null)[][],
-  widths: number[],
-  tone?: (i: number) => [string, string] | null,
-  toneCol?: number,
-) {
-  ws.addRow(header);
-  styleHeader(ws, 1, header.length);
-  rows.forEach((v, i) => {
-    const row = ws.addRow(v);
-    row.eachCell({ includeEmpty: true }, (c, col) => {
-      c.font = { name: FONT, size: 10, color: { argb: C.ink } };
-      c.alignment = { vertical: "top", wrapText: col > 2 };
-      c.border = border;
-      if (i % 2 === 1) c.fill = fill(C.zebra);
-    });
-    const t = tone?.(i);
-    if (t && toneCol) {
-      const c = row.getCell(toneCol);
-      c.fill = fill(t[0]);
-      c.font = { name: FONT, size: 10, bold: true, color: { argb: t[1] } };
-    }
-  });
-  widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: header.length } };
-}
-
 const pct = (a: number, t: number) => (t ? a / t : 0);
 const nf = (v: number) => v.toLocaleString("pt-BR");
+const br = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
+const mesAno = (c: string) => `${c.slice(5, 7)}/${c.slice(0, 4)}`;
 const pf = (a: number, t: number) =>
   `${(pct(a, t) * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
@@ -206,68 +201,171 @@ export async function buildWorkbook(
     ),
   ].sort();
 
-  // -------------------------------------------------------- Resumo executivo
-  const rs = wb.addWorksheet("Resumo executivo", {
-    views: [{ showGridLines: false }],
-    properties: { tabColor: { argb: C.head } },
+  resumo(
+    wb.addWorksheet("Resumo executivo", {
+      views: [{ showGridLines: false, zoomScale: 100 }],
+      properties: { tabColor: { argb: C.head } },
+      pageSetup: {
+        paperSize: 9,
+        orientation: "portrait",
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 1,
+        margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
+      },
+    }),
+    items,
+    total,
+    count,
+    competencias,
+    meta,
+  );
+
+  saneamento(
+    wb.addWorksheet("Saneamento", {
+      views: [{ state: "frozen", xSplit: 1, ySplit: 2 }],
+      properties: { tabColor: { argb: "FFF59E0B" } },
+    }),
+    items,
+  );
+
+  const buf = await wb.xlsx.writeBuffer();
+  return new Blob([buf], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-  rs.columns = [{ width: 3 }, { width: 30 }, { width: 14 }, { width: 11 }, { width: 70 }];
-  rs.getCell("B2").value = "Diagnóstico tributário da base de CNPJs";
-  rs.getCell("B2").font = { name: FONT, size: 18, bold: true, color: { argb: C.ink } };
-  rs.getCell("B3").value = [
-    meta.empresa ?? null,
-    `gerado em ${new Date().toLocaleDateString("pt-BR")}`,
-    competencias.length ? `dados da Receita de ${competencias.join(", ")}` : null,
+}
+
+// ------------------------------------------------------------ Resumo executivo
+/** Colunas B..I do relatório (A é margem). */
+const R0 = 2;
+const R1 = 9;
+const RW = 15.5;
+/** Caracteres por linha num bloco mesclado de B a I (fonte 10–11). */
+const CPL = 118;
+
+function resumo(
+  rs: Worksheet,
+  items: Item[],
+  total: number,
+  count: (f: (x: Item) => boolean) => number,
+  competencias: string[],
+  meta: { filtro: string; empresa?: string | null },
+) {
+  rs.getColumn(1).width = 2.5;
+  for (let c = R0; c <= R1; c++) rs.getColumn(c).width = RW;
+  rs.getColumn(R1 + 1).width = 2.5;
+
+  const span = (row: number, c0: number, c1: number) => {
+    if (c1 > c0) rs.mergeCells(row, c0, row, c1);
+    return rs.getCell(row, c0);
+  };
+  const paint = (row: number, c0: number, c1: number, argb: string) => {
+    for (let c = c0; c <= c1; c++) rs.getCell(row, c).fill = fill(argb);
+  };
+  const altura = (t: string, cpl: number, base = 15) =>
+    Math.max(base, Math.ceil(t.length / cpl) * 14.5 + 4);
+
+  // Faixa de título.
+  for (let r = 1; r <= 5; r++) paint(r, 1, R1 + 1, C.head);
+  rs.getRow(1).height = 10;
+  rs.getRow(2).height = 30;
+  rs.getRow(3).height = 18;
+  rs.getRow(4).height = 18;
+  rs.getRow(5).height = 10;
+  const t = span(2, R0, R1);
+  t.value = "Diagnóstico tributário da base de CNPJs";
+  t.font = { name: FONT, size: 20, bold: true, color: { argb: "FFFFFFFF" } };
+  t.alignment = { vertical: "middle" };
+  const emp = span(3, R0, R1);
+  emp.value = meta.empresa ?? "Base de CNPJs";
+  emp.font = { name: FONT, size: 12, bold: true, color: { argb: "FFE2E8F0" } };
+  const sub = span(4, R0, R1);
+  sub.value = [
+    `Gerado em ${new Date().toLocaleDateString("pt-BR")}`,
+    competencias.length ? `dados da Receita de ${competencias.map(mesAno).join(", ")}` : null,
     meta.filtro !== "Toda a base" ? `recorte: ${meta.filtro}` : null,
   ]
     .filter(Boolean)
-    .join(" · ");
-  rs.getCell("B3").font = { name: FONT, size: 10, color: { argb: C.muted } };
+    .join("  ·  ");
+  sub.font = { name: FONT, size: 10, color: { argb: "FF94A3B8" } };
 
   const identificados = count((x) => x.d.status === "identificado");
   const acao = count((x) => x.d.precisaAcao);
   const cpf = count((x) => x.d.status === "provavel_cpf");
   const inexistente = count((x) => x.d.status === "cnpj_nao_encontrado");
-  const ressalva = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification === "excluido_simples");
-  const ecfAntiga = count((x) => x.d.status === "ressalva" && x.r.tax_entities.public_classification !== "excluido_simples");
+  const ressalva = count(
+    (x) =>
+      x.d.status === "ressalva" && x.r.tax_entities.public_classification === "excluido_simples",
+  );
+  const ecfAntiga = count(
+    (x) =>
+      x.d.status === "ressalva" && x.r.tax_entities.public_classification !== "excluido_simples",
+  );
   const semFonte = count((x) => x.d.status === "sem_fonte_publica");
-  const simples = count((x) => x.r.tax_entities.public_classification === "simples_nacional");
-  const simplesConsultados = count(
-    (x) => x.r.tax_entities.public_classification === "simples_nacional" && !!x.ibs,
-  );
-  const regular = count(
-    (x) => x.r.tax_entities.public_classification === "simples_nacional" && (x.ibs?.ibs === "sim" || x.ibs?.cbs === "sim"),
-  );
   const inativos = count(
     (x) => !!x.r.tax_entities.situacao_cadastral && x.r.tax_entities.situacao_cadastral !== "ATIVA",
   );
+  const simplesItems = items.filter(
+    (x) => x.r.tax_entities.public_classification === "simples_nacional",
+  );
+  const simples = simplesItems.length;
+  const sOpcao = simplesItems.map((x) => ibsCbsOpcao(x.ibs));
+  const sSim = sOpcao.filter((o) => o === "Sim (IBS e CBS)").length;
+  const sParcial = sOpcao.filter((o) => o === "Só IBS" || o === "Só CBS").length;
+  const sNao = sOpcao.filter((o) => o === "Não").length;
+  const sPend = sOpcao.filter((o) => o === "A confirmar").length;
+  const sDatas = [
+    ...new Set(simplesItems.map((x) => ibsCbsDesde(x.ibs)).filter((v): v is string => !!v)),
+  ].sort();
 
-  // Cartões: número grande + legenda.
-  const cards: [string, string, string][] = [
-    [nf(total), "documentos analisados", C.ink],
-    [pf(identificados, total), `com regime identificado (${nf(identificados)})`, C.okInk],
-    [nf(acao), "pedem ação do cliente", C.warnInk],
-    [nf(cpf + inexistente), "números a corrigir no cadastro", C.badInk],
+  // Cartões de indicador.
+  let line = 7;
+  const cards: [string, string, string, string][] = [
+    [
+      "Documentos analisados",
+      nf(total),
+      meta.filtro === "Toda a base" ? "base inteira" : meta.filtro,
+      C.head,
+    ],
+    ["Regime identificado", pf(identificados, total), `${nf(identificados)} documentos`, C.okInk],
+    ["Pedem ação", nf(acao), "confirmar ou corrigir", C.warnInk],
+    ["Cadastro a corrigir", nf(cpf + inexistente), "CPF ou CNPJ inexistente", C.badInk],
   ];
-  cards.forEach(([v, l, ink], i) => {
-    const row = 5 + i * 2;
-    const a = rs.getCell(row, 2);
-    a.value = v;
-    a.font = { name: FONT, size: 20, bold: true, color: { argb: ink } };
-    const b = rs.getCell(row, 3);
-    rs.mergeCells(row, 3, row, 5);
-    b.value = l;
-    b.font = { name: FONT, size: 11, color: { argb: C.muted } };
-    b.alignment = { vertical: "middle" };
+  cards.forEach(([label, valor, hint, ink], i) => {
+    const c0 = R0 + i * 2;
+    const c1 = c0 + 1;
+    for (let r = line; r <= line + 2; r++) paint(r, c0, c1, C.card);
+    const l = span(line, c0, c1);
+    l.value = label.toUpperCase();
+    l.font = { name: FONT, size: 8, bold: true, color: { argb: C.muted } };
+    l.alignment = { vertical: "bottom", indent: 1 };
+    const v = span(line + 1, c0, c1);
+    v.value = valor;
+    v.font = { name: FONT, size: 24, bold: true, color: { argb: ink } };
+    v.alignment = { vertical: "middle", indent: 1 };
+    const h = span(line + 2, c0, c1);
+    h.value = hint;
+    h.font = { name: FONT, size: 9, color: { argb: C.muted } };
+    h.alignment = { vertical: "top", indent: 1 };
+    rs.getCell(line, c0).border = { top: { style: "thick", color: { argb: ink } } };
   });
+  rs.getRow(line).height = 22;
+  rs.getRow(line + 1).height = 36;
+  rs.getRow(line + 2).height = 20;
+  line += 4;
 
-  let line = 14;
-  const titulo = (t: string) => {
-    rs.getCell(line, 2).value = t;
-    rs.getCell(line, 2).font = { name: FONT, size: 12, bold: true, color: { argb: C.ink } };
+  const titulo = (txt: string) => {
     line++;
+    const c = span(line, R0, R1);
+    c.value = txt;
+    c.font = { name: FONT, size: 13, bold: true, color: { argb: C.ink } };
+    c.border = { bottom: { style: "medium", color: { argb: C.head } } };
+    rs.getRow(line).height = 22;
+    line += 2;
   };
-  titulo("Conclusões");
+
+  // Conclusões.
+  titulo("Principais conclusões");
   const regimeAno = [
     ...new Set(
       items
@@ -278,6 +376,9 @@ export async function buildWorkbook(
   ].sort();
   const conclusoes = [
     `${pf(identificados, total)} da base tem regime identificado em fonte oficial da Receita: Simples e MEI pela opção vigente; Lucro Real e Presumido pela última ECF publicada${regimeAno.length ? ` (ano-calendário ${regimeAno.join(", ")})` : ""}.`,
+    simples
+      ? `Simples híbrido: dos ${nf(simples)} optantes do Simples, ${nf(sSim + sParcial)} optaram pelo regime regular de IBS/CBS${sDatas.length ? ` (a partir de ${sDatas.map(br).join(", ")})` : ""} e ${nf(sNao)} continuam no Simples puro${sPend ? `; ${nf(sPend)} a confirmar` : ""}.`
+      : null,
     ressalva
       ? `${nf(ressalva)} empresas saíram do Simples e ainda não têm ECF posterior à saída: o regime atual precisa ser confirmado com o parceiro.`
       : null,
@@ -291,58 +392,89 @@ export async function buildWorkbook(
       ? `${nf(cpf)} números são CPF cadastrados como CNPJ (com "000" na frente). Pessoa física não tem regime de empresa: corrigir o cadastro.`
       : null,
     inexistente ? `${nf(inexistente)} CNPJs não existem na Receita: conferir a digitação.` : null,
-    simples
-      ? `Simples híbrido: ${nf(simplesConsultados)} de ${nf(simples)} optantes do Simples consultados na Consulta Optantes${simplesConsultados ? ` (${nf(regular)} no regime regular de IBS ou CBS)` : ""}${simples > simplesConsultados ? `; ${nf(simples - simplesConsultados)} a confirmar no Saneamento` : ""}.`
-      : null,
     inativos
       ? `${nf(inativos)} cadastros estão baixados, inaptos ou suspensos na Receita: avaliar se ainda devem ficar na base.`
       : null,
-  ].filter((t): t is string => !!t);
-  for (const t of conclusoes) {
-    rs.mergeCells(line, 2, line, 5);
-    const c = rs.getCell(line, 2);
-    c.value = `•  ${t}`;
-    c.font = { name: FONT, size: 11, color: { argb: C.ink } };
-    c.alignment = { wrapText: true, vertical: "top" };
-    rs.getRow(line).height = 32;
+  ].filter((v): v is string => !!v);
+  conclusoes.forEach((txt, i) => {
+    const c = span(line, R0, R1);
+    c.value = {
+      richText: [
+        {
+          text: `${String(i + 1).padStart(2, "0")}   `,
+          font: { name: FONT, size: 10.5, bold: true, color: { argb: C.accent } },
+        },
+        { text: txt, font: { name: FONT, size: 10.5, color: { argb: C.ink } } },
+      ],
+    };
+    c.alignment = { wrapText: true, vertical: "top", indent: 1 };
+    rs.getRow(line).height = altura(txt, CPL - 6, 18) + 4;
     line++;
-  }
-  line++;
+  });
 
-  const block = (
-    t: string,
-    header: string[],
-    data: (string | number)[][],
-    tones?: ([string, string] | null)[],
+  /** Tabela leve: cabeçalho claro, linhas só com divisória inferior. */
+  type Coluna = { titulo: string; de: number; ate: number; alinhar?: "left" | "right" };
+  const tabela = (
+    colunas: Coluna[],
+    linhas: {
+      valores: (string | number)[];
+      tom?: [string, string] | null;
+      total?: boolean;
+      fmt?: (string | undefined)[];
+    }[],
   ) => {
-    titulo(t);
-    header.forEach((h, i) => {
-      const c = rs.getCell(line, 2 + i);
-      c.value = h;
-      c.fill = fill(C.head);
-      c.font = { name: FONT, bold: true, size: 10, color: { argb: "FFFFFFFF" } };
-      c.border = border;
-    });
+    for (const col of colunas) {
+      const c = span(line, col.de, col.ate);
+      c.value = col.titulo.toUpperCase();
+      c.font = { name: FONT, size: 8, bold: true, color: { argb: C.muted } };
+      c.alignment = {
+        vertical: "middle",
+        horizontal: col.alinhar ?? "left",
+        indent: col.alinhar === "right" ? 0 : 1,
+      };
+    }
+    for (let c = R0; c <= R1; c++) {
+      rs.getCell(line, c).fill = fill(C.card);
+      rs.getCell(line, c).border = { bottom: { style: "thin", color: { argb: C.muted } } };
+    }
+    rs.getRow(line).height = 20;
     line++;
-    data.forEach((v, j) => {
-      v.forEach((x, i) => {
-        const c = rs.getCell(line, 2 + i);
-        c.value = x;
-        c.border = border;
-        c.font = { name: FONT, size: 10, color: { argb: C.ink } };
-        c.alignment = { vertical: "top", wrapText: i === 3 };
-        if (i === 2 && typeof x === "number") c.numFmt = "0.0%";
-        const tone = tones?.[j];
-        if (i === 0 && tone) {
-          c.fill = fill(tone[0]);
-          c.font = { name: FONT, size: 10, bold: true, color: { argb: tone[1] } };
+    for (const l of linhas) {
+      let maxH = 18;
+      colunas.forEach((col, i) => {
+        const c = span(line, col.de, col.ate);
+        const v = l.valores[i] ?? "";
+        c.value = v;
+        if (l.fmt?.[i]) c.numFmt = l.fmt[i]!;
+        c.font = { name: FONT, size: 10, bold: !!l.total, color: { argb: C.ink } };
+        c.alignment = {
+          vertical: "middle",
+          wrapText: true,
+          horizontal: col.alinhar ?? "left",
+          indent: col.alinhar === "right" ? 0 : 1,
+        };
+        if (i === 0 && l.tom) {
+          c.font = { name: FONT, size: 10, bold: true, color: { argb: l.tom[1] } };
         }
+        if (typeof v === "string")
+          maxH = Math.max(maxH, altura(v, Math.round((col.ate - col.de + 1) * RW * 0.95)));
       });
+      for (let c = R0; c <= R1; c++) {
+        rs.getCell(line, c).border = {
+          bottom: { style: l.total ? "medium" : "hair", color: { argb: l.total ? C.ink : C.line } },
+        };
+        if (l.total)
+          rs.getCell(line, c).border = { top: { style: "thin", color: { argb: C.ink } } };
+      }
+      if (l.tom) rs.getCell(line, R0).fill = fill(l.tom[0]);
+      rs.getRow(line).height = maxH;
       line++;
-    });
-    line++;
+    }
   };
+  const barra = (p: number) => "█".repeat(Math.max(p > 0 ? 1 : 0, Math.round(p * 28)));
 
+  // Regime tributário.
+  titulo("Regime tributário da base");
   const regimes = new Map<string, number>();
   for (const x of items) {
     const k = foraDaReceita(x.d)
@@ -350,179 +482,207 @@ export async function buildWorkbook(
       : CLASSIFICATION_LABEL[x.r.tax_entities.public_classification];
     regimes.set(k, (regimes.get(k) ?? 0) + 1);
   }
-  block(
-    "Regime tributário",
-    ["Regime", "Documentos", "% da base", "Observação"],
-    [...regimes.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([k, n]) => [
-        k,
-        n,
-        pct(n, total),
-        k === "Lucro Real" || k === "Lucro Presumido"
-          ? "Pela última ECF publicada (histórico declarado, não o regime vigente)."
-          : k === "Excluído do Simples"
-            ? "Saiu do Simples; regime atual a confirmar."
-            : k === "Não é CNPJ válido na Receita"
-              ? "Provável CPF ou CNPJ digitado errado."
-              : "",
-      ]),
+  const regCols: Coluna[] = [
+    { titulo: "Regime", de: R0, ate: R0 + 2 },
+    { titulo: "Documentos", de: R0 + 3, ate: R0 + 3, alinhar: "right" },
+    { titulo: "% da base", de: R0 + 4, ate: R0 + 4, alinhar: "right" },
+    { titulo: "Distribuição", de: R0 + 5, ate: R1 },
+  ];
+  const regLinhas = [...regimes.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => ({
+      valores: [k, n, pct(n, total), barra(pct(n, total))],
+      fmt: [undefined, "#,##0", "0.0%"],
+    }));
+  tabela(regCols, [
+    ...regLinhas,
+    { valores: ["Total", total, 1, ""], total: true, fmt: [undefined, "#,##0", "0%"] },
+  ]);
+  // Barras na cor de destaque.
+  for (let r = line - regLinhas.length - 1; r < line - 1; r++) {
+    rs.getCell(r, R0 + 5).font = { name: FONT, size: 9, color: { argb: C.accent } };
+    rs.getCell(r, R0 + 5).alignment = { vertical: "middle", indent: 1 };
+  }
+  const nota = (txt: string) => {
+    const c = span(line, R0, R1);
+    c.value = txt;
+    c.font = { name: FONT, size: 9, italic: true, color: { argb: C.muted } };
+    c.alignment = { wrapText: true, vertical: "top" };
+    rs.getRow(line).height = altura(txt, CPL + 10);
+    line++;
+  };
+  line++;
+  nota(
+    "Lucro Real e Lucro Presumido vêm da última ECF publicada pela Receita (histórico declarado, não o regime vigente). Não optar pelo Simples nunca é tratado como Lucro Real ou Presumido.",
   );
 
+  // Simples híbrido.
+  if (simples) {
+    titulo("Simples híbrido · opção pelo regime regular de IBS/CBS");
+    const sCols: Coluna[] = [
+      { titulo: "Situação", de: R0, ate: R0 + 4 },
+      { titulo: "Documentos", de: R0 + 5, ate: R0 + 5, alinhar: "right" },
+      { titulo: "% do Simples", de: R0 + 6, ate: R0 + 6, alinhar: "right" },
+      { titulo: "", de: R0 + 7, ate: R1 },
+    ];
+    const lin = (label: string, n: number, tom: [string, string] | null) => ({
+      valores: [label, n, pct(n, simples), ""],
+      tom,
+      fmt: [undefined, "#,##0", "0.0%"],
+    });
+    tabela(sCols, [
+      lin(
+        `Optaram pelo regime regular de IBS e CBS${sDatas.length ? ` (desde ${sDatas.map(br).join(", ")})` : ""}`,
+        sSim,
+        [C.ok, C.okInk],
+      ),
+      ...(sParcial ? [lin("Optaram só por IBS ou só por CBS", sParcial, [C.ok, C.okInk])] : []),
+      lin("Não optaram (Simples puro)", sNao, [C.idle, C.ink]),
+      ...(sPend ? [lin("A confirmar", sPend, [C.warn, C.warnInk])] : []),
+      {
+        valores: ["Optantes do Simples", simples, 1, ""],
+        total: true,
+        fmt: [undefined, "#,##0", "0%"],
+      },
+    ]);
+    line++;
+    nota(
+      "A opção vale para todos os estabelecimentos da empresa e é renovada a cada janela de opção da Receita.",
+    );
+  }
+
+  // Status e o que fazer.
+  titulo("Status do diagnóstico e o que fazer");
   const porStatus = DIAGNOSIS_ORDER.map((s) => ({
     s,
     n: count((x) => x.d.status === s),
-    acao: items.find((x) => x.d.status === s && !x.r.tax_entities.situacao_cadastral?.match(/BAIXADA|INAPTA|SUSPENSA|NULA/))?.d.acao ??
+    acao:
+      items.find(
+        (x) =>
+          x.d.status === s &&
+          !x.r.tax_entities.situacao_cadastral?.match(/BAIXADA|INAPTA|SUSPENSA|NULA/),
+      )?.d.acao ??
       items.find((x) => x.d.status === s)?.d.acao ??
       "",
   })).filter((x) => x.n > 0);
-  block(
-    "Status do diagnóstico e o que fazer",
-    ["Status", "Documentos", "% da base", "O que fazer"],
-    [...porStatus.map((x) => [DIAGNOSIS_LABEL[x.s], x.n, pct(x.n, total), x.acao]), ["Total", total, 1, ""]],
-    [...porStatus.map((x) => TONE[x.s]), null],
+  tabela(
+    [
+      { titulo: "Status", de: R0, ate: R0 + 1 },
+      { titulo: "Documentos", de: R0 + 2, ate: R0 + 2, alinhar: "right" },
+      { titulo: "% da base", de: R0 + 3, ate: R0 + 3, alinhar: "right" },
+      { titulo: "O que fazer", de: R0 + 4, ate: R1 },
+    ],
+    [
+      ...porStatus.map((x) => ({
+        valores: [DIAGNOSIS_LABEL[x.s], x.n, pct(x.n, total), x.acao || "Nenhuma ação."],
+        tom: TONE[x.s],
+        fmt: [undefined, "#,##0", "0.0%"],
+      })),
+      { valores: ["Total", total, 1, ""], total: true, fmt: [undefined, "#,##0", "0%"] },
+    ],
   );
-  rs.getCell(line, 2).value =
-    'Detalhe por documento na aba "Base". As linhas que pedem ação estão em "Saneamento", com colunas para a sua resposta.';
-  rs.getCell(line, 2).font = { name: FONT, size: 10, italic: true, color: { argb: C.muted } };
-
-  // ------------------------------------------------------------------- Base
-  const ws = wb.addWorksheet("Base", { views: [{ state: "frozen", xSplit: 1, ySplit: 1 }] });
-  table(
-    ws,
-    [...EXPORT_COLUMNS],
-    items.map((x) => toExportRow(x.r, x.d, x.ibs)),
-    WIDTHS,
-    (i) => (items[i] ? TONE[items[i].d.status] : null),
-    COL_STATUS,
+  line += 2;
+  const fim = span(line, R0, R1);
+  fim.value =
+    'Todos os documentos, com o cadastro, o regime, o diagnóstico e as colunas para a sua resposta, estão na aba "Saneamento". As linhas que pedem ação vêm primeiro, por prioridade.';
+  fim.font = { name: FONT, size: 10, color: { argb: C.ink } };
+  fim.alignment = { wrapText: true, vertical: "middle", indent: 1 };
+  paint(line, R0, R1, C.warn);
+  rs.getRow(line).height = 34;
+  line += 2;
+  nota(
+    "Fontes: dados abertos oficiais da Receita Federal (cadastro de CNPJ, Simples Nacional e SIMEI, ECF) e a Consulta Optantes do Portal do Simples para a opção de IBS/CBS.",
   );
-  ws.getColumn(7).numFmt = "dd/mm/yyyy";
+  rs.pageSetup.printArea = `A1:${String.fromCharCode(64 + R1 + 1)}${line}`;
+}
 
-  // ------------------------------------------------------------- Saneamento
+// ------------------------------------------------------------------ Saneamento
+function saneamento(sn: Worksheet, items: Item[]) {
   const PRI = { Alta: 0, Média: 1, Baixa: 2, "—": 3 } as const;
-  const fila = items
-    .filter((x) => x.d.precisaAcao)
-    .sort(
-      (a, b) =>
-        PRI[a.d.prioridade] - PRI[b.d.prioridade] ||
-        DIAGNOSIS_ORDER.indexOf(a.d.status) - DIAGNOSIS_ORDER.indexOf(b.d.status) ||
-        a.r.cnpj.localeCompare(b.r.cnpj),
-    );
-  const sn = wb.addWorksheet("Saneamento", {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 1 }],
-    properties: { tabColor: { argb: "FFF59E0B" } },
-  });
-  const SN_HEAD = [
-    "Documento",
-    "Tipo",
-    "Nome no seu cadastro",
-    "Prioridade",
-    "Status",
-    "Motivo",
-    "Ação recomendada",
-    "Documento correto (preencher)",
-    "Regime atual informado (preencher)",
-    "Optou pelo regime regular de IBS/CBS? (preencher)",
-    "Observação (preencher)",
-  ];
-  table(
-    sn,
-    SN_HEAD,
-    fila.map(({ r, d }) => {
-      const doc = documento(r, d);
-      return [
-        doc.numero,
-        doc.tipo,
-        r.declared_razao_social ?? r.tax_entities.razao_social,
-        d.prioridade,
-        DIAGNOSIS_LABEL[d.status],
-        d.causa,
-        d.acao,
-        null,
-        null,
-        null,
-        null,
-      ];
-    }),
-    [21, 7, 34, 11, 30, 60, 44, 24, 26, 22, 34],
-    (i) => (fila[i] ? TONE[fila[i].d.status] : null),
-    5,
+  const fila = [...items].sort(
+    (a, b) =>
+      Number(b.d.precisaAcao) - Number(a.d.precisaAcao) ||
+      PRI[a.d.prioridade] - PRI[b.d.prioridade] ||
+      DIAGNOSIS_ORDER.indexOf(a.d.status) - DIAGNOSIS_ORDER.indexOf(b.d.status) ||
+      a.r.cnpj.localeCompare(b.r.cnpj),
   );
-  styleHeader(sn, 1, SN_HEAD.length);
-  for (const col of [8, 9, 10, 11]) {
-    sn.getRow(1).getCell(col).fill = fill("FFB45309");
-    for (let r = 2; r <= fila.length + 1; r++) sn.getCell(r, col).fill = fill(C.input);
+  const n = SANEAMENTO_COLUMNS.length;
+  const INPUT_HEAD = "FFB45309";
+
+  // Linha 1: grupos de colunas.
+  const grupos: { nome: string; de: number; ate: number }[] = [];
+  SANEAMENTO_COLUMNS.forEach(([, , g], i) => {
+    const last = grupos.at(-1);
+    if (last && last.nome === g) last.ate = i + 1;
+    else grupos.push({ nome: g, de: i + 1, ate: i + 1 });
+  });
+  for (const g of grupos) {
+    if (g.ate > g.de) sn.mergeCells(1, g.de, 1, g.ate);
+    const c = sn.getCell(1, g.de);
+    c.value = g.nome.toUpperCase();
+    const input = g.de >= INPUT_FROM;
+    for (let col = g.de; col <= g.ate; col++) {
+      const x = sn.getCell(1, col);
+      x.fill = fill(input ? "FF92400E" : C.ink);
+      x.border = { left: { style: "thin", color: { argb: "FFFFFFFF" } } };
+    }
+    c.font = { name: FONT, size: 8, bold: true, color: { argb: "FFFFFFFF" } };
+    c.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   }
-  for (let r = 2; r <= fila.length + 1; r++) {
-    sn.getCell(r, 9).dataValidation = {
+  sn.getRow(1).height = 18;
+
+  // Linha 2: títulos.
+  const h = sn.getRow(2);
+  h.values = SANEAMENTO_COLUMNS.map((c) => c[0]);
+  h.height = 32;
+  for (let i = 1; i <= n; i++) {
+    const c = h.getCell(i);
+    c.fill = fill(i >= INPUT_FROM ? INPUT_HEAD : C.head);
+    c.font = { name: FONT, bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+    c.alignment = { vertical: "middle", wrapText: true, indent: 1 };
+    c.border = border;
+  }
+  SANEAMENTO_COLUMNS.forEach(([, w], i) => (sn.getColumn(i + 1).width = w));
+
+  const cStatus = COL("Status");
+  const cPri = COL("Prioridade");
+  const cIbs = COL("Regime regular IBS/CBS");
+  const cRegime = COL("Regime atual informado");
+  fila.forEach((x, i) => {
+    const row = sn.addRow(toSaneamentoRow(x.r, x.d, x.ibs, x.rel));
+    row.eachCell({ includeEmpty: true }, (c, col) => {
+      if (col > n) return;
+      c.font = { name: FONT, size: 10, color: { argb: C.ink } };
+      c.alignment = { vertical: "top", wrapText: col > 2 };
+      c.border = border;
+      if (col >= INPUT_FROM) c.fill = fill(C.input);
+      else if (i % 2 === 1) c.fill = fill(C.zebra);
+    });
+    const [bg, ink] = TONE[x.d.status];
+    const st = row.getCell(cStatus);
+    st.fill = fill(bg);
+    st.font = { name: FONT, size: 10, bold: true, color: { argb: ink } };
+    const pr = row.getCell(cPri);
+    if (x.d.prioridade === "Alta")
+      pr.font = { name: FONT, size: 10, bold: true, color: { argb: C.badInk } };
+    if (x.d.prioridade === "Média")
+      pr.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnInk } };
+    const ib = row.getCell(cIbs);
+    if (ib.value === "Sim (IBS e CBS)" || ib.value === "Só IBS" || ib.value === "Só CBS")
+      ib.font = { name: FONT, size: 10, bold: true, color: { argb: C.okInk } };
+    if (ib.value === "A confirmar")
+      ib.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnInk } };
+    row.getCell(cRegime).dataValidation = {
       type: "list",
       allowBlank: true,
-      formulae: ['"Simples Nacional,MEI (SIMEI),Lucro Presumido,Lucro Real,Imune ou isenta,Pessoa física,Cadastro inativo"'],
+      formulae: [
+        '"Simples Nacional,Simples com IBS/CBS no regime regular,MEI (SIMEI),Lucro Presumido,Lucro Real,Imune ou isenta,Pessoa física,Cadastro inativo"',
+      ],
     };
-    if (fila[r - 2]?.r.tax_entities.public_classification === "simples_nacional")
-      sn.getCell(r, 10).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: ['"Sim (IBS e CBS),Só IBS,Só CBS,Não"'],
-      };
-  }
-  if (!fila.length) sn.addRow(["Nenhuma linha precisa de ação neste recorte."]);
-
-  // ---------------------------------------------------- Detalhe e evidências
-  const dt = wb.addWorksheet("Detalhe e evidências", {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 1 }],
   });
-  table(
-    dt,
-    ["Documento", "Nome no seu cadastro", "Relacionamento", "Motivo do diagnóstico", "Alertas do cadastro", "Fonte", "Evidência", "Última consulta"],
-    items.map(({ r, d, rel }) => [
-      documento(r, d).numero,
-      r.declared_razao_social,
-      rel,
-      d.causa,
-      d.alertas.join(" · ") || null,
-      r.tax_entities.public_classification_basis?.["fonte"]
-        ? sourceName(String(r.tax_entities.public_classification_basis["fonte"]))
-        : null,
-      basisText(r.tax_entities.public_classification_basis) || null,
-      r.tax_entities.last_consulted_at ? new Date(r.tax_entities.last_consulted_at) : null,
-    ]),
-    [21, 34, 20, 60, 40, 26, 80, 17],
-  );
-  dt.getColumn(8).numFmt = "dd/mm/yyyy hh:mm";
-
-  // ------------------------------------------------------------ Metodologia
-  const mt = wb.addWorksheet("Metodologia", { views: [{ showGridLines: false }] });
-  mt.columns = [{ width: 3 }, { width: 34 }, { width: 100 }];
-  mt.getCell("B2").value = "Como cada linha foi diagnosticada";
-  mt.getCell("B2").font = { name: FONT, size: 14, bold: true, color: { argb: C.ink } };
-  const notas: [string, string][] = [
-    ["Fontes", "Dados abertos oficiais da Receita Federal: Simples Nacional e SIMEI, cadastro de Empresas e Estabelecimentos (razão social, natureza jurídica, porte, abertura, CNAE, endereço e situação) e regime declarado na ECF. Cruzamento em lote, na competência indicada no Resumo."],
-    [DIAGNOSIS_LABEL.identificado, "Optante pelo Simples ou SIMEI na Receita, ou Lucro Real/Presumido declarado na ECF. Real e Presumido vêm sempre com o ano-calendário da ECF: é histórico declarado, não o regime vigente."],
-    [DIAGNOSIS_LABEL.ressalva, "Excluído do Simples sem ECF publicada depois da saída. O regime atual precisa ser confirmado."],
-    [DIAGNOSIS_LABEL.sem_fonte_publica, "Nunca optou pelo Simples e não há ECF publicada para a empresa (matriz). Não optar pelo Simples nunca é tratado como Lucro Presumido ou Lucro Real."],
-    [DIAGNOSIS_LABEL.cnpj_nao_encontrado, "O número não existe no cadastro de CNPJ da Receita."],
-    [DIAGNOSIS_LABEL.provavel_cpf, "O número não existe no cadastro de CNPJ e, sem os três zeros iniciais, é um CPF válido (pessoa física). A planilha mostra o número no formato de CPF."],
-    [DIAGNOSIS_LABEL.aguardando, "O CNPJ entrou na base depois do último processamento."],
-    ["Simples híbrido (IBS/CBS)", "A opção do Simples pelo regime regular de IBS e de CBS não está nos dados abertos da Receita. Só aparece na Consulta Optantes do Portal do Simples, um CNPJ por vez e protegida por captcha. A opção vem da CNPJá (que lê essa consulta) ou de consulta feita por uma pessoa da equipe, sempre com a data; vale para todos os estabelecimentos da empresa. Se as duas existirem, vale a mais recente. Optante do Simples sem consulta registrada fica \"A confirmar\" e vai para o Saneamento."],
-    ["Filiais", "A ECF é declarada pela matriz: a filial recebe o regime da empresa (mesma raiz de 8 dígitos)."],
-    ["Prioridade", "Alta: corrigir o número ou o cadastro inativo. Média: confirmar o regime com o parceiro. Baixa: conferência simples."],
-    ["Como responder", "Na aba Saneamento, preencha as colunas destacadas em amarelo e devolva a planilha. O regime informado tem lista de opções."],
-  ];
-  notas.forEach(([k, v], i) => {
-    const r = mt.getRow(4 + i);
-    r.getCell(2).value = k;
-    r.getCell(2).font = { name: FONT, size: 10, bold: true, color: { argb: C.ink } };
-    r.getCell(3).value = v;
-    r.getCell(3).font = { name: FONT, size: 10, color: { argb: C.ink } };
-    r.getCell(3).alignment = { wrapText: true, vertical: "top" };
-    r.getCell(2).alignment = { vertical: "top", wrapText: true };
-  });
-
-  const buf = await wb.xlsx.writeBuffer();
-  return new Blob([buf], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
+  for (const t of DATE_COLS) sn.getColumn(COL(t)).numFmt = "dd/mm/yyyy";
+  sn.autoFilter = { from: { row: 2, column: 1 }, to: { row: 2, column: n } };
+  if (!fila.length) sn.addRow(["Nenhum documento neste recorte."]);
 }
 
 export function downloadBlob(blob: Blob, name: string) {

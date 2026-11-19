@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Building2, CheckCircle2, ExternalLink, Loader2, Puzzle, Search } from "lucide-react";
+import { Building2, ExternalLink, Loader2, Puzzle, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ModuleTabs } from "@/components/tax-intel/module-tabs";
 import { EmptyState, ErrorState } from "@/components/techiva/empty-state";
+import { Kpi } from "@/components/techiva/kpi";
 import { Page, PageHeader, Rise, Segmented } from "@/components/techiva/page";
 import { Pager } from "@/components/techiva/pager";
 import { SideSheet } from "@/components/techiva/side-sheet";
@@ -17,6 +18,8 @@ import { formatCnpj } from "@/lib/tax-intel/cnpj";
 import {
   CONSULTA_OPTANTES_URL,
   consultaEfetiva,
+  ibsCbsDesde,
+  ibsCbsOpcao,
   ibsCbsText,
   loadConsultas,
   parseConsultaOptantes,
@@ -43,7 +46,30 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/tributario/sim
 });
 
 type Empresa = { raiz: string; row: PortfolioRow; consulta: ConsultaRegistrada | null };
-type Filtro = "pendentes" | "consultadas" | "todas";
+type Filtro = "todas" | "optaram" | "nao_optaram" | "pendentes";
+
+const optou = (c: ConsultaRegistrada | null) => c?.ibs === "sim" || c?.cbs === "sim";
+const brDate = (iso: string | null) => (iso ? iso.split("-").reverse().join("/") : "—");
+
+/** Opção em selo: verde = optou, neutro = não optou, âmbar = a confirmar. */
+function OpcaoBadge({ c }: { c: ConsultaRegistrada | null }) {
+  const o = ibsCbsOpcao(c);
+  const label = o === "Não" ? "Não optante" : o === "Sim (IBS e CBS)" ? "Optante (IBS e CBS)" : o;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        !c
+          ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+          : optou(c)
+            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+            : "border-border bg-muted/40 text-muted-foreground",
+      )}
+    >
+      {label}
+    </span>
+  );
+}
 
 const ORIGEM_APP = "techiva-app";
 const ORIGEM_EXT = "techiva-consulta-optantes";
@@ -119,7 +145,7 @@ function SimplesHibridoPage() {
     }));
   }, [base.data, consultas.data]);
 
-  const [filtro, setFiltro] = useState<Filtro>("pendentes");
+  const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
@@ -133,7 +159,8 @@ function SimplesHibridoPage() {
     const t = busca.trim().toUpperCase().replace(/[./-]/g, "");
     return empresas.filter((e) => {
       if (filtro === "pendentes" && e.consulta) return false;
-      if (filtro === "consultadas" && !e.consulta) return false;
+      if (filtro === "optaram" && !optou(e.consulta)) return false;
+      if (filtro === "nao_optaram" && (!e.consulta || optou(e.consulta))) return false;
       if (!t) return true;
       return (
         e.row.cnpj.startsWith(t) ||
@@ -145,9 +172,10 @@ function SimplesHibridoPage() {
   }, [empresas, filtro, busca]);
   const pagina = visiveis.slice(page * pageSize, page * pageSize + pageSize);
   const consultadas = empresas.filter((e) => e.consulta).length;
-  const regular = empresas.filter(
-    (e) => e.consulta?.ibs === "sim" || e.consulta?.cbs === "sim",
-  ).length;
+  const regular = empresas.filter((e) => optou(e.consulta)).length;
+  const pendentes = empresas.length - consultadas;
+  const pctOf = (v: number) =>
+    empresas.length ? `${Math.round((v / empresas.length) * 1000) / 10}%`.replace(".", ",") : "—";
   const proxima = empresas.find((e) => !e.consulta && e.raiz !== aguardando?.empresa.raiz) ?? null;
 
   async function gravar(empresa: Empresa, texto: string, arquivo?: File | null) {
@@ -223,19 +251,18 @@ function SimplesHibridoPage() {
       <PageHeader
         eyebrow="inteligência tributária"
         title="Simples híbrido (IBS/CBS)"
-        helpTitle="Por que a consulta é feita por uma pessoa"
+        helpTitle="De onde vem a opção"
         help={
           <>
             <p>
               A opção do Simples pelo regime regular de IBS e de CBS não está nos dados abertos da
-              Receita. Ela só aparece na Consulta Optantes do Portal do Simples, um CNPJ por vez e
-              protegida por captcha. Por isso a consulta é feita por você; o sistema preenche, lê o
-              resultado e grava com a data e o seu usuário.
+              Receita. Ela vem da Consulta Optantes do Portal do Simples, consultada automaticamente
+              para todos os optantes da base e renovada a cada janela de opção.
             </p>
             <p className="mt-2">
-              Com a extensão TECH-IVA, o botão Consultar abre a Receita com o CNPJ preenchido; você
-              clica em Consultar lá e o resultado volta e é gravado. Sem ela, o botão copia o CNPJ e
-              abre a Receita; depois copie a página do resultado (Ctrl+A, Ctrl+C) e cole aqui.
+              Para conferir uma empresa, use Conferir: com a extensão TECH-IVA, a Receita abre com o
+              CNPJ preenchido e o resultado volta sozinho; sem ela, o CNPJ é copiado e você cola
+              aqui o texto do resultado. Vale a consulta mais recente.
             </p>
             <p className="mt-2">
               Só aparecem as empresas que a Receita aponta como optantes do Simples (MEI não tem
@@ -246,8 +273,8 @@ function SimplesHibridoPage() {
         meta={
           base.data ? (
             <span>
-              <span className="font-mono tabular text-foreground">{n(consultadas)}</span> de{" "}
-              {n(empresas.length)} empresas consultadas · {n(regular)} no regime regular
+              <span className="font-mono tabular text-foreground">{n(regular)}</span> de{" "}
+              {n(empresas.length)} optantes do Simples no regime regular de IBS/CBS
             </span>
           ) : null
         }
@@ -266,21 +293,48 @@ function SimplesHibridoPage() {
       />
       <ModuleTabs tenantId={tenantId} />
 
-      <Rise index={1}>
-        <div
-          className={cn(
-            "flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm",
-            ext.versao ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-surface-1",
-          )}
-        >
-          <Puzzle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          {ext.versao ? (
-            <span>Extensão ativa: o CNPJ vai preenchido e o resultado volta sozinho.</span>
-          ) : (
-            <span>Sem a extensão: cole o CNPJ na Receita e traga o texto do resultado.</span>
-          )}
-        </div>
-      </Rise>
+      {base.data && empresas.length > 0 && (
+        <Rise index={1} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Kpi label="Optantes do Simples" value={n(empresas.length)} hint="empresas (por raiz)" />
+          <Kpi
+            label="No regime regular"
+            value={<span className="text-emerald-700 dark:text-emerald-400">{n(regular)}</span>}
+            hint={`${pctOf(regular)} optaram por IBS/CBS`}
+          />
+          <Kpi
+            label="Simples puro"
+            value={n(consultadas - regular)}
+            hint={`${pctOf(consultadas - regular)} não optaram`}
+          />
+          <Kpi
+            label="A confirmar"
+            value={
+              <span className={pendentes ? "text-amber-700 dark:text-amber-400" : undefined}>
+                {n(pendentes)}
+              </span>
+            }
+            hint={pendentes ? "ainda sem consulta" : "todas consultadas"}
+          />
+        </Rise>
+      )}
+
+      {pendentes > 0 && (
+        <Rise index={1}>
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 text-sm",
+              ext.versao ? "border-emerald-500/30 bg-emerald-500/5" : "border-border bg-surface-1",
+            )}
+          >
+            <Puzzle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            {ext.versao ? (
+              <span>Extensão ativa: o CNPJ vai preenchido e o resultado volta sozinho.</span>
+            ) : (
+              <span>Sem a extensão: cole o CNPJ na Receita e traga o texto do resultado.</span>
+            )}
+          </div>
+        </Rise>
+      )}
 
       {aguardando && (
         <Rise index={2}>
@@ -308,9 +362,10 @@ function SimplesHibridoPage() {
             setPage(0);
           }}
           options={[
-            { value: "pendentes", label: `A consultar (${n(empresas.length - consultadas)})` },
-            { value: "consultadas", label: `Consultadas (${n(consultadas)})` },
-            { value: "todas", label: "Todas" },
+            { value: "todas", label: `Todas (${n(empresas.length)})` },
+            { value: "optaram", label: `Optaram (${n(regular)})` },
+            { value: "nao_optaram", label: `Não optaram (${n(consultadas - regular)})` },
+            { value: "pendentes", label: `A confirmar (${n(pendentes)})` },
           ]}
         />
         <div className="relative ml-auto w-full max-w-xs">
@@ -353,6 +408,7 @@ function SimplesHibridoPage() {
                 <th className="px-3 py-2 font-medium">Razão social</th>
                 <th className="hidden px-3 py-2 font-medium md:table-cell">Município/UF</th>
                 <th className="px-3 py-2 font-medium">Regime regular IBS/CBS</th>
+                <th className="px-3 py-2 font-medium">Data da opção</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
@@ -361,7 +417,10 @@ function SimplesHibridoPage() {
                 const ent = e.row.tax_entities;
                 const esperando = aguardando?.empresa.raiz === e.raiz;
                 return (
-                  <tr key={e.raiz} className="border-t border-border/60">
+                  <tr
+                    key={e.raiz}
+                    className="border-t border-border/60 transition-colors hover:bg-surface-2/40"
+                  >
                     <td className="px-3 py-2 font-mono tabular">{formatCnpj(e.row.cnpj)}</td>
                     <td className="px-3 py-2">
                       {ent.razao_social ?? e.row.declared_razao_social ?? "—"}
@@ -370,14 +429,10 @@ function SimplesHibridoPage() {
                       {[ent.municipio, ent.uf].filter(Boolean).join("/") || "—"}
                     </td>
                     <td className="px-3 py-2">
-                      {e.consulta ? (
-                        <span className="inline-flex items-center gap-1.5">
-                          <CheckCircle2 className="size-3.5 text-emerald-600" aria-hidden />
-                          {ibsCbsText(e.consulta)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">A confirmar</span>
-                      )}
+                      <OpcaoBadge c={e.consulta} />
+                    </td>
+                    <td className="px-3 py-2 font-mono tabular">
+                      {brDate(ibsCbsDesde(e.consulta))}
                     </td>
                     <td className="px-3 py-2 text-right">
                       <Button
@@ -389,7 +444,7 @@ function SimplesHibridoPage() {
                         {esperando ? (
                           <Loader2 className="mr-1.5 size-3.5 animate-spin" aria-hidden />
                         ) : null}
-                        {e.consulta ? "Consultar de novo" : "Consultar"}
+                        {e.consulta ? "Conferir" : "Consultar"}
                       </Button>
                     </td>
                   </tr>

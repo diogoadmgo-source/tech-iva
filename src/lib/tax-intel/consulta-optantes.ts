@@ -252,14 +252,31 @@ export function consultaEfetiva(
   return assistida.consultadoEm >= base.consultadoEm ? assistida : base;
 }
 
-/** Texto curto para a grade e o Excel. */
+/** Texto curto para a grade e o Excel (sem a origem do dado). */
 export function ibsCbsText(c: ConsultaRegistrada | null | undefined): string {
   if (!c) return "A confirmar";
-  const dia = c.consultadoEm.slice(0, 10).split("-").reverse().join("/");
-  const origem = c.fonte === "cnpja_simples" ? `CNPJá, ${dia}` : `consulta de ${dia}`;
   const parte = (v: "sim" | "nao", desde: string) =>
     v === "sim" ? `optante desde ${desde.split("-").reverse().join("/")}` : "não optante";
-  if (c.ibs === c.cbs && c.ibsDesde === c.cbsDesde)
-    return `IBS e CBS: ${parte(c.ibs, c.ibsDesde)} (${origem})`;
-  return `IBS: ${parte(c.ibs, c.ibsDesde)}; CBS: ${parte(c.cbs, c.cbsDesde)} (${origem})`;
+  if (c.ibs === c.cbs && (c.ibs === "nao" || c.ibsDesde === c.cbsDesde))
+    return `IBS e CBS: ${parte(c.ibs, c.ibsDesde)}`;
+  return `IBS: ${parte(c.ibs, c.ibsDesde)}; CBS: ${parte(c.cbs, c.cbsDesde)}`;
+}
+
+/** Opção em uma palavra, para coluna própria (a data vai em outra coluna). */
+export function ibsCbsOpcao(c: ConsultaRegistrada | null | undefined): string {
+  if (!c) return "A confirmar";
+  if (c.ibs === "sim" && c.cbs === "sim") return "Sim (IBS e CBS)";
+  if (c.ibs === "sim") return "Só IBS";
+  if (c.cbs === "sim") return "Só CBS";
+  return "Não";
+}
+
+/** Início da opção (AAAA-MM-DD): o mais cedo entre IBS e CBS; null sem opção. */
+export function ibsCbsDesde(c: ConsultaRegistrada | null | undefined): string | null {
+  if (!c) return null;
+  const d = [c.ibs === "sim" ? c.ibsDesde : null, c.cbs === "sim" ? c.cbsDesde : null]
+    .filter((v): v is string => !!v && /^\d{4}-\d{2}-\d{2}/.test(v))
+    .map((v) => v.slice(0, 10))
+    .sort();
+  return d[0] ?? null;
 }
