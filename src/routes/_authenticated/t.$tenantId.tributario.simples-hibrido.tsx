@@ -232,6 +232,11 @@ function SimplesHibridoPage() {
               resultado e grava com a data e o seu usuário.
             </p>
             <p className="mt-2">
+              Com a extensão TECH-IVA, o botão Consultar abre a Receita com o CNPJ preenchido; você
+              clica em Consultar lá e o resultado volta e é gravado. Sem ela, o botão copia o CNPJ e
+              abre a Receita; depois copie a página do resultado (Ctrl+A, Ctrl+C) e cole aqui.
+            </p>
+            <p className="mt-2">
               Só aparecem as empresas que a Receita aponta como optantes do Simples (MEI não tem
               essa opção). A opção vale para todos os estabelecimentos da empresa.
             </p>
@@ -269,16 +274,9 @@ function SimplesHibridoPage() {
         >
           <Puzzle className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           {ext.versao ? (
-            <span>
-              Extensão TECH-IVA ativa. Clique em Consultar: a aba da Receita abre com o CNPJ
-              preenchido; clique em Consultar lá e o resultado volta e é gravado sozinho.
-            </span>
+            <span>Extensão ativa: o CNPJ vai preenchido e o resultado volta sozinho.</span>
           ) : (
-            <span>
-              Sem a extensão: o botão copia o CNPJ e abre a Receita. Cole o CNPJ, consulte, copie a
-              página do resultado (Ctrl+A, Ctrl+C) e cole aqui. Com a extensão TECH-IVA instalada, o
-              CNPJ vai preenchido e o resultado volta sozinho.
-            </span>
+            <span>Sem a extensão: cole o CNPJ na Receita e traga o texto do resultado.</span>
           )}
         </div>
       </Rise>
