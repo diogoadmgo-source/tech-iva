@@ -84,6 +84,10 @@ function ibsCbsColunas(
   if (foraDaReceita(d)) return ["—", null];
   if (d.status === "aguardando") return [null, null];
   const k = r.tax_entities.public_classification;
+  const sit = r.tax_entities.situacao_cadastral;
+  // Cadastro inativo não é consultado (0256): a opção não interessa.
+  if (k === "simples_nacional" && !c && sit && sit !== "ATIVA")
+    return ["Não consultado (inativo)", null];
   if (k === "simples_nacional") return [ibsCbsOpcao(c), isoToDate(ibsCbsDesde(c))];
   if (k === "mei_simei") return ["Não se aplica (MEI)", null];
   return ["Não se aplica", null];
