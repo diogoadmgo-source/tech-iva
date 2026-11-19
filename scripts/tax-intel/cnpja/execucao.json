@@ -1,5 +1,5 @@
 {
-  "motivo": "carga da GDB, retomada: espera o limite por minuto (429) em vez de parar",
+  "motivo": "carga da GDB: até 6 consultas em voo, espaçadas para 40 créditos/min; grava a cada 10",
   "max_creditos": 1680,
   "historico": true,
   "valido_desde": "2026-10-30",

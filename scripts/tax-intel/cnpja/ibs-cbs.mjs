@@ -3,7 +3,7 @@
 //
 // Lê os alvos e grava com o papel tax_ingestor. Respeita um teto de créditos e
 // para no primeiro 401/402/403/429. O repositório é público: o log NUNCA mostra
-// CNPJ ou nome, só totais. Limite da conta: 40 créditos por minuto; com 3 créditos por consulta, 5 s entre elas.
+// CNPJ ou nome, só totais. Limite da conta: 40 créditos por minuto (partidas espaçadas, até 6 em voo).
 //
 // Parâmetros (scripts/tax-intel/cnpja/execucao.json; o disparo manual sobrepõe):
 //   max_creditos  teto de créditos desta execução
@@ -76,71 +76,102 @@ async function main() {
 
   const tot = { ok: 0, sim: 0, nao: 0, erro: 0, nao_reconhecido: 0, fora_do_simples: 0, creditos: 0 };
   let lote = [];
-  const gravar = async () => {
+  let fila_db = Promise.resolve();
+  const gravar = () => {
     const l = lote;
     lote = [];
-    if (!l.length || AMOSTRA) return;
-    await db.query("select tax_ingest_ibs_cbs($1::jsonb)", [JSON.stringify(l)]);
+    if (!l.length || AMOSTRA) return fila_db;
+    // Uma gravação por vez na mesma conexão.
+    fila_db = fila_db.then(() => db.query("select tax_ingest_ibs_cbs($1::jsonb)", [JSON.stringify(l)]));
+    return fila_db;
   };
 
+  // Pool pequeno: a CNPJá demora (com histórico ela consulta a Receita na hora),
+  // então várias consultas ficam em voo; as partidas são espaçadas para não
+  // passar de 40 créditos por minuto.
+  const PARALELO = 6;
+  const INTERVALO = Math.ceil((60_000 / 40) * CUSTO) + 300;
+  let proxima = 0;
+  const vez = async () => {
+    const agora = Date.now();
+    const t = Math.max(agora, proxima);
+    proxima = t + INTERVALO;
+    if (t > agora) await new Promise((ok) => setTimeout(ok, t - agora));
+  };
+  const inicio = Date.now();
+  let feitos = 0;
   let parar = null;
-  try {
-    for (const [i, a] of fila.entries()) {
-      const url = `https://api.cnpja.com/office/${a.cnpj}?simples=true${HIST ? "&simplesHistory=true" : ""}`;
-      let r, txt;
-      for (let t = 0; t < 6; t++) {
-        r = await fetch(url, { headers: { Authorization: KEY } });
-        txt = await r.text();
-        if (r.status === 429) {
-          // Limite por minuto da conta: espera o tempo pedido e tenta de novo.
-          const espera = Math.min(Number(r.headers.get("retry-after")) || 60, 300);
-          console.log(`limite por minuto (429): esperando ${espera}s`);
-          await new Promise((ok) => setTimeout(ok, espera * 1000));
-          continue;
-        }
-        if (r.status < 500) break;
-        await new Promise((ok) => setTimeout(ok, 5000 * (t + 1)));
+  let pos = 0;
+
+  async function uma(i, a) {
+    const url = `https://api.cnpja.com/office/${a.cnpj}?simples=true${HIST ? "&simplesHistory=true" : ""}`;
+    let r, txt;
+    for (let t = 0; t < 6 && !parar; t++) {
+      await vez();
+      r = await fetch(url, { headers: { Authorization: KEY } });
+      txt = await r.text();
+      if (r.status === 429) {
+        // Limite por minuto da conta: espera o tempo pedido e tenta de novo.
+        const espera = Math.min(Number(r.headers.get("retry-after")) || 60, 300);
+        console.log(`limite por minuto (429): esperando ${espera}s`);
+        proxima = Math.max(proxima, Date.now() + espera * 1000);
+        continue;
       }
-      if ([401, 402, 403, 429].includes(r.status)) {
-        parar = `HTTP ${r.status} (chave, créditos ou limite)`;
-        break;
-      }
-      if (!r.ok) {
-        tot.erro++;
-        lote.push({
-          raiz: a.cnpj_raiz,
-          status: r.status === 404 ? "nao_encontrado" : "erro",
-          http: r.status,
-          erro: txt.slice(0, 300).replace(/\d{8,}/g, "…"),
-        });
-      } else {
-        tot.creditos += CUSTO;
-        const s = JSON.parse(txt)?.company?.simples ?? null;
-        if (AMOSTRA) {
-          if (i === 0) console.log("estrutura de company.simples:", JSON.stringify(forma(s)));
-          console.log(`#${i + 1}: eventos IBS/CBS: ${Array.isArray(s?.events) ? s.events.length : "campo ausente"}`);
-        }
-        const ibs = opcao(s, "IBS");
-        const cbs = opcao(s, "CBS");
-        if (s?.optant !== true) {
-          tot.fora_do_simples++;
-          lote.push({ raiz: a.cnpj_raiz, status: "erro", http: r.status, erro: "CNPJá não aponta como optante do Simples", raw: s });
-        } else if (!ibs || !cbs) {
-          tot.nao_reconhecido++;
-          lote.push({ raiz: a.cnpj_raiz, status: "erro", http: r.status, erro: "evento IBS/CBS não reconhecido", raw: s });
-        } else {
-          tot.ok++;
-          tot[ibs.valor === "sim" || cbs.valor === "sim" ? "sim" : "nao"]++;
-          lote.push({
-            raiz: a.cnpj_raiz, status: "ok", http: r.status,
-            ibs: ibs.valor, ibs_desde: ibs.desde, cbs: cbs.valor, cbs_desde: cbs.desde, raw: s,
-          });
-        }
-      }
-      if (lote.length >= 50) await gravar();
-      if ((i + 1) % 50 === 0) console.log(`andamento: ${i + 1}/${fila.length}`);
-      await new Promise((ok) => setTimeout(ok, CUSTO === 3 ? 5000 : 3500));
+      if (r.status < 500) break;
+      await new Promise((ok) => setTimeout(ok, 5000 * (t + 1)));
     }
+    if (!r || [401, 402, 403, 429].includes(r.status)) {
+      parar ??= `HTTP ${r?.status} (chave, créditos ou limite)`;
+      return;
+    }
+    if (!r.ok) {
+      tot.erro++;
+      lote.push({
+        raiz: a.cnpj_raiz,
+        status: r.status === 404 ? "nao_encontrado" : "erro",
+        http: r.status,
+        erro: txt.slice(0, 300).replace(/\d{8,}/g, "…"),
+      });
+    } else {
+      tot.creditos += CUSTO;
+      const s = JSON.parse(txt)?.company?.simples ?? null;
+      if (AMOSTRA) {
+        if (i === 0) console.log("estrutura de company.simples:", JSON.stringify(forma(s)));
+        console.log(`#${i + 1}: eventos IBS/CBS: ${Array.isArray(s?.events) ? s.events.length : "campo ausente"}`);
+      }
+      const ibs = opcao(s, "IBS");
+      const cbs = opcao(s, "CBS");
+      if (s?.optant !== true) {
+        tot.fora_do_simples++;
+        lote.push({ raiz: a.cnpj_raiz, status: "erro", http: r.status, erro: "CNPJá não aponta como optante do Simples", raw: s });
+      } else if (!ibs || !cbs) {
+        tot.nao_reconhecido++;
+        lote.push({ raiz: a.cnpj_raiz, status: "erro", http: r.status, erro: "evento IBS/CBS não reconhecido", raw: s });
+      } else {
+        tot.ok++;
+        tot[ibs.valor === "sim" || cbs.valor === "sim" ? "sim" : "nao"]++;
+        lote.push({
+          raiz: a.cnpj_raiz, status: "ok", http: r.status,
+          ibs: ibs.valor, ibs_desde: ibs.desde, cbs: cbs.valor, cbs_desde: cbs.desde, raw: s,
+        });
+      }
+    }
+    feitos++;
+    // Grava a cada 10: uma interrupção perde no máximo poucas consultas pagas.
+    if (lote.length >= 10) await gravar();
+    if (feitos % 25 === 0)
+      console.log(`andamento: ${feitos}/${fila.length} em ${Math.round((Date.now() - inicio) / 1000)}s`);
+  }
+
+  try {
+    await Promise.all(
+      Array.from({ length: Math.min(PARALELO, fila.length) }, async () => {
+        while (!parar && pos < fila.length) {
+          const i = pos++;
+          await uma(i, fila[i]);
+        }
+      }),
+    );
   } finally {
     await gravar();
     await db.end();
