@@ -5,12 +5,16 @@ create temp table m5(nome text primary key, cnpj text);
 insert into m5 values
   ('optou_matriz', t.cnpj('616161610001')),
   ('optou_filial', t.cnpj('616161610002')),
-  ('nao_optou', t.cnpj('606060600001'));
+  ('nao_optou', t.cnpj('606060600001')),
+  ('baixada', t.cnpj('585858580001'));
 insert into tax_entities (cnpj, public_classification) select cnpj, 'simples_nacional' from m5;
+update tax_entities set situacao_cadastral = 'BAIXADA' where cnpj = (select cnpj from m5 where nome = 'baixada');
 insert into tax_relationships (tenant_id, cnpj, relationship) select t.id('co_a'), cnpj, 'cliente' from m5;
 grant select on m5 to tax_ingestor;
 
 set session authorization tax_ingestor;
+select t.eq('empresa baixada não é alvo (0256)',
+  (select count(*)::int from tax_ingest_ibs_cbs_targets('58585857', 10, 0) where cnpj_raiz = '58585858'), 0);
 select t.eq('alvos: uma linha por raiz ainda sem consulta',
   (select count(*)::int from tax_ingest_ibs_cbs_targets('60606059', 10) where cnpj_raiz in ('61616161', '60606060')), 2);
 select t.eq('lote gravado',

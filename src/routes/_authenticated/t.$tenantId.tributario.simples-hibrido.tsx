@@ -48,6 +48,8 @@ export const Route = createFileRoute("/_authenticated/t/$tenantId/tributario/sim
 type Empresa = { raiz: string; row: PortfolioRow; consulta: ConsultaRegistrada | null };
 type Filtro = "todas" | "optaram" | "nao_optaram" | "pendentes";
 
+const ativo = (r: PortfolioRow) =>
+  !r.tax_entities.situacao_cadastral || r.tax_entities.situacao_cadastral === "ATIVA";
 const optou = (c: ConsultaRegistrada | null) => c?.ibs === "sim" || c?.cbs === "sim";
 const brDate = (iso: string | null) => (iso ? iso.split("-").reverse().join("/") : "—");
 
@@ -136,13 +138,20 @@ function SimplesHibridoPage() {
     for (const r of base.data ?? []) {
       const k = raizOf(r.cnpj);
       const cur = map.get(k);
-      if (!cur || (r.tax_entities.is_matriz && !cur.tax_entities.is_matriz)) map.set(k, r);
+      // Prefere estabelecimento ativo e, entre eles, a matriz.
+      const peso = (x: PortfolioRow) => (ativo(x) ? 2 : 0) + (x.tax_entities.is_matriz ? 1 : 0);
+      if (!cur || peso(r) > peso(cur)) map.set(k, r);
     }
-    return [...map.entries()].map(([raiz, row]) => ({
-      raiz,
-      row,
-      consulta: consultaEfetiva(row, consultas.data?.get(raiz)),
-    }));
+    return (
+      [...map.entries()]
+        .map(([raiz, row]) => ({
+          raiz,
+          row,
+          consulta: consultaEfetiva(row, consultas.data?.get(raiz)),
+        }))
+        // Empresa sem estabelecimento ativo não é consultada (a opção não interessa).
+        .filter((e) => e.consulta || ativo(e.row))
+    );
   }, [base.data, consultas.data]);
 
   const [filtro, setFiltro] = useState<Filtro>("todas");
