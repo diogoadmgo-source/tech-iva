@@ -3,13 +3,15 @@
 //
 // Lê os alvos e grava com o papel tax_ingestor. Respeita um teto de créditos e
 // para no primeiro 401/402/403/429. O repositório é público: o log NUNCA mostra
-// CNPJ ou nome, só totais. Limite da conta: 40 consultas por minuto (1,6 s entre elas).
+// CNPJ ou nome, só totais. Limite da conta: 40 créditos por minuto; com 3 créditos por consulta, 5 s entre elas.
 //
 // Parâmetros (scripts/tax-intel/cnpja/execucao.json; o disparo manual sobrepõe):
 //   max_creditos  teto de créditos desta execução
 //   historico     true = pede simplesHistory (no teste de 19/11 os eventos
 //                 IBS/CBS vieram com ele; custa 1 crédito a mais)
-//   idade_dias    reconsulta quem foi consultado há mais que isso
+//   valido_desde  AAAA-MM-DD, fim da última janela de opção da Receita: só
+//                 reconsulta quem foi consultado antes dessa data
+//   idade_dias    (sem valido_desde) reconsulta quem foi consultado há mais que isso
 //   amostra       >0 = só sonda N empresas e NÃO grava (mostra a estrutura)
 import { readFile } from "node:fs/promises";
 
@@ -32,7 +34,13 @@ async function main() {
   const num = (v, d) => (v === undefined || v === "" || Number.isNaN(Number(v)) ? d : Number(v));
   const MAX = num(env("MAX_CREDITOS") ?? cfg.max_creditos, 0);
   const HIST = String(env("HISTORICO") ?? cfg.historico ?? "true") === "true";
-  const IDADE = num(env("IDADE_DIAS") ?? cfg.idade_dias, 30);
+  // Validade por janela de opção: quem foi consultado depois do fim da última
+  // janela da Receita não é consultado de novo (o dado é compartilhado entre
+  // todos os clientes). Sem valido_desde, vale idade_dias.
+  const desde = env("VALIDO_DESDE") ?? cfg.valido_desde;
+  const IDADE = /^\d{4}-\d{2}-\d{2}$/.test(String(desde ?? ""))
+    ? Math.max(0, Math.floor((Date.now() - Date.parse(`${desde}T03:00:00Z`)) / 86_400_000))
+    : num(env("IDADE_DIAS") ?? cfg.idade_dias, 30);
   const AMOSTRA = num(env("AMOSTRA") ?? cfg.amostra, 0);
   const CUSTO = HIST ? 3 : 2;
   const KEY = process.env.CNPJA_API_KEY;
@@ -80,9 +88,16 @@ async function main() {
     for (const [i, a] of fila.entries()) {
       const url = `https://api.cnpja.com/office/${a.cnpj}?simples=true${HIST ? "&simplesHistory=true" : ""}`;
       let r, txt;
-      for (let t = 0; t < 3; t++) {
+      for (let t = 0; t < 6; t++) {
         r = await fetch(url, { headers: { Authorization: KEY } });
         txt = await r.text();
+        if (r.status === 429) {
+          // Limite por minuto da conta: espera o tempo pedido e tenta de novo.
+          const espera = Math.min(Number(r.headers.get("retry-after")) || 60, 300);
+          console.log(`limite por minuto (429): esperando ${espera}s`);
+          await new Promise((ok) => setTimeout(ok, espera * 1000));
+          continue;
+        }
         if (r.status < 500) break;
         await new Promise((ok) => setTimeout(ok, 5000 * (t + 1)));
       }
@@ -124,7 +139,7 @@ async function main() {
       }
       if (lote.length >= 50) await gravar();
       if ((i + 1) % 50 === 0) console.log(`andamento: ${i + 1}/${fila.length}`);
-      await new Promise((ok) => setTimeout(ok, 1600));
+      await new Promise((ok) => setTimeout(ok, CUSTO === 3 ? 5000 : 3500));
     }
   } finally {
     await gravar();

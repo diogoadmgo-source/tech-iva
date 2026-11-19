@@ -1,7 +1,7 @@
 {
-  "motivo": "carga da GDB: 554 optantes x 3 créditos (com simplesHistory; sem ele o campo events não vem)",
-  "max_creditos": 1700,
+  "motivo": "carga da GDB, retomada: espera o limite por minuto (429) em vez de parar",
+  "max_creditos": 1680,
   "historico": true,
-  "idade_dias": 30,
+  "valido_desde": "2026-10-30",
   "amostra": 0
 }
