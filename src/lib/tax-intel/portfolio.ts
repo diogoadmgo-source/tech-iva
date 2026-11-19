@@ -210,6 +210,12 @@ export type PortfolioRow = {
     natureza_juridica?: string | null;
     natureza_descricao?: string | null;
     porte?: string | null;
+    ibs_regular?: "sim" | "nao" | "nao_identificado";
+    ibs_desde?: string | null;
+    cbs_regular?: "sim" | "nao" | "nao_identificado";
+    cbs_desde?: string | null;
+    ibs_cbs_fonte?: string | null;
+    ibs_cbs_consultado_em?: string | null;
     uf: string | null;
     municipio: string | null;
     public_classification: TaxClassification;
@@ -220,7 +226,7 @@ export type PortfolioRow = {
 
 const SELECT =
   "tenant_id, cnpj, relationship, declared_razao_social, declared_nome_fantasia, first_import_id, last_import_id, created_at, " +
-  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, situacao_data, data_abertura, cnae_principal, cnae_descricao, natureza_juridica, natureza_descricao, porte, uf, municipio, public_classification, public_classification_basis, last_consulted_at)";
+  "tax_entities!inner(cnpj_raiz, is_matriz, cnpj_alfanumerico, razao_social, situacao_cadastral, situacao_data, data_abertura, cnae_principal, cnae_descricao, natureza_juridica, natureza_descricao, porte, ibs_regular, ibs_desde, cbs_regular, cbs_desde, ibs_cbs_fonte, ibs_cbs_consultado_em, uf, municipio, public_classification, public_classification_basis, last_consulted_at)";
 
 const ORDER: Record<SortKey, string> = {
   cnpj: "cnpj",

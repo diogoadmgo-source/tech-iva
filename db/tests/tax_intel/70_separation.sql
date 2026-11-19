@@ -61,7 +61,9 @@ select t.throws('fonte com nome de evidência é recusada',
 select t.eq('IBS/CBS regular catalogado como indisponível',
   (select status from public.tax_sources where code = 'ibs_cbs_regular'), 'indisponivel');
 select t.ok('nenhuma fonte marcada como verificada antes de chamada real',
-  not exists (select 1 from public.tax_sources where verified_at is not null));
+  not exists (select 1 from public.tax_sources where verified_at is not null and code <> 'cnpja_simples'));
+select t.ok('CNPJá verificada por chamada real (teste de 19/11/2026)',
+  (select verified_at is not null from public.tax_sources where code = 'cnpja_simples'));
 
 -- Consulta pública só grava fonte do catálogo (FK) e chave no formato da granularidade.
 select t.throws('consulta com fonte fora do catálogo é recusada',

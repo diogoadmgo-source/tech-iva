@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { FileSpreadsheet, Gauge, Table2 } from "lucide-react";
+import { FileSpreadsheet, Gauge, Layers, Table2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,9 +12,15 @@ const TABS = [
     icon: FileSpreadsheet,
     exact: false,
   },
+  {
+    to: "/t/$tenantId/tributario/simples-hibrido",
+    label: "Simples híbrido",
+    icon: Layers,
+    exact: false,
+  },
 ] as const;
 
-/** Navegação interna do módulo: três telas, uma linha. */
+/** Navegação interna do módulo: uma linha. */
 export function ModuleTabs({ tenantId }: { tenantId: string }) {
   return (
     <nav

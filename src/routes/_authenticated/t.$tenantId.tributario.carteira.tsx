@@ -38,6 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cnpjParts, formatCnpj } from "@/lib/tax-intel/cnpj";
+import { loadConsultas } from "@/lib/tax-intel/consulta-optantes";
 import { buildWorkbook, downloadBlob } from "@/lib/tax-intel/excel";
 import {
   basisLines,
@@ -239,9 +240,11 @@ function CarteiraPage() {
         source === "selecao"
           ? [...selected.values()]
           : await loadPortfolioAll(tenantId, filters, sort, (l) => setExporting(l));
+      const consultas = await loadConsultas(tenantId);
       const blob = await buildWorkbook(data, {
         filtro: source === "selecao" ? `${n(data.length)} selecionados` : describe(filters),
         empresa: shell.data?.tenant.name ?? null,
+        consultas,
       });
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `base-de-cnpjs-${stamp}.xlsx`);

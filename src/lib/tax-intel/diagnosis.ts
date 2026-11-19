@@ -4,7 +4,8 @@
  * gravou (classe e base da classificação); não deduz regime nenhum.
  */
 import { formatCnpj } from "./cnpj";
-import { classificationText, type TaxClassification } from "./labels";
+import { ibsCbsText, type ConsultaRegistrada } from "./consulta-optantes";
+import { CLASSIFICATION_LABEL, classificationText, type TaxClassification } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
 export type DiagnosisStatus =
@@ -83,7 +84,16 @@ const situacaoTexto = (r: PortfolioRow) => {
   return `${sit.charAt(0)}${sit.slice(1).toLowerCase()}${data ? ` desde ${data}` : ""}`;
 };
 
-export function diagnose(r: PortfolioRow): Diagnosis {
+/**
+ * `ibscbs`: consulta da opção pelo regime regular de IBS/CBS (Consulta
+ * Optantes, feita por pessoa). `undefined` = não verificado neste uso;
+ * `null` = verificado e sem consulta registrada.
+ */
+export function diagnose(
+  r: PortfolioRow,
+  now: Date = new Date(),
+  ibscbs?: ConsultaRegistrada | null,
+): Diagnosis {
   const e = r.tax_entities;
   const c: TaxClassification = e.public_classification;
   const b: Basis = e.public_classification_basis;
@@ -149,6 +159,18 @@ export function diagnose(r: PortfolioRow): Diagnosis {
 
   // Identificado pela fonte pública.
   const ano = s(b?.["ano_calendario"]);
+  // ECF antiga: a Receita publica a ECF com cerca de 2 anos de atraso (em 2026,
+  // o ano mais recente é 2024). Ano anterior a isso = a empresa não entregou ECF
+  // depois, ou mudou de regime: o regime atual precisa ser confirmado.
+  const anoRef = now.getFullYear() - 2;
+  if ((c === "lucro_real" || c === "lucro_presumido") && ano && Number(ano) < anoRef)
+    return {
+      status: "ressalva", regime, alertas, precisaAcao: true, prioridade: sit ? "Alta" : "Média",
+      causa:
+        inativo +
+        `A última ECF publicada é do ano-calendário ${ano} (${CLASSIFICATION_LABEL[c]}). Não há ECF de ${Number(ano) + 1} a ${anoRef}, embora a Receita já tenha publicado esses anos para outras empresas. O regime atual não pode ser confirmado por fonte pública.`,
+      acao: "Confirmar com o parceiro o regime atual e se a ECF dos anos seguintes foi entregue.",
+    };
   const causa =
     c === "lucro_real" || c === "lucro_presumido"
       ? `Declarado na ECF do ano-calendário ${ano ?? "indicado"} (histórico, não o regime vigente).`
@@ -157,16 +179,27 @@ export function diagnose(r: PortfolioRow): Diagnosis {
         : c === "simples_nacional"
           ? `Optante pelo Simples Nacional${b?.["data_opcao_simples"] ? ` desde ${br(b["data_opcao_simples"])}` : ""}, segundo a Receita.`
           : "Identificado na fonte pública.";
+  // Simples: a opção pelo regime regular de IBS/CBS só sai na Consulta Optantes.
+  const ibsPendente = c === "simples_nacional" && ibscbs === null;
+  const ibsTexto =
+    c !== "simples_nacional" || ibscbs === undefined
+      ? ""
+      : ibscbs
+        ? ` Regime regular: ${ibsCbsText(ibscbs)}.`
+        : " Opção pelo regime regular de IBS/CBS ainda não consultada.";
+  const acoes = [
+    sit ? "Avaliar inativar o cadastro." : null,
+    !sit && alertas.length ? "Conferir a razão social no seu cadastro." : null,
+    !sit && ibsPendente
+      ? "Confirmar a opção pelo regime regular de IBS e CBS (Consulta Optantes do Simples)."
+      : null,
+  ].filter((a): a is string => !!a);
   return {
     status: "identificado", regime, alertas,
-    precisaAcao: Boolean(sit) || alertas.length > 0,
-    prioridade: sit ? "Alta" : alertas.length ? "Baixa" : "—",
-    causa: inativo + causa,
-    acao: sit
-      ? "Avaliar inativar o cadastro."
-      : alertas.length
-        ? "Conferir a razão social no seu cadastro."
-        : "Nenhuma ação necessária.",
+    precisaAcao: acoes.length > 0,
+    prioridade: sit ? "Alta" : acoes.length ? "Baixa" : "—",
+    causa: inativo + causa + ibsTexto,
+    acao: acoes.join(" ") || "Nenhuma ação necessária.",
   };
 }
 
