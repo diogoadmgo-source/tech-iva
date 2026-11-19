@@ -96,7 +96,7 @@ select t.claims('00000000-0000-0000-0000-00000000dead');
 set role authenticated;
 select t.eq('sem vínculo: nenhuma importação', (select count(*) from public.tax_imports), 0::bigint);
 select t.eq('sem vínculo: nenhuma entidade', (select count(*) from public.tax_entities), 0::bigint);
-select t.ok('sem vínculo: lê o catálogo de fontes', (select count(*) from public.tax_sources) = 6);
+select t.ok('sem vínculo: lê o catálogo de fontes', (select count(*) from public.tax_sources) = 7);
 reset role;
 
 -- As políticas usam tax_scope_tenants() (calculado uma vez por consulta).

@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatCnpj } from "@/lib/tax-intel/cnpj";
 import {
   CONSULTA_OPTANTES_URL,
+  consultaEfetiva,
   ibsCbsText,
   loadConsultas,
   parseConsultaOptantes,
@@ -114,7 +115,7 @@ function SimplesHibridoPage() {
     return [...map.entries()].map(([raiz, row]) => ({
       raiz,
       row,
-      consulta: consultas.data?.get(raiz) ?? null,
+      consulta: consultaEfetiva(row, consultas.data?.get(raiz)),
     }));
   }, [base.data, consultas.data]);
 

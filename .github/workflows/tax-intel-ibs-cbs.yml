@@ -1,0 +1,52 @@
+name: Inteligência Tributária · IBS/CBS dos optantes (CNPJá)
+
+# Opção pelo regime regular de IBS/CBS dos optantes do Simples, pela CNPJá (API
+# paga, autorizada pelo usuário em 19/11/2026). Grava com tax_ingestor (nunca
+# service_role). Cada execução é uma mudança em scripts/tax-intel/cnpja/
+# execucao.json (teto de créditos e parâmetros), para ficar registrada no Git,
+# ou um disparo manual. O log não mostra CNPJ (repositório público).
+on:
+  workflow_dispatch:
+    inputs:
+      max_creditos:
+        description: "Teto de créditos desta execução"
+        type: string
+        default: "900"
+      historico:
+        description: "Pedir simplesHistory (mais 1 crédito por empresa)"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+  push:
+    branches: [main, claude/project-thread-r25ha6]
+    paths: [scripts/tax-intel/cnpja/execucao.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tax-intel-ibs-cbs
+  cancel-in-progress: false
+
+jobs:
+  carga:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: tax-intel-producao
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Dependências
+        working-directory: scripts/tax-intel/cnpja
+        run: |
+          echo '{"private":true,"type":"module"}' > package.json
+          npm install --no-save --no-package-lock --no-audit --no-fund pg@8.16.3
+      - name: Consultas
+        env:
+          CNPJA_API_KEY: ${{ secrets.CNPJA_API_KEY }}
+          TAX_INGESTOR_DATABASE_URL: ${{ secrets.TAX_INGESTOR_DATABASE_URL }}
+          MAX_CREDITOS: ${{ inputs.max_creditos }}
+          HISTORICO: ${{ inputs.historico }}
+        run: node scripts/tax-intel/cnpja/ibs-cbs.mjs

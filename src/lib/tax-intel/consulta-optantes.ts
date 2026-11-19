@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { isValidCnpj, stripCnpj } from "./cnpj";
 import { taxFrom, taxRpc } from "./import-client";
+import type { PortfolioRow } from "./portfolio";
 
 export const CONSULTA_OPTANTES_URL = "https://consopt.www8.receita.fazenda.gov.br/consultaoptantes";
 
@@ -101,6 +102,8 @@ export const raizOf = (cnpj: string) => cnpj.slice(0, 8);
 
 export type ConsultaRegistrada = {
   raiz: string;
+  /** consulta_assistida = feita por pessoa no app; cnpja_simples = API da CNPJá (0255). */
+  fonte?: "consulta_assistida" | "cnpja_simples";
   ibs: "sim" | "nao";
   cbs: "sim" | "nao";
   ibsDesde: string;
@@ -144,6 +147,7 @@ export async function loadConsultas(tenantId: string): Promise<Map<string, Consu
         out.get(e.lookup_key) ??
         ({
           raiz: e.lookup_key,
+          fonte: "consulta_assistida",
           ibs: "nao",
           cbs: "nao",
           ibsDesde: e.valid_from,
@@ -214,13 +218,48 @@ export async function registrarConsulta(
   return data as { raiz: string };
 }
 
+/** Opção gravada pela carga da CNPJá no cadastro público (tax_entities, 0255). */
+export function consultaDaBase(r: PortfolioRow): ConsultaRegistrada | null {
+  const e = r.tax_entities;
+  if (!e.ibs_cbs_fonte || !e.ibs_cbs_consultado_em) return null;
+  if (
+    (e.ibs_regular !== "sim" && e.ibs_regular !== "nao") ||
+    (e.cbs_regular !== "sim" && e.cbs_regular !== "nao")
+  )
+    return null;
+  const dia = e.ibs_cbs_consultado_em.slice(0, 10);
+  return {
+    raiz: raizOf(r.cnpj),
+    fonte: "cnpja_simples",
+    ibs: e.ibs_regular,
+    cbs: e.cbs_regular,
+    ibsDesde: e.ibs_desde ?? dia,
+    cbsDesde: e.cbs_desde ?? dia,
+    consultadoEm: dia,
+    descricao: "CNPJá (fonte: Consulta Optantes do Portal do Simples)",
+    temArquivo: false,
+  };
+}
+
+/** A mais recente entre a consulta assistida do tenant e a da CNPJá. */
+export function consultaEfetiva(
+  r: PortfolioRow,
+  assistida: ConsultaRegistrada | null | undefined,
+): ConsultaRegistrada | null {
+  const base = consultaDaBase(r);
+  if (!assistida) return base;
+  if (!base) return assistida;
+  return assistida.consultadoEm >= base.consultadoEm ? assistida : base;
+}
+
 /** Texto curto para a grade e o Excel. */
 export function ibsCbsText(c: ConsultaRegistrada | null | undefined): string {
   if (!c) return "A confirmar";
   const dia = c.consultadoEm.slice(0, 10).split("-").reverse().join("/");
+  const origem = c.fonte === "cnpja_simples" ? `CNPJá, ${dia}` : `consulta de ${dia}`;
   const parte = (v: "sim" | "nao", desde: string) =>
     v === "sim" ? `optante desde ${desde.split("-").reverse().join("/")}` : "não optante";
   if (c.ibs === c.cbs && c.ibsDesde === c.cbsDesde)
-    return `IBS e CBS: ${parte(c.ibs, c.ibsDesde)} (consulta de ${dia})`;
-  return `IBS: ${parte(c.ibs, c.ibsDesde)}; CBS: ${parte(c.cbs, c.cbsDesde)} (consulta de ${dia})`;
+    return `IBS e CBS: ${parte(c.ibs, c.ibsDesde)} (${origem})`;
+  return `IBS: ${parte(c.ibs, c.ibsDesde)}; CBS: ${parte(c.cbs, c.cbsDesde)} (${origem})`;
 }

@@ -19,7 +19,7 @@ import {
   type Diagnosis,
   type DiagnosisStatus,
 } from "./diagnosis";
-import { ibsCbsText, raizOf, type ConsultaRegistrada } from "./consulta-optantes";
+import { consultaEfetiva, ibsCbsText, raizOf, type ConsultaRegistrada } from "./consulta-optantes";
 import { basisText, CLASSIFICATION_LABEL, RELATIONSHIP_LABEL, sourceName } from "./labels";
 import type { PortfolioRow } from "./portfolio";
 
@@ -182,7 +182,7 @@ function porDocumento(rows: PortfolioRow[], consultas: Consultas): Item[] {
     else map.set(r.cnpj, { r, rels: new Set([RELATIONSHIP_LABEL[r.relationship]]) });
   }
   return [...map.values()].map(({ r, rels }) => {
-    const ibs = consultas.get(raizOf(r.cnpj)) ?? null;
+    const ibs = consultaEfetiva(r, consultas.get(raizOf(r.cnpj)));
     return { r, ibs, d: diagnose(r, new Date(), ibs), rel: [...rels].join(" e ") };
   });
 }
@@ -504,7 +504,7 @@ export async function buildWorkbook(
     [DIAGNOSIS_LABEL.cnpj_nao_encontrado, "O número não existe no cadastro de CNPJ da Receita."],
     [DIAGNOSIS_LABEL.provavel_cpf, "O número não existe no cadastro de CNPJ e, sem os três zeros iniciais, é um CPF válido (pessoa física). A planilha mostra o número no formato de CPF."],
     [DIAGNOSIS_LABEL.aguardando, "O CNPJ entrou na base depois do último processamento."],
-    ["Simples híbrido (IBS/CBS)", "A opção do Simples pelo regime regular de IBS e de CBS não está nos dados abertos da Receita. Só aparece na Consulta Optantes do Portal do Simples, um CNPJ por vez e protegida por captcha. Cada consulta foi feita por uma pessoa da equipe e gravada com a data; a opção vale para todos os estabelecimentos da empresa. Optante do Simples sem consulta registrada fica \"A confirmar\" e vai para o Saneamento."],
+    ["Simples híbrido (IBS/CBS)", "A opção do Simples pelo regime regular de IBS e de CBS não está nos dados abertos da Receita. Só aparece na Consulta Optantes do Portal do Simples, um CNPJ por vez e protegida por captcha. A opção vem da CNPJá (que lê essa consulta) ou de consulta feita por uma pessoa da equipe, sempre com a data; vale para todos os estabelecimentos da empresa. Se as duas existirem, vale a mais recente. Optante do Simples sem consulta registrada fica \"A confirmar\" e vai para o Saneamento."],
     ["Filiais", "A ECF é declarada pela matriz: a filial recebe o regime da empresa (mesma raiz de 8 dígitos)."],
     ["Prioridade", "Alta: corrigir o número ou o cadastro inativo. Média: confirmar o regime com o parceiro. Baixa: conferência simples."],
     ["Como responder", "Na aba Saneamento, preencha as colunas destacadas em amarelo e devolva a planilha. O regime informado tem lista de opções."],
