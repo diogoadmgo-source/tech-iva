@@ -72,7 +72,7 @@ function parcial(opcao: OpcaoPagamento, valorCents: number | null | undefined): 
 export function pedidoPcont(input: {
   pa: string;
   opcao: OpcaoPagamento;
-  valorParcialCents?: number | null;
+  valorParcialCents?: number | null | undefined;
 }): { pa: string; opcaoPagamento: OpcaoPagamento; valorDarfParcial?: number } {
   const valor = parcial(input.opcao, input.valorParcialCents);
   return {
@@ -82,7 +82,7 @@ export function pedidoPcont(input: {
   };
 }
 
-export type ItemRad = { chaveDFE: string; opcao: OpcaoPagamento; valorParcialCents?: number | null };
+export type ItemRad = { chaveDFE: string; opcao: OpcaoPagamento; valorParcialCents?: number | null | undefined };
 
 /** Limite nosso, não da Receita: evita um pedido gigante por engano. */
 export const MAX_ITENS_RAD = 50;

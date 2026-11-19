@@ -162,7 +162,7 @@ async function registrar(
 export async function gerarDarfPcont(
   tenantId: string,
   usuario: string,
-  input: { pa: string; opcao: OpcaoPagamento; valorParcialCents?: number | null },
+  input: { pa: string; opcao: OpcaoPagamento; valorParcialCents?: number | null | undefined },
 ): Promise<GerarDarfResult> {
   let pedido: ReturnType<typeof pedidoPcont>;
   try {

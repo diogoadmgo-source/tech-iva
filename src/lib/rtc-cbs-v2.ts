@@ -227,7 +227,7 @@ export function useGerarDarfPcont(tenantId: string) {
   const qc = useQueryClient();
   const gerar = useServerFn(cbsDarfPcont);
   return useMutation({
-    mutationFn: async (input: { pa: string; opcao: OpcaoPagamento; valorParcialCents?: number | null }) => {
+    mutationFn: async (input: { pa: string; opcao: OpcaoPagamento; valorParcialCents?: number | null | undefined }) => {
       const r = await gerar({ data: { tenantId, ...input } });
       if (!r.ok) throw new Error(r.motivo);
       return r.darfs;
