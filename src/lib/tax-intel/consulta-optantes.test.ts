@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ibsCbsText, parseConsultaOptantes } from "./consulta-optantes";
+import { ibsCbsDesde, ibsCbsOpcao, ibsCbsText, parseConsultaOptantes } from "./consulta-optantes";
 
 // Texto como sai do Ctrl+A/Ctrl+C na página de resultado (print de 18/11/2026).
 const NAO = `Simples Nacional
@@ -68,6 +68,26 @@ describe("leitura da Consulta Optantes", () => {
         descricao: "",
         temArquivo: false,
       }),
-    ).toBe("IBS e CBS: não optante (consulta de 18/11/2026)");
+    ).toBe("IBS e CBS: não optante");
+  });
+
+  it("opção e data em colunas separadas", () => {
+    const base = { raiz: "1", consultadoEm: "2026-11-19", descricao: "", temArquivo: false };
+    const ambos = {
+      ...base,
+      ibs: "sim" as const,
+      cbs: "sim" as const,
+      ibsDesde: "2027-01-01",
+      cbsDesde: "2027-01-01",
+    };
+    expect(ibsCbsOpcao(ambos)).toBe("Sim (IBS e CBS)");
+    expect(ibsCbsDesde(ambos)).toBe("2027-01-01");
+    expect(ibsCbsText(ambos)).toBe("IBS e CBS: optante desde 01/01/2027");
+    const so = { ...ambos, cbs: "nao" as const, cbsDesde: "2026-11-19" };
+    expect(ibsCbsOpcao(so)).toBe("Só IBS");
+    const nao = { ...so, ibs: "nao" as const, ibsDesde: "2026-11-19" };
+    expect(ibsCbsOpcao(nao)).toBe("Não");
+    expect(ibsCbsDesde(nao)).toBeNull();
+    expect(ibsCbsOpcao(null)).toBe("A confirmar");
   });
 });
