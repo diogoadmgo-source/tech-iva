@@ -33,6 +33,7 @@ describe("leitor de débitos v2", () => {
       documento: 55,
       apurado_cents: 1829,
       extinto_cents: 1000,
+      pgto_antecipado_cents: 0,
       saldo_devedor_cents: 829,
     });
   });

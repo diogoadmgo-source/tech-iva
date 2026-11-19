@@ -24,3 +24,24 @@ export function urlRecurso(base: string, ambiente: Ambiente, recurso: Recurso, c
 export function urlSituacao(base: string, ambiente: Ambiente, tiquete: string) {
   return `${raiz(base, ambiente)}/situacao/${encodeURIComponent(tiquete)}`;
 }
+
+/**
+ * Link do arquivo de retorno (v2, desde 13/10/2026). Concluída a solicitação,
+ * a URL assinada NÃO vem mais no aviso nem na situação: é este GET, com o
+ * Bearer, que a devolve. Não entra no limite de 4 aberturas por dia.
+ */
+export function urlDownload(base: string, ambiente: Ambiente, tiquete: string) {
+  return `${raiz(base, ambiente)}/download/${encodeURIComponent(tiquete)}`;
+}
+
+export type TipoDarf = "pcont" | "rad";
+
+/**
+ * Geração de DARF (síncrona). A documentação diz `String (14)` no campo, mas
+ * um dos exemplos usa 8 dígitos. Seguimos a tabela de campos (14 dígitos, o
+ * CNPJ completo do estabelecimento) — conferir na primeira chamada real.
+ */
+export function urlDarf(base: string, ambiente: Ambiente, tipo: TipoDarf, cnpj: string) {
+  const cnpj14 = cnpj.replace(/[^0-9A-Za-z]/g, "").toUpperCase().padStart(14, "0");
+  return `${raiz(base, ambiente)}/${tipo}/${cnpj14}`;
+}
