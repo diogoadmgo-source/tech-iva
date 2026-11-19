@@ -26,7 +26,10 @@
 import { sealSecret, unsealSecret } from "@/lib/credentials.server";
 import { mesCorrenteEmSaoPaulo } from "@/lib/datas";
 import { lerAbertura } from "@/lib/rtc-v2/abertura";
-import { urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
+import { lerDebitosV2 } from "@/lib/rtc-v2/debitos";
+import { urlDownload, urlRecurso, urlSituacao, type Ambiente, type Recurso } from "@/lib/rtc-v2/enderecos";
+import { arquivoV2Reconhecido, lerPagamentosV2 } from "@/lib/rtc-v2/pagamentos";
+import { lerSituacao, type LeituraSituacao } from "@/lib/rtc-v2/situacao";
 import { cedoDemaisParaBaixar, liberacaoDoDownload } from "@/lib/rtc-v2/espera";
 import { lerRetorno, type Retorno } from "@/lib/rtc-v2/retorno";
 import { lerRespostaPedidoV1 } from "@/lib/rtc-v2/resposta-pedido";
@@ -95,7 +98,7 @@ function apiPrefix(): string {
 }
 
 /** `RTC_API_PREFIX` valia na v1; na v2 vira a escolha do caminho. */
-function ambienteAtual(): Ambiente {
+export function ambienteAtual(): Ambiente {
   const raw = (process.env["RTC_API_PREFIX"] ?? "").trim();
   return raw.startsWith("prr") ? "restrita" : "producao";
 }
@@ -117,7 +120,7 @@ function v2Ligada(): boolean {
 }
 
 /** Sem endereço não há chamada: erro explícito, nunca uma URL montada no escuro. */
-function baseObrigatoria(): string {
+export function baseObrigatoria(): string {
   const base = apiBase();
   if (!base) {
     throw new ApuracaoGatewayError(
@@ -128,24 +131,24 @@ function baseObrigatoria(): string {
   return base;
 }
 
-function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
+export function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   return fn(controller.signal).finally(() => clearTimeout(timer));
 }
 
-type AdminClient = Awaited<
+export type AdminClient = Awaited<
   typeof import("@/integrations/supabase/client.server")
 >["supabaseAdmin"];
 
-type Credential = { id: string; apiKey: string };
+export type Credential = { id: string; apiKey: string };
 
 /**
  * Credencial de acesso à API (provider `rtc`, kind `api_key`). O material é
  * `<CLIENT_ID>:<CLIENT_SECRET>` selado em envelope no bucket privado — nunca
  * volta ao navegador e nunca vai para log.
  */
-async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credential> {
+export async function loadApiKey(admin: AdminClient, tenantId: string): Promise<Credential> {
   const { data, error } = await admin
     .from("integration_credentials")
     .select("id, secret_ref, status")
@@ -265,7 +268,7 @@ function formatoCredencial(credential: string): FormatoCredencial {
   };
 }
 
-function transporte(error: unknown, etapa: string): ApuracaoGatewayError {
+export function transporte(error: unknown, etapa: string): ApuracaoGatewayError {
   const category =
     error instanceof DOMException && error.name === "AbortError"
       ? "timeout"
@@ -339,7 +342,7 @@ function chaveCache(credential: string, url: string): string {
 }
 
 /** Troca a credencial pelo access_token. Falha aqui NÃO consome cota de apuração. */
-async function accessToken(
+export async function accessToken(
   credential: string,
   opts?: { renovar?: boolean },
 ): Promise<{ token: string; diag: ChamadaDiag }> {
@@ -481,7 +484,7 @@ async function pedirToken(
   throw comDiag(final.erro, final.diag);
 }
 
-function corpoJson(text: string): Record<string, unknown> | null {
+export function corpoJson(text: string): Record<string, unknown> | null {
   try {
     const parsed = text ? JSON.parse(text) : null;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
@@ -604,7 +607,7 @@ const HEADERS_DIAG = [
   "www-authenticate",
 ];
 
-function headersDiag(res: Response): Record<string, string> {
+export function headersDiag(res: Response): Record<string, string> {
   const out: Record<string, string> = {};
   for (const name of HEADERS_DIAG) {
     const value = res.headers.get(name);
@@ -685,7 +688,7 @@ async function baixarPorUrlAssinada(
 export async function consultarSituacao(
   tiquete: string,
   token: string,
-): Promise<{ estado: string; retorno: Retorno }> {
+): Promise<{ leitura: LeituraSituacao; retorno: Retorno }> {
   const url = urlSituacao(baseObrigatoria(), ambienteAtual(), tiquete);
   let res: Response;
   try {
@@ -700,9 +703,46 @@ export async function consultarSituacao(
     throw transporte(error, "situacao");
   }
   const body = corpoJson(await res.text());
+  // A documentação devolve `{situacao: "ERRO", codigoErro, mensagemErro}` com
+  // HTTP 4xx/5xx: quando o corpo traz a situação, ela vale mais que o número.
+  const leitura = lerSituacao(body);
+  if (!res.ok && leitura.situacao === "DESCONHECIDA") throw erroDaReceita(res.status, body);
+  return { leitura, retorno: lerRetorno(body) };
+}
+
+/**
+ * Link do arquivo (v2, documentação de 13/10/2026). Concluída a solicitação,
+ * é este GET — com o Bearer — que devolve a `urlAssinada`. Não conta no limite
+ * de 4 aberturas por dia. `null` = 404 ARQUIVO_INDISPONIVEL: ainda não pronto,
+ * tentar de novo depois, sem marcar erro.
+ *
+ * A URL é segredo de 48 h: nunca vai para log nem para o navegador.
+ */
+export async function consultarLinkDownload(
+  tiquete: string,
+  token: string,
+): Promise<{ url: string; expiraEm: string | null } | null> {
+  const url = urlDownload(baseObrigatoria(), ambienteAtual(), tiquete);
+  let res: Response;
+  try {
+    res = await withTimeout((signal) =>
+      fetch(url, {
+        method: "GET",
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+        signal,
+      }),
+    );
+  } catch (error) {
+    throw transporte(error, "link_download");
+  }
+  const body = corpoJson(await res.text());
+  if (res.status === 404) return null;
   if (!res.ok) throw erroDaReceita(res.status, body);
-  const estado = String((body?.["estado"] as string | undefined) ?? "DESCONHECIDO");
-  return { estado, retorno: lerRetorno(body) };
+  const retorno = lerRetorno(body);
+  if (retorno.tipo !== "url") {
+    throw new ApuracaoGatewayError("error", "A Receita respondeu ao pedido do link sem a URL do arquivo.");
+  }
+  return { url: retorno.url, expiraEm: retorno.expiraEm };
 }
 
 /**
@@ -846,7 +886,7 @@ async function gravarDiag(admin: AdminClient, apuracaoId: string, diag: Download
 }
 
 
-async function logUse(
+export async function logUse(
   admin: AdminClient,
   credentialId: string,
   finalidade: string,
@@ -867,12 +907,12 @@ async function logUse(
  * é um Proxy e o método perde o `this` (erro "Cannot read properties of
  * undefined (reading 'rest')"). Sempre chamar através do objeto.
  */
-const rpc =
+export const rpc =
   (admin: AdminClient) =>
   (fn: string, args: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }> =>
     (admin.rpc as unknown as (f: string, a: Record<string, unknown>) => any).call(admin, fn, args);
 
-const table = (admin: AdminClient, name: string): any =>
+export const table = (admin: AdminClient, name: string): any =>
   (admin.from as unknown as (t: string) => any).call(admin, name);
 
 async function marcarErro(admin: AdminClient, id: string, motivo: string) {
@@ -966,8 +1006,18 @@ function consumiuCotaDaReceita(reason: GatewayUnavailableReason | undefined): bo
   return reason === "error";
 }
 
-async function estornarCota(admin: AdminClient, cnpj: string, reason?: GatewayUnavailableReason) {
+async function estornarCota(
+  admin: AdminClient,
+  cnpj: string,
+  reason: GatewayUnavailableReason | undefined,
+  opcoes: OpcoesAbertura,
+) {
   if (consumiuCotaDaReceita(reason)) return;
+  // v2: a cota é de cada API (0260); v1: uma só por CNPJ.
+  if (opcoes.apiVersao === 2) {
+    await rpc(admin)("rtc_quota_estornar_v2", { p_cnpj: cnpj, p_recurso: opcoes.recurso });
+    return;
+  }
   await rpc(admin)("rtc_quota_estornar", { p_cnpj: cnpj, p_kind: "solicitacao" });
 }
 
@@ -1031,7 +1081,7 @@ async function abrirSolicitacao(
     const err = e as ApuracaoGatewayError;
     await marcarErro(admin, row.id, err.message);
     // Falha de credencial: a Receita nem foi chamada — devolve a cota.
-    await estornarCota(admin, cnpj, err.reason ?? "no_credential");
+    await estornarCota(admin, cnpj, err.reason ?? "no_credential", opcoes);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 
@@ -1135,7 +1185,7 @@ async function abrirSolicitacao(
     await logUse(admin, credential.id, "apuracao.solicitar", false, err.message);
     await marcarErro(admin, row.id, err.message);
     await apagarToken(admin, row.id, tokenRef);
-    await estornarCota(admin, cnpj, err.reason);
+    await estornarCota(admin, cnpj, err.reason, opcoes);
     return { ok: false, motivo: err.message, reason: err.reason ?? "error" };
   }
 }
@@ -1186,7 +1236,8 @@ function competenciaCorrente(): string {
 /**
  * Abertura na v2, por recurso. Cada recurso (`debitos`, `creditos`,
  * `pagamentos`, `recolhimentos`) é uma solicitação própria e consome uma das 4
- * chamadas do dia — a cota é do endpoint de abertura, não do recurso.
+ * chamadas do dia DAQUELA API — a FAQ da Receita: "até 4 chamadas por API, por
+ * dia e por credencial" (contadas em `rtc_api_quota_v2`, 0260).
  *
  * O acompanhamento não depende do webhook: o `tiqueteSolicitacao` do 201 fica
  * gravado na linha e `processarPendentes` segue por ele pela consulta de
@@ -1292,13 +1343,35 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
 
   const { data: row, error } = await table(admin, "rtc_apuracao")
     .select(
-      "id, tenant_id, competencia, status, solicitado_em, webhook_recebido_em, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em",
+      "id, tenant_id, competencia, status, solicitado_em, webhook_recebido_em, tiquete_download, access_token_ref, payload, url_assinada, url_assinada_expira_em, api_versao, recurso, tiquete_solicitacao",
     )
     .eq("id", apuracaoId)
     .maybeSingle();
   if (error) return { ok: false, id: apuracaoId, motivo: error.message };
   if (!row) return { ok: false, id: apuracaoId, motivo: "Apuração inexistente." };
   if (row.status === "disponivel") return { ok: true, id: apuracaoId, debitos: 0 };
+
+  const v2 = Number(row.api_versao ?? 1) >= 2;
+  // v2: concluída a solicitação, o link vem do endpoint de download, pedido
+  // pelo tíquete da solicitação. Só para linha ainda viva ('solicitada').
+  if (
+    v2 &&
+    row.status === "solicitada" &&
+    !row.payload &&
+    row.tiquete_solicitacao &&
+    !urlAssinadaUtilizavel({
+      url: row.url_assinada as string | null,
+      expiraEm: row.url_assinada_expira_em as string | null,
+      solicitadoEm: row.solicitado_em as string | null,
+      agora: Date.now(),
+    })
+  ) {
+    const link = await obterLinkV2(admin, row.id as string, row.tenant_id as string, String(row.tiquete_solicitacao));
+    if (!link.ok) return { ok: false, id: apuracaoId, motivo: link.motivo };
+    row.url_assinada = link.url;
+    row.url_assinada_expira_em = link.expiraEm;
+  }
+
   if (!row.tiquete_download && !row.payload && !row.url_assinada) {
     return { ok: false, id: apuracaoId, motivo: "Tíquete de download ainda não recebido." };
   }
@@ -1449,6 +1522,8 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
     }
   }
 
+  if (v2) return ingerirV2(admin, apuracaoId, String(row.recurso ?? "debitos"), payload);
+
   const { data: ingested, error: ingestError } = await rpc(admin)("rtc_apuracao_ingest_json", {
     p_apuracao: apuracaoId,
     p_json: payload,
@@ -1462,6 +1537,94 @@ export async function processarApuracao(apuracaoId: string): Promise<ProcessarRe
   return { ok: true, id: apuracaoId, debitos };
 }
 
+/**
+ * Pede o link do arquivo de uma solicitação v2 concluída e o grava na linha.
+ * "Ainda não pronto" (404) não é erro: a linha segue como está.
+ */
+async function obterLinkV2(
+  admin: AdminClient,
+  apuracaoId: string,
+  tenantId: string,
+  tiquete: string,
+): Promise<{ ok: true; url: string; expiraEm: string | null } | { ok: false; motivo: string }> {
+  let credential: Credential;
+  try {
+    credential = await loadApiKey(admin, tenantId);
+  } catch (e) {
+    return { ok: false, motivo: (e as Error).message };
+  }
+  let link: { url: string; expiraEm: string | null } | null;
+  try {
+    const { token } = await accessToken(credential.apiKey);
+    link = await consultarLinkDownload(tiquete, token);
+  } catch (e) {
+    const err = e as ApuracaoGatewayError;
+    await registrarNota(admin, apuracaoId, "link_download_v2", "aviso", { erro: err.message });
+    return { ok: false, motivo: `Link do arquivo da Receita: ${err.message}` };
+  }
+  if (!link) {
+    await registrarNota(admin, apuracaoId, "link_download_v2", "info", { arquivo: "ainda_indisponivel" });
+    return { ok: false, motivo: "A Receita ainda não liberou o arquivo. Tente de novo em alguns minutos." };
+  }
+  const gravado = await table(admin, "rtc_apuracao")
+    .update({ url_assinada: link.url, url_assinada_expira_em: link.expiraEm })
+    .eq("id", apuracaoId);
+  if (gravado.error) {
+    // Não grava = não baixa: a URL só pode ser usada se ficou guardada, para o
+    // reprocessamento achá-la. O link pode ser pedido de novo.
+    const motivo = `Falha ao gravar a URL assinada da apuração: ${gravado.error.message}`;
+    await registrarNota(admin, apuracaoId, "gravacao_url_assinada", "erro", { erro: String(gravado.error.message) });
+    return { ok: false, motivo };
+  }
+  await registrarNota(admin, apuracaoId, "link_download_v2", "info", {
+    arquivo: "link_recebido",
+    expira_em: link.expiraEm,
+  });
+  return { ok: true, url: link.url, expiraEm: link.expiraEm };
+}
+
+/**
+ * Grava o arquivo v2 já baixado. O arquivo é lido aqui (leitores puros e
+ * testados em src/lib/rtc-v2/) e as linhas vão para `rtc_cbs_v2_ingerir`
+ * (0260), que faz o upsert — a janela da v2 é incremental.
+ *
+ * Arquivo sem a lista `apuracao` não é o que esperamos: erro explícito,
+ * nunca "nenhum lançamento".
+ */
+async function ingerirV2(
+  admin: AdminClient,
+  apuracaoId: string,
+  recurso: string,
+  payload: Record<string, unknown>,
+): Promise<ProcessarResult> {
+  if (!arquivoV2Reconhecido(payload)) {
+    const chaves = Object.keys(payload).slice(0, 8).join(", ") || "nenhuma chave";
+    const motivo = `Não entendemos o arquivo da Receita: faltou a lista "apuracao" (veio: ${chaves}). Nada foi lançado; o arquivo ficou guardado.`;
+    await marcarErro(admin, apuracaoId, motivo);
+    return { ok: false, id: apuracaoId, motivo };
+  }
+  let linhas: unknown[] = [];
+  if (recurso === "debitos") linhas = lerDebitosV2(payload);
+  else if (recurso === "pagamentos" || recurso === "recolhimentos") linhas = lerPagamentosV2(payload);
+  else {
+    // Créditos têm estrutura própria (apropriação/utilização) e ainda não têm
+    // leitor: o arquivo fica guardado em `payload`, nada é lançado no escuro.
+    await registrarNota(admin, apuracaoId, "creditos_sem_leitor", "aviso", {
+      grupos: (payload["apuracao"] as unknown[]).length,
+    });
+  }
+  const { data, error } = await rpc(admin)("rtc_cbs_v2_ingerir", {
+    p_apuracao: apuracaoId,
+    p_linhas: linhas,
+  });
+  if (error) {
+    await marcarErro(admin, apuracaoId, `Falha ao gravar a apuração: ${error.message}`);
+    return { ok: false, id: apuracaoId, motivo: error.message };
+  }
+  const n = Number((data as { linhas?: number } | null)?.linhas ?? 0);
+  return { ok: true, id: apuracaoId, debitos: n };
+}
+
 type LinhaAguardandoSituacao = {
   id: string;
   tenant_id: string;
@@ -1469,6 +1632,7 @@ type LinhaAguardandoSituacao = {
   tiquete_solicitacao: string;
   /** Coluna da Tarefa 4 — pode nem existir ainda (ver `select("*")` abaixo). */
   tea_segundos?: number | null;
+  webhook_recebido_em?: string | null;
 };
 
 /**
@@ -1486,7 +1650,9 @@ async function acompanharSituacao(
   admin: AdminClient,
   row: LinhaAguardandoSituacao,
 ): Promise<ProcessarResult | null> {
-  const teaSegundos = Number(row.tea_segundos ?? 0);
+  // Com o aviso do webhook já recebido, a Receita disse que terminou: não há
+  // por que esperar o tempo estimado.
+  const teaSegundos = row.webhook_recebido_em ? 0 : Number(row.tea_segundos ?? 0);
   const esperaAte =
     new Date(row.solicitado_em).getTime() + (Number.isFinite(teaSegundos) ? teaSegundos : 0) * 1000;
   if (Date.now() < esperaAte) return null;
@@ -1498,11 +1664,11 @@ async function acompanharSituacao(
     return null; // sem credencial agora: tenta de novo na próxima rodada
   }
 
-  let estado: string;
+  let leitura: LeituraSituacao;
   let retorno: Retorno;
   try {
     const { token } = await accessToken(credential.apiKey);
-    ({ estado, retorno } = await consultarSituacao(row.tiquete_solicitacao, token));
+    ({ leitura, retorno } = await consultarSituacao(row.tiquete_solicitacao, token));
   } catch (e) {
     console.error("[rtc-apuracao] falha ao consultar situação", {
       apuracao: row.id,
@@ -1511,50 +1677,31 @@ async function acompanharSituacao(
     return null; // falha de transporte: não marca erro na linha, tenta de novo depois
   }
 
-  if (estado === "CONCLUIDA") {
-    if (retorno.tipo !== "url") {
-      // Concluída sem URL assinada: não há o que baixar e esperar não muda
-      // isso. Erro na hora, dizendo o que veio — cair no ramo de espera lá
-      // embaixo trocaria este motivo pelo de 240 minutos, que descreve um
-      // problema que não é este.
-      // Quando o corpo traz um erro, ele é o motivo — melhor que "retorno erro".
-      const detalhe =
-        retorno.tipo === "erro"
-          ? (retorno.mensagem ?? retorno.codigo ?? "sem detalhe")
-          : `retorno ${retorno.tipo}`;
-      const motivo = `A Receita concluiu a solicitação sem URL assinada (${detalhe}).`;
-      await registrarNota(admin, row.id, "situacao_concluida_sem_url", "erro", {
-        retorno: retorno.tipo,
-        estado,
-      });
-      await marcarErro(admin, row.id, motivo);
-      return { ok: false, id: row.id, motivo };
-    }
-
-    const gravado = await table(admin, "rtc_apuracao")
-      .update({ url_assinada: retorno.url, url_assinada_expira_em: retorno.expiraEm })
-      .eq("id", row.id);
-    if (gravado.error) {
-      // A URL não ficou gravada. Seguir para `processarApuracao` — que relê a
-      // linha do banco — faria a apuração morrer dizendo que não há URL nem
-      // tíquete, que é a falha errada: a Receita entregou, nós é que não
-      // guardamos. A linha fica como está (`solicitada`) e a próxima rodada
-      // consulta a situação de novo: a consulta não gasta a cota de abertura e
-      // a URL continua lá do lado da Receita.
-      const motivo = `Falha ao gravar a URL assinada da apuração: ${gravado.error.message}`;
-      await registrarNota(admin, row.id, "gravacao_url_assinada", "erro", {
-        erro: String(gravado.error.message),
-      });
-      return { ok: false, id: row.id, motivo };
+  if (leitura.situacao === "CONCLUIDA") {
+    // Formato anterior a 14/10: a URL podia vir na própria situação. Se vier,
+    // aproveita; senão `processarApuracao` pede o link no endpoint de download.
+    if (retorno.tipo === "url") {
+      const gravado = await table(admin, "rtc_apuracao")
+        .update({ url_assinada: retorno.url, url_assinada_expira_em: retorno.expiraEm })
+        .eq("id", row.id);
+      if (gravado.error) {
+        const motivo = `Falha ao gravar a URL assinada da apuração: ${gravado.error.message}`;
+        await registrarNota(admin, row.id, "gravacao_url_assinada", "erro", {
+          erro: String(gravado.error.message),
+        });
+        return { ok: false, id: row.id, motivo };
+      }
     }
     return processarApuracao(row.id);
   }
 
-  if (estado === "ERRO") {
+  if (leitura.situacao === "ERRO" || leitura.situacao === "EXPIRADA") {
     const motivo =
-      retorno.tipo === "erro"
-        ? (retorno.mensagem ?? retorno.codigo ?? "a Receita não informou o motivo")
-        : "a Receita sinalizou erro sem detalhe";
+      leitura.mensagem ??
+      leitura.codigo ??
+      (leitura.situacao === "EXPIRADA"
+        ? "tempo limite de processamento excedido"
+        : "a Receita sinalizou erro sem detalhe");
     await marcarErro(admin, row.id, `A Receita recusou a apuração: ${motivo}`);
     return { ok: false, id: row.id, motivo };
   }

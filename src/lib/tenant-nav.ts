@@ -15,6 +15,7 @@ import {
   Network,
   Palette,
   PlugZap,
+  Receipt,
   Rocket,
   Scale,
   ScrollText,
@@ -32,6 +33,7 @@ export type NavRoute =
   | "/t/$tenantId"
   | "/t/$tenantId/cash"
   | "/t/$tenantId/apuracao"
+  | "/t/$tenantId/recolhimentos"
   | "/t/$tenantId/chain"
   | "/t/$tenantId/simulador"
   | "/t/$tenantId/validador"
@@ -133,6 +135,12 @@ function companyGroups(isCompany: boolean): NavGroup[] {
         OVERVIEW,
         { label: "Projeção de caixa", block: "3.4", icon: Banknote, to: "/t/$tenantId/cash" },
         { label: "Apuração", block: "3.12", icon: FileText, to: "/t/$tenantId/apuracao" },
+        {
+          label: "DARF e recolhimentos",
+          block: "3.12",
+          icon: Receipt,
+          to: "/t/$tenantId/recolhimentos",
+        },
         { label: "Preço de venda", block: "3.7", icon: Tag, to: "/t/$tenantId/price" },
         {
           label: "Financiamento",

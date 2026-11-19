@@ -36,6 +36,8 @@ export type LinhaV2 = {
   inexigivel_cents: number;
   suspenso_cents: number;
   extinto_cents: number;
+  /** `pgtoAntecipado`, incluído pela Receita na versão 1.3 (13/11/2026). */
+  pgto_antecipado_cents: number;
   saldo_devedor_cents: number;
 };
 
@@ -94,6 +96,7 @@ export function lerListaV2(arquivo: unknown, chaveLista: "debitos" | "creditos")
         inexigivel_cents: reaisParaCentavos(cbs["inexigivel"]),
         suspenso_cents: reaisParaCentavos(cbs["suspenso"]),
         extinto_cents: reaisParaCentavos(cbs["extinto"]),
+        pgto_antecipado_cents: reaisParaCentavos(cbs["pgtoAntecipado"]),
         saldo_devedor_cents: reaisParaCentavos(cbs["saldoDevedor"]),
       });
     }

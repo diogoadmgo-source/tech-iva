@@ -1,0 +1,39 @@
+name: Apuração CBS v2 · SQL
+
+# Suíte SQL da 0260 (cota por API, aviso do webhook, ingestão v2 e DARF) num
+# Postgres 16 DESCARTÁVEL criado pelo próprio job. Sem segredo nem Supabase.
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*_0260_*.sql"
+      - "db/tests/rtc_v2/**"
+      - "db/tests/tax_intel/00_supabase_stubs.sql"
+      - "scripts/rtc-v2/**"
+      - ".github/workflows/rtc-v2-sql.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cliente do Postgres
+        run: sudo apt-get update -q && sudo apt-get install -yq postgresql-client
+      - name: Suíte SQL
+        run: ./scripts/rtc-v2/sql-tests.sh
