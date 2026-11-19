@@ -1,7 +1,7 @@
 {
-  "motivo": "sonda: a opção IBS/CBS vem sem simplesHistory? (3 empresas, sem gravar)",
-  "max_creditos": 6,
-  "historico": false,
+  "motivo": "carga da GDB: 554 optantes x 3 créditos (com simplesHistory; sem ele o campo events não vem)",
+  "max_creditos": 1700,
+  "historico": true,
   "idade_dias": 30,
-  "amostra": 3
+  "amostra": 0
 }

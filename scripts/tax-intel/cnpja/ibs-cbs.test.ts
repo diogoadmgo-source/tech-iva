@@ -17,6 +17,9 @@ describe("opção IBS/CBS pela CNPJá", () => {
   it("sem evento vira não", () => {
     expect(opcao({ optant: true, events: [] }, "CBS")).toEqual({ valor: "nao", desde: null });
   });
+  it("sem o campo events (pedido sem histórico) não vira não", () => {
+    expect(opcao({ optant: true, since: "2020-01-01" }, "IBS")).toBeNull();
+  });
   it("evento de outro tipo não é adivinhado", () => {
     expect(opcao({ events: [{ regime: "IBS", from: "2027-07-01", text: "Exclusão" }] }, "IBS")).toBeNull();
   });

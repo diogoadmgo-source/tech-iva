@@ -15,7 +15,9 @@ import { readFile } from "node:fs/promises";
 
 /** Lê company.simples.events: [{regime: IBS|CBS, from, text}]. null = não reconhecido. */
 export function opcao(simples, regime) {
-  const ev = (Array.isArray(simples?.events) ? simples.events : []).filter(
+  // Sem o campo events não há resposta (sem simplesHistory ele não vem): nunca vira "não".
+  if (!Array.isArray(simples?.events)) return null;
+  const ev = simples.events.filter(
     (e) => String(e?.regime ?? "").toUpperCase() === regime,
   );
   if (!ev.length) return { valor: "nao", desde: null };
