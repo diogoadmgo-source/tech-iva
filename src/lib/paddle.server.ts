@@ -1,5 +1,5 @@
 /**
- * Acesso server-only ao Paddle através do gateway de conectores da Lovable.
+ * Acesso server-only à API do Paddle (chamada direta, com a chave de API da conta).
  * Nunca importar deste arquivo em código de navegador.
  */
 
@@ -7,9 +7,12 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 export type PaddleEnv = "sandbox" | "live";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/paddle";
+const API_URL: Record<PaddleEnv, string> = {
+  sandbox: "https://sandbox-api.paddle.com",
+  live: "https://api.paddle.com",
+};
 
-function connectionKey(env: PaddleEnv): string {
+function apiKey(env: PaddleEnv): string {
   const key =
     env === "sandbox" ? process.env["PADDLE_SANDBOX_API_KEY"] : process.env["PADDLE_LIVE_API_KEY"];
   if (!key) throw new Error(`Credencial do Paddle (${env}) não configurada.`);
@@ -30,15 +33,11 @@ export async function gatewayFetch(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  if (!lovableKey) throw new Error("LOVABLE_API_KEY não configurada.");
-
-  const response = await fetch(`${GATEWAY_URL}${path}`, {
+  const response = await fetch(`${API_URL[env]}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": connectionKey(env),
+      Authorization: `Bearer ${apiKey(env)}`,
       ...(init.headers as Record<string, string> | undefined),
     },
   });

@@ -37,3 +37,6 @@ minimum_password_length = 8
 
 [auth.password]
 hibp_enabled = true
+
+[functions.rtc-webhook]
+verify_jwt = false

@@ -1,26 +1,18 @@
 # Fluxo de trabalho
 
-## Antes de clicar em Publicar
+## Como o código vai para produção
 
-    bash scripts/pronto-para-publicar.sh
+Desde a saída do Lovable (novembro de 2026), o app roda na **Vercel**, ligada a
+este repositório no GitHub:
 
-Só publique se a última linha for **PRONTO PARA PUBLICAR**.
+- Todo merge na `main` publica sozinho em produção (`techiva.com.br`).
+- Todo pull request ganha um deploy de **preview** com URL própria. Teste nele
+  antes de fazer o merge.
+- Para voltar uma versão, use *Instant Rollback* no painel da Vercel.
 
-O motivo: em 16/09/2026 seis correções estavam gravadas só numa máquina.
-A publicação subiu a versão antiga e duas consultas da Receita foram gastas
-rodando um defeito que já estava corrigido.
-
-## Quem mexe no código
-
-Duas fontes escrevem na mesma branch `main`:
-
-- **O Lovable**, quando você pede algo no editor dele — envia sozinho.
-- **Edição local** (Claude Code ou manual) — só chega ao Lovable depois de `git push`.
-
-Por isso: **antes de começar a mexer localmente, traga o que o Lovable fez**
-(`git pull --no-rebase origin main`). E não peça ao Lovable para mexer num
-arquivo que está sendo mexido localmente ao mesmo tempo — em 16/09 as duas
-fontes corrigiram o mesmo defeito no mesmo arquivo, de jeitos diferentes.
+Não existe mais o botão "Publicar" nem o editor do Lovable escrevendo na `main`.
+O script `pronto-para-publicar.sh` foi removido: o deploy sai do GitHub, então
+uma alteração que ficou só numa máquina simplesmente não é publicada.
 
 ## Banco de dados
 
@@ -35,7 +27,7 @@ fontes corrigiram o mesmo defeito no mesmo arquivo, de jeitos diferentes.
 
 ## Ordem: publicar o código antes de aplicar mudanças do banco
 
-Regra: **sempre publique o código mais recente ANTES de aplicar uma migração**,
+Regra: **sempre publique o código mais recente (merge na `main`) ANTES de aplicar uma migração**,
 a menos que o cabeçalho da migração diga o contrário (a 0235, por exemplo, exige
 o banco antes do código). Migração nova costuma mudar o que o banco devolve (por exemplo,
 passar a devolver "sem valor" onde antes devolvia zero), e só o código novo
@@ -64,5 +56,5 @@ apuração chegasse.
 ## Verificação automática
 
 Todo envio para a `main` roda tipos e testes no GitHub
-(`.github/workflows/verificacao.yml`), inclusive os envios do Lovable.
-Se ficar vermelho, **não publique** até entender por quê.
+(`.github/workflows/verificacao.yml`).
+Se ficar vermelho, **não faça o merge** até entender por quê.

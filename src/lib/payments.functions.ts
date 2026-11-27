@@ -15,12 +15,13 @@ export const resolvePaddlePrice = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const { gatewayFetch } = await import("@/lib/paddle.server");
-    const response = await gatewayFetch(
-      data.environment,
-      `/prices?external_id=${encodeURIComponent(data.priceId)}`,
-    );
-    const result = (await response.json()) as { data?: { id: string }[] };
-    const id = result.data?.[0]?.id;
+    // A API do Paddle não filtra preço por external_id: lista os ativos e casa
+    // pelo import_meta.external_id (o mesmo campo que o webhook lê).
+    const response = await gatewayFetch(data.environment, `/prices?status=active&per_page=200`);
+    const result = (await response.json()) as {
+      data?: { id: string; import_meta?: { external_id?: string | null } | null }[];
+    };
+    const id = result.data?.find((p) => p.import_meta?.external_id === data.priceId)?.id;
     if (!id) throw new Error(`Preço ${data.priceId} não encontrado no provedor.`);
     return id;
   });
@@ -39,7 +40,8 @@ export const openBillingPortal = createServerFn({ method: "POST" })
       p_tenant: data.tenantId,
     });
     if (permError) throw new Error(permError.message);
-    if (!allowed) throw new Error("Seu papel nesta organização não permite gerenciar a assinatura.");
+    if (!allowed)
+      throw new Error("Seu papel nesta organização não permite gerenciar a assinatura.");
 
     const { data: rows, error } = await context.supabase
       .from("subscriptions")
@@ -77,7 +79,10 @@ export const openBillingPortal = createServerFn({ method: "POST" })
       data?: {
         urls?: {
           general?: { overview?: string };
-          subscriptions?: { cancel_subscription?: string; update_subscription_payment_method?: string }[];
+          subscriptions?: {
+            cancel_subscription?: string;
+            update_subscription_payment_method?: string;
+          }[];
         };
       };
     };

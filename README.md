@@ -1,32 +1,33 @@
-# Welcome to your Lovable project
+# TECH-IVA
 
-This project was built with [Lovable](https://lovable.dev).
+Projeção de IBS e CBS no caixa da empresa, com cálculo oficial da Receita Federal.
 
-## Build with Lovable
+## Stack
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+- TanStack Start (React 19, SSR), TypeScript, Tailwind CSS 4
+- Supabase (banco, autenticação, Edge Functions) — projeto `TechIVA-Prod`
+- Hospedagem na Vercel (build via Nitro, preset `vercel`)
+- Paddle (assinaturas) e Resend (e-mail), chamados diretamente pela API
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+## Desenvolvimento
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Requer [Bun](https://bun.sh) e Node.js 22.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev        # http://localhost:8080
+bun run test
+bun run build      # gera .vercel/output
 ```
 
-## Built with
+As variáveis públicas (`VITE_*`) estão em `.env`. As de servidor ficam na Vercel
+(Project Settings → Environment Variables); para rodar localmente, copie-as para
+um `.env.local` (não versionado). A lista completa está em
+`docs/hospedagem-vercel.md`.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+Para gerar um build Node em vez de Vercel: `NITRO_PRESET=node-server bun run build`.
+
+Fluxo de publicação e de migrations: `docs/fluxo-de-trabalho.md`.
 
 ## Arquitetura do caixa do imposto (`tax_cash_events`)
 
