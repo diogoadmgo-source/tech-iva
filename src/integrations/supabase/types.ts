@@ -1831,6 +1831,27 @@ export type Database = {
         }
         Relationships: []
       }
+      rtc_api_quota_v2: {
+        Row: {
+          cnpj8: string
+          dia: string
+          recurso: string
+          solicitacoes: number
+        }
+        Insert: {
+          cnpj8: string
+          dia: string
+          recurso: string
+          solicitacoes?: number
+        }
+        Update: {
+          cnpj8?: string
+          dia?: string
+          recurso?: string
+          solicitacoes?: number
+        }
+        Relationships: []
+      }
       rtc_apuracao: {
         Row: {
           access_token_ref: string | null
@@ -2015,6 +2036,251 @@ export type Database = {
           },
           {
             foreignKeyName: "rtc_apuracao_conta_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtc_cbs_darf: {
+        Row: {
+          cd_retorno: string
+          chave_dfe: string | null
+          chave_pix: string | null
+          codigo_barras: string | null
+          criado_em: string
+          dados_invalidos: string[]
+          data_maxima: string | null
+          gerado: boolean
+          http_status: number | null
+          id: string
+          juros_cents: number | null
+          link_pdf: string | null
+          mensagem: string | null
+          multa_cents: number | null
+          opcao_pagamento: string
+          pa: string | null
+          pedido: Json
+          principal_cents: number | null
+          solicitado_por: string | null
+          tenant_id: string
+          tipo: string
+          total_cents: number | null
+          valor_parcial_cents: number | null
+        }
+        Insert: {
+          cd_retorno: string
+          chave_dfe?: string | null
+          chave_pix?: string | null
+          codigo_barras?: string | null
+          criado_em?: string
+          dados_invalidos?: string[]
+          data_maxima?: string | null
+          gerado?: boolean
+          http_status?: number | null
+          id?: string
+          juros_cents?: number | null
+          link_pdf?: string | null
+          mensagem?: string | null
+          multa_cents?: number | null
+          opcao_pagamento: string
+          pa?: string | null
+          pedido: Json
+          principal_cents?: number | null
+          solicitado_por?: string | null
+          tenant_id: string
+          tipo: string
+          total_cents?: number | null
+          valor_parcial_cents?: number | null
+        }
+        Update: {
+          cd_retorno?: string
+          chave_dfe?: string | null
+          chave_pix?: string | null
+          codigo_barras?: string | null
+          criado_em?: string
+          dados_invalidos?: string[]
+          data_maxima?: string | null
+          gerado?: boolean
+          http_status?: number | null
+          id?: string
+          juros_cents?: number | null
+          link_pdf?: string | null
+          mensagem?: string | null
+          multa_cents?: number | null
+          opcao_pagamento?: string
+          pa?: string | null
+          pedido?: Json
+          principal_cents?: number | null
+          solicitado_por?: string | null
+          tenant_id?: string
+          tipo?: string
+          total_cents?: number | null
+          valor_parcial_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_cbs_darf_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtc_cbs_debito_v2: {
+        Row: {
+          apuracao_id: string | null
+          apurado_cents: number
+          atualizacao: string | null
+          chave: string
+          documento: number
+          emissao: string | null
+          excedente_cents: number
+          extinto_cents: number
+          id: string
+          inexigivel_cents: number
+          origem: number
+          pa: string
+          pgto_antecipado_cents: number
+          recebido_em: string
+          registro: string | null
+          saldo_devedor_cents: number
+          suspenso_cents: number
+          tenant_id: string
+        }
+        Insert: {
+          apuracao_id?: string | null
+          apurado_cents?: number
+          atualizacao?: string | null
+          chave: string
+          documento: number
+          emissao?: string | null
+          excedente_cents?: number
+          extinto_cents?: number
+          id?: string
+          inexigivel_cents?: number
+          origem: number
+          pa: string
+          pgto_antecipado_cents?: number
+          recebido_em?: string
+          registro?: string | null
+          saldo_devedor_cents?: number
+          suspenso_cents?: number
+          tenant_id: string
+        }
+        Update: {
+          apuracao_id?: string | null
+          apurado_cents?: number
+          atualizacao?: string | null
+          chave?: string
+          documento?: number
+          emissao?: string | null
+          excedente_cents?: number
+          extinto_cents?: number
+          id?: string
+          inexigivel_cents?: number
+          origem?: number
+          pa?: string
+          pgto_antecipado_cents?: number
+          recebido_em?: string
+          registro?: string | null
+          saldo_devedor_cents?: number
+          suspenso_cents?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_cbs_debito_v2_apuracao_id_fkey"
+            columns: ["apuracao_id"]
+            isOneToOne: false
+            referencedRelation: "rtc_apuracao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rtc_cbs_debito_v2_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rtc_cbs_pagamento: {
+        Row: {
+          apuracao_id: string | null
+          chave_dfe: string | null
+          data_arrecadacao: string
+          id: string
+          juros_cents: number
+          multa_cents: number
+          ni_adquirente: string | null
+          ni_contribuinte: string | null
+          ni_fornecedor: string | null
+          numero_darf: string
+          pa: string
+          principal_cents: number
+          recebido_em: string
+          recurso: string
+          sequencial: number
+          tenant_id: string
+          tipo: number
+          total_cents: number
+          vencimento: string | null
+        }
+        Insert: {
+          apuracao_id?: string | null
+          chave_dfe?: string | null
+          data_arrecadacao: string
+          id?: string
+          juros_cents?: number
+          multa_cents?: number
+          ni_adquirente?: string | null
+          ni_contribuinte?: string | null
+          ni_fornecedor?: string | null
+          numero_darf: string
+          pa: string
+          principal_cents?: number
+          recebido_em?: string
+          recurso: string
+          sequencial: number
+          tenant_id: string
+          tipo: number
+          total_cents?: number
+          vencimento?: string | null
+        }
+        Update: {
+          apuracao_id?: string | null
+          chave_dfe?: string | null
+          data_arrecadacao?: string
+          id?: string
+          juros_cents?: number
+          multa_cents?: number
+          ni_adquirente?: string | null
+          ni_contribuinte?: string | null
+          ni_fornecedor?: string | null
+          numero_darf?: string
+          pa?: string
+          principal_cents?: number
+          recebido_em?: string
+          recurso?: string
+          sequencial?: number
+          tenant_id?: string
+          tipo?: number
+          total_cents?: number
+          vencimento?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rtc_cbs_pagamento_apuracao_id_fkey"
+            columns: ["apuracao_id"]
+            isOneToOne: false
+            referencedRelation: "rtc_apuracao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rtc_cbs_pagamento_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -4379,17 +4645,29 @@ export type Database = {
       }
       tax_entities: {
         Row: {
+          cbs_desde: string | null
+          cbs_regular: Database["public"]["Enums"]["tax_tri_state"]
+          cnae_descricao: string | null
+          cnae_principal: string | null
           cnpj: string
           cnpj_alfanumerico: boolean | null
           cnpj_dv: string | null
           cnpj_ordem: string | null
           cnpj_raiz: string | null
           created_at: string
+          data_abertura: string | null
+          ibs_cbs_consultado_em: string | null
+          ibs_cbs_fonte: string | null
+          ibs_desde: string | null
+          ibs_regular: Database["public"]["Enums"]["tax_tri_state"]
           is_matriz: boolean | null
           last_consulted_at: string | null
           municipio: string | null
           municipio_ibge: string | null
+          natureza_descricao: string | null
+          natureza_juridica: string | null
           nome_fantasia: string | null
+          porte: string | null
           public_classification: Database["public"]["Enums"]["tax_classification"]
           public_classification_basis: Json
           public_classified_at: string | null
@@ -4400,17 +4678,29 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cbs_desde?: string | null
+          cbs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          cnae_descricao?: string | null
+          cnae_principal?: string | null
           cnpj: string
           cnpj_alfanumerico?: boolean | null
           cnpj_dv?: string | null
           cnpj_ordem?: string | null
           cnpj_raiz?: string | null
           created_at?: string
+          data_abertura?: string | null
+          ibs_cbs_consultado_em?: string | null
+          ibs_cbs_fonte?: string | null
+          ibs_desde?: string | null
+          ibs_regular?: Database["public"]["Enums"]["tax_tri_state"]
           is_matriz?: boolean | null
           last_consulted_at?: string | null
           municipio?: string | null
           municipio_ibge?: string | null
+          natureza_descricao?: string | null
+          natureza_juridica?: string | null
           nome_fantasia?: string | null
+          porte?: string | null
           public_classification?: Database["public"]["Enums"]["tax_classification"]
           public_classification_basis?: Json
           public_classified_at?: string | null
@@ -4421,17 +4711,29 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cbs_desde?: string | null
+          cbs_regular?: Database["public"]["Enums"]["tax_tri_state"]
+          cnae_descricao?: string | null
+          cnae_principal?: string | null
           cnpj?: string
           cnpj_alfanumerico?: boolean | null
           cnpj_dv?: string | null
           cnpj_ordem?: string | null
           cnpj_raiz?: string | null
           created_at?: string
+          data_abertura?: string | null
+          ibs_cbs_consultado_em?: string | null
+          ibs_cbs_fonte?: string | null
+          ibs_desde?: string | null
+          ibs_regular?: Database["public"]["Enums"]["tax_tri_state"]
           is_matriz?: boolean | null
           last_consulted_at?: string | null
           municipio?: string | null
           municipio_ibge?: string | null
+          natureza_descricao?: string | null
+          natureza_juridica?: string | null
           nome_fantasia?: string | null
+          porte?: string | null
           public_classification?: Database["public"]["Enums"]["tax_classification"]
           public_classification_basis?: Json
           public_classified_at?: string | null
@@ -6136,16 +6438,32 @@ export type Database = {
         Args: { p_payload: Json; p_tenant: string }
         Returns: string
       }
+      rtc_cbs_darf_registrar: {
+        Args: { p_registro: Json; p_tenant: string; p_usuario: string }
+        Returns: string
+      }
+      rtc_cbs_v2_ingerir: {
+        Args: { p_apuracao: string; p_linhas: Json }
+        Returns: Json
+      }
       rtc_class_trib_upsert: { Args: { p: Json }; Returns: number }
       rtc_credential_state: { Args: { p_tenant: string }; Returns: Json }
+      rtc_dia_receita: { Args: never; Returns: string }
+      rtc_pa_data: { Args: { p: string }; Returns: string }
+      rtc_pode_emitir_darf: { Args: { p_tenant: string }; Returns: boolean }
       rtc_quota_estornar: {
         Args: { p_cnpj: string; p_kind: string }
+        Returns: Json
+      }
+      rtc_quota_estornar_v2: {
+        Args: { p_cnpj: string; p_recurso: string }
         Returns: Json
       }
       rtc_quota_status: {
         Args: { p_limite?: number; p_tenant: string }
         Returns: Json
       }
+      rtc_quota_status_v2: { Args: { p_tenant: string }; Returns: Json }
       rtc_quota_take: {
         Args: {
           p_cnpj: string
@@ -6153,6 +6471,10 @@ export type Database = {
           p_limite?: number
           p_origem?: string
         }
+        Returns: Json
+      }
+      rtc_quota_take_v2: {
+        Args: { p_cnpj: string; p_origem?: string; p_recurso: string }
         Returns: Json
       }
       rule_reprocess_progress: { Args: { p_id: string }; Returns: Json }
@@ -6275,6 +6597,7 @@ export type Database = {
       tax_classify_compute: { Args: { p_cnpj: string }; Returns: Json }
       tax_cnpj_is_valid: { Args: { p: string }; Returns: boolean }
       tax_cnpj_strip: { Args: { p: string }; Returns: string }
+      tax_cpf_is_valid: { Args: { p: string }; Returns: boolean }
       tax_import_add_items: {
         Args: { p_import: string; p_rows: Json }
         Returns: Json
@@ -6359,6 +6682,21 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      tax_ingest_ibs_cbs: { Args: { p_rows: Json }; Returns: Json }
+      tax_ingest_ibs_cbs_targets: {
+        Args: { p_after?: string; p_idade_dias?: number; p_limit?: number }
+        Returns: {
+          cnpj: string
+          cnpj_raiz: string
+        }[]
+      }
+      tax_ingest_simples_targets: {
+        Args: { p_after?: string; p_limit?: number }
+        Returns: {
+          cnpj: string
+          cnpj_raiz: string
+        }[]
+      }
       tax_ingest_start_run: {
         Args: {
           p_competencia: string
@@ -6397,6 +6735,22 @@ export type Database = {
       }
       tax_portfolio_status: { Args: { p_tenant: string }; Returns: Json }
       tax_processing_status: { Args: { p_tenant: string }; Returns: Json }
+      tax_register_consulta_optantes: {
+        Args: {
+          p_cbs: string
+          p_cbs_desde: string
+          p_cnpj: string
+          p_consultado_em: string
+          p_file_mime?: string
+          p_file_path?: string
+          p_file_sha256?: string
+          p_file_size?: number
+          p_ibs: string
+          p_ibs_desde: string
+          p_tenant: string
+        }
+        Returns: Json
+      }
       tax_request_processing: { Args: { p_tenant: string }; Returns: Json }
       tax_scope_tenants: { Args: never; Returns: string[] }
       tax_storage_tenant: { Args: { p_name: string }; Returns: string }
