@@ -13,8 +13,9 @@
     },
     {
       "matches": [
-        "https://*.lovable.app/*",
-        "https://*.lovableproject.com/*",
+        "https://techiva.com.br/*",
+        "https://*.techiva.com.br/*",
+        "https://*.vercel.app/*",
         "http://localhost/*"
       ],
       "js": ["app.js"],

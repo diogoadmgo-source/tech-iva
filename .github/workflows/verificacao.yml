@@ -1,7 +1,6 @@
 name: Verificação
 
-# Roda em todo envio para a principal — inclusive os commits automáticos do
-# Lovable, que hoje não passam por verificação nenhuma — e em pull request.
+# Roda em todo envio para a principal e em pull request.
 on:
   push:
     branches: [main]
@@ -25,3 +24,6 @@ jobs:
 
       - name: Testes
         run: bunx vitest run
+
+      - name: Build (saída da Vercel)
+        run: bun run build

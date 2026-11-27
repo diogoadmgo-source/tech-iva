@@ -1,8 +1,6 @@
-import logoAsset from "@/assets/techiva-logo.png.asset.json";
-import iconAsset from "@/assets/techiva-icon.png.asset.json";
-
-export const brandLogoUrl = logoAsset.url;
-export const brandIconUrl = iconAsset.url;
+// Arquivos servidos de public/brand/ (antes ficavam no armazenamento de assets do Lovable).
+export const brandLogoUrl = "/brand/techiva-logo.png";
+export const brandIconUrl = "/brand/techiva-icon.png";
 
 /** Lockup completo (símbolo + wordmark TECH IVA%), adaptado ao tema claro. */
 export function BrandLogo({ className = "h-8 w-auto" }: { className?: string }) {
@@ -26,6 +24,12 @@ export function BrandIcon({
   alt?: string;
 }) {
   return (
-    <img src={brandIconUrl} alt={alt} className={`brand-mark ${className}`} loading="lazy" decoding="async" />
+    <img
+      src={brandIconUrl}
+      alt={alt}
+      className={`brand-mark ${className}`}
+      loading="lazy"
+      decoding="async"
+    />
   );
 }

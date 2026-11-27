@@ -10,10 +10,8 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
-import iconAsset from "@/assets/techiva-icon.png.asset.json";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -62,10 +60,6 @@ function ErrorComponent({ error: rawError, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   const chunk = isChunkLoadError(error);
-
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
 
   // Recuperação automática (uma única vez) quando o app foi atualizado durante a navegação.
   useEffect(() => {
@@ -119,12 +113,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "TECH-IVA — IBS e CBS no seu caixa" },
       { name: "description", content: "Projeção de IBS e CBS no caixa da sua empresa, com cálculo oficial da Receita Federal." },
-      { name: "author", content: "Lovable" },
+      { name: "author", content: "TECH-IVA" },
       { property: "og:title", content: "TECH-IVA — IBS e CBS no seu caixa" },
       { property: "og:description", content: "Projeção de IBS e CBS no caixa da sua empresa, com cálculo oficial da Receita Federal." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -132,7 +125,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: iconAsset.url },
+      { rel: "apple-touch-icon", href: "/brand/techiva-icon.png" },
     ],
   }),
   shellComponent: RootShell,

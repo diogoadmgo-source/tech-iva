@@ -17,8 +17,9 @@ a opção pelo regime regular de IBS e de CBS dos optantes do Simples.
 3. Ligue o **Modo do desenvolvedor**.
 4. Clique em **Carregar sem compactação** e escolha a pasta.
 
-Se o TECH-IVA estiver num domínio próprio (fora de `*.lovable.app`), inclua o
-domínio em `content_scripts[1].matches` do `manifest.json`.
+A extensão já reconhece `techiva.com.br` e os previews da Vercel (`*.vercel.app`).
+Se o TECH-IVA mudar de domínio, inclua o novo em `content_scripts[1].matches`
+do `manifest.json`.
 
 ## Usar
 

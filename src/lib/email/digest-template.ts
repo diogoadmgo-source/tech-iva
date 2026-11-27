@@ -4,7 +4,7 @@
  */
 
 const LOGO_URL =
-  "https://project--855fd1d6-ffd5-4396-8e4c-6ec320982648.lovable.app/__l5e/assets-v1/61c2ed72-5485-4a53-b97e-1dd7fb61d35e/techiva-logo.png";
+  "https://techiva.com.br/brand/techiva-logo.png";
 
 function escapeHtml(value: string): string {
   return value
