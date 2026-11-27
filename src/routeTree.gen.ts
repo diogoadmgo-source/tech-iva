@@ -29,7 +29,6 @@ import { Route as AuthenticatedTTenantIdRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTTenantIdIndexRouteImport } from './routes/_authenticated/t.$tenantId.index'
 import { Route as AuthenticatedTTenantIdAlertsRouteImport } from './routes/_authenticated/t.$tenantId.alerts'
 import { Route as AuthenticatedTTenantIdApuracaoRouteImport } from './routes/_authenticated/t.$tenantId.apuracao'
-import { Route as AuthenticatedTTenantIdRecolhimentosRouteImport } from './routes/_authenticated/t.$tenantId.recolhimentos'
 import { Route as AuthenticatedTTenantIdAuditRouteImport } from './routes/_authenticated/t.$tenantId.audit'
 import { Route as AuthenticatedTTenantIdBrandRouteImport } from './routes/_authenticated/t.$tenantId.brand'
 import { Route as AuthenticatedTTenantIdCashRouteImport } from './routes/_authenticated/t.$tenantId.cash'
@@ -44,6 +43,7 @@ import { Route as AuthenticatedTTenantIdOpsRouteImport } from './routes/_authent
 import { Route as AuthenticatedTTenantIdPlansRouteImport } from './routes/_authenticated/t.$tenantId.plans'
 import { Route as AuthenticatedTTenantIdPortfolioRouteImport } from './routes/_authenticated/t.$tenantId.portfolio'
 import { Route as AuthenticatedTTenantIdPriceRouteImport } from './routes/_authenticated/t.$tenantId.price'
+import { Route as AuthenticatedTTenantIdRecolhimentosRouteImport } from './routes/_authenticated/t.$tenantId.recolhimentos'
 import { Route as AuthenticatedTTenantIdRegimeRouteImport } from './routes/_authenticated/t.$tenantId.regime'
 import { Route as AuthenticatedTTenantIdReportsRouteImport } from './routes/_authenticated/t.$tenantId.reports'
 import { Route as AuthenticatedTTenantIdRulesRouteImport } from './routes/_authenticated/t.$tenantId.rules'
@@ -164,12 +164,6 @@ const AuthenticatedTTenantIdApuracaoRoute =
     path: '/apuracao',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
-const AuthenticatedTTenantIdRecolhimentosRoute =
-  AuthenticatedTTenantIdRecolhimentosRouteImport.update({
-    id: '/recolhimentos',
-    path: '/recolhimentos',
-    getParentRoute: () => AuthenticatedTTenantIdRoute,
-  } as any)
 const AuthenticatedTTenantIdAuditRoute =
   AuthenticatedTTenantIdAuditRouteImport.update({
     id: '/audit',
@@ -252,6 +246,12 @@ const AuthenticatedTTenantIdPriceRoute =
   AuthenticatedTTenantIdPriceRouteImport.update({
     id: '/price',
     path: '/price',
+    getParentRoute: () => AuthenticatedTTenantIdRoute,
+  } as any)
+const AuthenticatedTTenantIdRecolhimentosRoute =
+  AuthenticatedTTenantIdRecolhimentosRouteImport.update({
+    id: '/recolhimentos',
+    path: '/recolhimentos',
     getParentRoute: () => AuthenticatedTTenantIdRoute,
   } as any)
 const AuthenticatedTTenantIdRegimeRoute =
@@ -369,7 +369,6 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
   '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
-  '/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -384,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
+  '/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
@@ -420,7 +420,6 @@ export interface FileRoutesByTo {
   '/s/$token': typeof STokenRoute
   '/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
-  '/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -435,6 +434,7 @@ export interface FileRoutesByTo {
   '/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
+  '/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
@@ -474,7 +474,6 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId': typeof AuthenticatedTTenantIdRouteWithChildren
   '/_authenticated/t/$tenantId/alerts': typeof AuthenticatedTTenantIdAlertsRoute
   '/_authenticated/t/$tenantId/apuracao': typeof AuthenticatedTTenantIdApuracaoRoute
-  '/_authenticated/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/_authenticated/t/$tenantId/audit': typeof AuthenticatedTTenantIdAuditRoute
   '/_authenticated/t/$tenantId/brand': typeof AuthenticatedTTenantIdBrandRoute
   '/_authenticated/t/$tenantId/cash': typeof AuthenticatedTTenantIdCashRoute
@@ -489,6 +488,7 @@ export interface FileRoutesById {
   '/_authenticated/t/$tenantId/plans': typeof AuthenticatedTTenantIdPlansRoute
   '/_authenticated/t/$tenantId/portfolio': typeof AuthenticatedTTenantIdPortfolioRoute
   '/_authenticated/t/$tenantId/price': typeof AuthenticatedTTenantIdPriceRoute
+  '/_authenticated/t/$tenantId/recolhimentos': typeof AuthenticatedTTenantIdRecolhimentosRoute
   '/_authenticated/t/$tenantId/regime': typeof AuthenticatedTTenantIdRegimeRoute
   '/_authenticated/t/$tenantId/reports': typeof AuthenticatedTTenantIdReportsRoute
   '/_authenticated/t/$tenantId/rules': typeof AuthenticatedTTenantIdRulesRoute
@@ -528,7 +528,6 @@ export interface FileRouteTypes {
     | '/t/$tenantId'
     | '/t/$tenantId/alerts'
     | '/t/$tenantId/apuracao'
-    | '/t/$tenantId/recolhimentos'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -543,6 +542,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
     | '/t/$tenantId/price'
+    | '/t/$tenantId/recolhimentos'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
@@ -579,7 +579,6 @@ export interface FileRouteTypes {
     | '/s/$token'
     | '/t/$tenantId/alerts'
     | '/t/$tenantId/apuracao'
-    | '/t/$tenantId/recolhimentos'
     | '/t/$tenantId/audit'
     | '/t/$tenantId/brand'
     | '/t/$tenantId/cash'
@@ -594,6 +593,7 @@ export interface FileRouteTypes {
     | '/t/$tenantId/plans'
     | '/t/$tenantId/portfolio'
     | '/t/$tenantId/price'
+    | '/t/$tenantId/recolhimentos'
     | '/t/$tenantId/regime'
     | '/t/$tenantId/reports'
     | '/t/$tenantId/rules'
@@ -632,7 +632,6 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId'
     | '/_authenticated/t/$tenantId/alerts'
     | '/_authenticated/t/$tenantId/apuracao'
-    | '/_authenticated/t/$tenantId/recolhimentos'
     | '/_authenticated/t/$tenantId/audit'
     | '/_authenticated/t/$tenantId/brand'
     | '/_authenticated/t/$tenantId/cash'
@@ -647,6 +646,7 @@ export interface FileRouteTypes {
     | '/_authenticated/t/$tenantId/plans'
     | '/_authenticated/t/$tenantId/portfolio'
     | '/_authenticated/t/$tenantId/price'
+    | '/_authenticated/t/$tenantId/recolhimentos'
     | '/_authenticated/t/$tenantId/regime'
     | '/_authenticated/t/$tenantId/reports'
     | '/_authenticated/t/$tenantId/rules'
@@ -828,13 +828,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTTenantIdApuracaoRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
-    '/_authenticated/t/$tenantId/recolhimentos': {
-      id: '/_authenticated/t/$tenantId/recolhimentos'
-      path: '/recolhimentos'
-      fullPath: '/t/$tenantId/recolhimentos'
-      preLoaderRoute: typeof AuthenticatedTTenantIdRecolhimentosRouteImport
-      parentRoute: typeof AuthenticatedTTenantIdRoute
-    }
     '/_authenticated/t/$tenantId/audit': {
       id: '/_authenticated/t/$tenantId/audit'
       path: '/audit'
@@ -931,6 +924,13 @@ declare module '@tanstack/react-router' {
       path: '/price'
       fullPath: '/t/$tenantId/price'
       preLoaderRoute: typeof AuthenticatedTTenantIdPriceRouteImport
+      parentRoute: typeof AuthenticatedTTenantIdRoute
+    }
+    '/_authenticated/t/$tenantId/recolhimentos': {
+      id: '/_authenticated/t/$tenantId/recolhimentos'
+      path: '/recolhimentos'
+      fullPath: '/t/$tenantId/recolhimentos'
+      preLoaderRoute: typeof AuthenticatedTTenantIdRecolhimentosRouteImport
       parentRoute: typeof AuthenticatedTTenantIdRoute
     }
     '/_authenticated/t/$tenantId/regime': {
@@ -1051,7 +1051,6 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdAlertsRoute: typeof AuthenticatedTTenantIdAlertsRoute
   AuthenticatedTTenantIdApuracaoRoute: typeof AuthenticatedTTenantIdApuracaoRoute
-  AuthenticatedTTenantIdRecolhimentosRoute: typeof AuthenticatedTTenantIdRecolhimentosRoute
   AuthenticatedTTenantIdAuditRoute: typeof AuthenticatedTTenantIdAuditRoute
   AuthenticatedTTenantIdBrandRoute: typeof AuthenticatedTTenantIdBrandRoute
   AuthenticatedTTenantIdCashRoute: typeof AuthenticatedTTenantIdCashRoute
@@ -1066,6 +1065,7 @@ interface AuthenticatedTTenantIdRouteChildren {
   AuthenticatedTTenantIdPlansRoute: typeof AuthenticatedTTenantIdPlansRoute
   AuthenticatedTTenantIdPortfolioRoute: typeof AuthenticatedTTenantIdPortfolioRoute
   AuthenticatedTTenantIdPriceRoute: typeof AuthenticatedTTenantIdPriceRoute
+  AuthenticatedTTenantIdRecolhimentosRoute: typeof AuthenticatedTTenantIdRecolhimentosRoute
   AuthenticatedTTenantIdRegimeRoute: typeof AuthenticatedTTenantIdRegimeRoute
   AuthenticatedTTenantIdReportsRoute: typeof AuthenticatedTTenantIdReportsRoute
   AuthenticatedTTenantIdRulesRoute: typeof AuthenticatedTTenantIdRulesRoute
@@ -1086,7 +1086,6 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
   {
     AuthenticatedTTenantIdAlertsRoute: AuthenticatedTTenantIdAlertsRoute,
     AuthenticatedTTenantIdApuracaoRoute: AuthenticatedTTenantIdApuracaoRoute,
-    AuthenticatedTTenantIdRecolhimentosRoute: AuthenticatedTTenantIdRecolhimentosRoute,
     AuthenticatedTTenantIdAuditRoute: AuthenticatedTTenantIdAuditRoute,
     AuthenticatedTTenantIdBrandRoute: AuthenticatedTTenantIdBrandRoute,
     AuthenticatedTTenantIdCashRoute: AuthenticatedTTenantIdCashRoute,
@@ -1103,6 +1102,8 @@ const AuthenticatedTTenantIdRouteChildren: AuthenticatedTTenantIdRouteChildren =
     AuthenticatedTTenantIdPlansRoute: AuthenticatedTTenantIdPlansRoute,
     AuthenticatedTTenantIdPortfolioRoute: AuthenticatedTTenantIdPortfolioRoute,
     AuthenticatedTTenantIdPriceRoute: AuthenticatedTTenantIdPriceRoute,
+    AuthenticatedTTenantIdRecolhimentosRoute:
+      AuthenticatedTTenantIdRecolhimentosRoute,
     AuthenticatedTTenantIdRegimeRoute: AuthenticatedTTenantIdRegimeRoute,
     AuthenticatedTTenantIdReportsRoute: AuthenticatedTTenantIdReportsRoute,
     AuthenticatedTTenantIdRulesRoute: AuthenticatedTTenantIdRulesRoute,
